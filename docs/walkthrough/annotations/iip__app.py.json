@@ -121,7 +121,7 @@
     {
       "from": 40,
       "to": 43,
-      "text": "The remaining groups: `risk engine`, `simulation` and `integration`. The `dashboard` and `ai analyst` routers aren't listed, so their groups appear without a description. Line 32 closes the list."
+      "text": "The remaining groups: `risk engine`, `simulation` and `integration`. The `dashboard` and `ai analyst` routers aren't listed, so their groups appear without a description. The last line closes the list."
     },
     {
       "from": 46,
@@ -171,7 +171,7 @@
     {
       "from": 61,
       "to": 63,
-      "text": "The description shown at the top of `/docs`; two adjacent string literals are joined into one. Line 52 closes the call."
+      "text": "The description shown at the top of `/docs`; two adjacent string literals are joined into one. The last line closes the call."
     },
     {
       "from": 64,

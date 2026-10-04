@@ -21,7 +21,7 @@
     {
       "from": 8,
       "to": 10,
-      "text": "Describes the output: an equirectangular grid (longitude and latitude mapped straight onto x and y), one hex string per row at 1 bit per cell, so the browser needs no map library and no network request to draw the world. Line 10 closes the docstring."
+      "text": "Describes the output: an equirectangular grid (longitude and latitude mapped straight onto x and y), one hex string per row at 1 bit per cell, so the browser needs no map library and no network request to draw the world. The last line closes the docstring."
     },
     {
       "from": 11,

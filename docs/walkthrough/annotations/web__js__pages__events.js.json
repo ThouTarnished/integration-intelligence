@@ -61,7 +61,7 @@
     {
       "from": 22,
       "to": 24,
-      "text": "The linked incident as a button carrying `data-incident`, or a faint dash when the event didn't join an incident. Lines 23-24 close the row and the function."
+      "text": "The linked incident as a button carrying `data-incident`, or a faint dash when the event didn't join an incident. The last two lines close the row and the function."
     },
     {
       "from": 26,
@@ -71,7 +71,7 @@
     {
       "from": 29,
       "to": 29,
-      "text": "All filter state in one object, with keys named exactly like the API's query parameters so line 53 can send it as is. `q` comes from the URL when the overview map links here, and a `?level=` value is uppercased to match stored levels like `CRITICAL`."
+      "text": "All filter state in one object, with keys named exactly like the API's query parameters so `load()` can send it as is. `q` comes from the URL when the overview map links here, and a `?level=` value is uppercased to match stored levels like `CRITICAL`."
     },
     {
       "from": 30,
@@ -91,12 +91,12 @@
     {
       "from": 38,
       "to": 40,
-      "text": "The filter bar starts with the search box, prefilled from `state.q`. The `/` key hint advertises the keyboard shortcut wired up on line 105."
+      "text": "The filter bar starts with the search box, prefilled from `state.q`. The `/` key hint advertises the keyboard shortcut: `ctx.focusSearch`, set near the end of this file, lets main.js focus the box when `/` is pressed."
     },
     {
       "from": 41,
       "to": 44,
-      "text": "Three segmented controls: event type, risk level (an exact match, so `High` shows only HIGH events; it can be preselected from the URL) and sort order. Their values are the exact strings the API expects, such as `resource_access`, `HIGH` or `asc`. Line 44 closes the filter bar."
+      "text": "Three segmented controls: event type, risk level (an exact match, so `High` shows only HIGH events; it can be preselected from the URL) and sort order. Their values are the exact strings the API expects, such as `resource_access`, `HIGH` or `asc`. The last line closes the filter bar."
     },
     {
       "from": 45,
@@ -181,7 +181,7 @@
     {
       "from": 74,
       "to": 77,
-      "text": "Any failure, network or HTTP, replaces the table with an error box showing the message, unless a newer load has taken over. Line 74 closes `load`."
+      "text": "Any failure, network or HTTP, replaces the table with an error box showing the message, unless a newer load has taken over. The last line closes `load`."
     },
     {
       "from": 79,

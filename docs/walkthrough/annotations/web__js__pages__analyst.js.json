@@ -71,7 +71,7 @@
     {
       "from": 36,
       "to": 38,
-      "text": "The composer form, with autocomplete off and `maxlength=500`, matching the backend's limit on question length. Line 36 closes the chat column."
+      "text": "The composer form, with autocomplete off and `maxlength=500`, matching the backend's limit on question length. The last line closes the chat column."
     },
     {
       "from": 39,
@@ -86,7 +86,7 @@
     {
       "from": 43,
       "to": 45,
-      "text": "Step 4, **Cite**: every answer lists the records it used. Lines 42-43 close the panel, the grid and the template."
+      "text": "Step 4, **Cite**: every answer lists the records it used. The last two lines close the panel, the grid and the template."
     },
     {
       "from": 47,
@@ -161,7 +161,7 @@
     {
       "from": 79,
       "to": 80,
-      "text": "Scrolls again, because the finished answer is usually taller than the placeholder. Line 78 closes `ask`."
+      "text": "Scrolls again, because the finished answer is usually taller than the placeholder. The last line closes `ask`."
     },
     {
       "from": 81,

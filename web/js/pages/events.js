@@ -68,7 +68,7 @@ export default {
           body.insertAdjacentHTML("beforeend", String(html`${page.items.map(row)}`));
           enter([...body.children].slice(before), { y: 6, step: 14, blur: 0, max: 24 });
         }
-        $("[data-total]", view).textContent = `${fmt.num(total)} events`;
+        $("[data-total]", view).textContent = fmt.count(total, "event");
         $("[data-shown]", view).textContent = `Showing ${fmt.num(items.length)} of ${fmt.num(total)}`;
         $("[data-more]", view).hidden = items.length >= total;
       } catch (error) {

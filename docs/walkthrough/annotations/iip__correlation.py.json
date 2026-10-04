@@ -71,7 +71,7 @@
     {
       "from": 25,
       "to": 27,
-      "text": "Failed logins alone are a \"Credential attack\". A new device in an unusual location, checked last, is an \"Unfamiliar sign-in\". Line 27 closes the tuple."
+      "text": "Failed logins alone are a \"Credential attack\". A new device in an unusual location, checked last, is an \"Unfamiliar sign-in\". The last line closes the tuple."
     },
     {
       "from": 30,

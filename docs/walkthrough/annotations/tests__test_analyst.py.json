@@ -1,6 +1,6 @@
 {
   "path": "tests/test_analyst.py",
-  "lines": 98,
+  "lines": 117,
   "summary": "Tests for the AI analyst (`iip/analyst.py`) and its `POST /api/v1/ai/ask` endpoint. Because `conftest.py` removes `OPENAI_API_KEY`, the deterministic analyst answers, so the tests can check exactly which record each question focuses on. The last test fakes an OpenAI key and a network failure with `monkeypatch` to prove the fallback never leaves the user without an answer. The newer tests check the question parser itself, and that searches, counts, event explanations and definitions agree with the database.",
   "notes": [
     {
@@ -212,6 +212,36 @@
       "from": 96,
       "to": 98,
       "text": "An empty search is reported honestly, reading the terms back (password spray in Tokyo, where there is no activity), instead of listing unrelated incidents as if they matched."
+    },
+    {
+      "from": 101,
+      "to": 103,
+      "text": "The off-topic rules end to end. Questions about something else and small talk are answered without retrieving records or calling a model, while vague questions about the platform keep working."
+    },
+    {
+      "from": 104,
+      "to": 106,
+      "text": "\"What should I worry about?\" names nothing specific but is plainly about the platform, so it still lists the incident queue. A two-letter \"hi\" passes validation and is greeted, and thanks are acknowledged."
+    },
+    {
+      "from": 107,
+      "to": 108,
+      "text": "Questions about something else are spotted even when the parser reads one of their words as a search term: \"Dubai\" is a known place and \"high\" a risk level."
+    },
+    {
+      "from": 109,
+      "to": 109,
+      "text": "Pretends an OpenAI key is configured, so the model would normally write the answer."
+    },
+    {
+      "from": 111,
+      "to": 114,
+      "text": "A stand-in for `httpx.post` that fails the test if it is ever called. `AssertionError` is not one of the errors `ask()` falls back on, so a call would surface instead of being swallowed."
+    },
+    {
+      "from": 115,
+      "to": 117,
+      "text": "\"Shawerma\" is answered by the deterministic analyst alone: the reply says it is not related and names the word as typed, and there is no engine decision and nothing to cite."
     }
   ]
 }

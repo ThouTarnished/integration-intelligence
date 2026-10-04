@@ -81,10 +81,11 @@ export function jsonBlock(value) {
   return raw(`<pre class="code">${text}</pre>`);
 }
 
-/** Minimal, safe markdown: escape everything, then allow **bold**, `code` and "- " bullets. */
+/** Minimal, safe markdown: escape everything, then allow **bold**, *italic*, `code` and "- " bullets. */
 export function markdown(text) {
   const escaped = String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const inline = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>")
+  const inline = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*([^*\s](?:[^*]*[^*\s])?)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\b(INC-\d{4}|EVT-\d{5}|USR-\d{4})\b/g, '<button class="ref" data-ref="$1">$1</button>');
   const blocks = escaped.split(/\n{2,}/).map((block) => {
     const lines = block.split("\n");

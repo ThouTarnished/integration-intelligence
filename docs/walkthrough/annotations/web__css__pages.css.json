@@ -296,7 +296,7 @@
     {
       "from": 72,
       "to": 72,
-      "text": "The marker's label (\"airliner · 900 km/h\") hangs 18px below it, centred with `left: 50%` plus `translateX(-50%)`, in small mono where `font-style: normal` cancels the italics of the `em` element."
+      "text": "The marker's label (\"airliner · 900 km/h\") hangs 18px below it, starting at the marker rather than centred on it: a very fast trip pushes the marker close to the left end of the track, where a centred label would be cut off. It is small mono, and `font-style: normal` cancels the italics of the `em` element."
     },
     {
       "from": 74,
@@ -761,7 +761,7 @@
     {
       "from": 195,
       "to": 196,
-      "text": "The API console stacks its parts in a grid with 10px gaps, and its top bar is a wrapping flex row of method, path and Send."
+      "text": "The API console stacks its parts in a grid with 10px gaps. Its one column is `minmax(0, 1fr)`, so a response with long JSON lines scrolls inside its code block instead of stretching the console over the endpoint catalog. The top bar is a wrapping flex row of method, path and Send."
     },
     {
       "from": 197,
@@ -861,7 +861,7 @@
     {
       "from": 219,
       "to": 220,
-      "text": "The message header (\"Analyst\", and the sources line under answers) in small uppercase letter-spaced mono `--t3`, with its sparkles icon in aqua."
+      "text": "The message header (\"Analyst\", and the sources line under answers) in small uppercase letter-spaced mono `--t3`, with its sparkles icon in aqua. It wraps, so a long list of sources flows onto a second line instead of squeezing the links."
     },
     {
       "from": 221,
@@ -886,7 +886,7 @@
     {
       "from": 226,
       "to": 226,
-      "text": "Record references in answers (`INC-0001`, `EVT-00001`, `USR-1001`): aqua mono with a dashed aqua underline drawn as a bottom border; main.js opens the matching drawer when one is clicked."
+      "text": "Record references in answers (`INC-0001`, `EVT-00001`, `USR-1001`): aqua mono with a dashed aqua underline drawn as a bottom border, never broken across lines at the hyphen; main.js opens the matching drawer when one is clicked."
     },
     {
       "from": 227,

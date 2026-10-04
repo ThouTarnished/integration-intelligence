@@ -86,7 +86,7 @@
     {
       "from": 44,
       "to": 47,
-      "text": "Which explanation engine the AI analyst uses (`openai` with its model, or `deterministic`), the rate limit, and how many dashboards are connected to the live stream (`data-clients`). Line 47 closes the panel."
+      "text": "Which explanation engine the AI analyst uses (`openai` with its model, or `deterministic`), the rate limit, and how many dashboards are connected to the live stream (`data-clients`). The last line closes the panel."
     },
     {
       "from": 48,
@@ -106,7 +106,7 @@
     {
       "from": 58,
       "to": 61,
-      "text": "The JSON body textarea, prefilled with `SAMPLE` and with spellcheck off, a meta line explaining that write calls carry the API key, and an empty response area. Line 61 closes the console."
+      "text": "The JSON body textarea, prefilled with `SAMPLE` and with spellcheck off, a meta line explaining that write calls carry the API key, and an empty response area. The last line closes the console."
     },
     {
       "from": 62,
@@ -116,7 +116,7 @@
     {
       "from": 64,
       "to": 66,
-      "text": "Each endpoint is a row whose `data-endpoint` holds the method and path separated by a space. It shows a coloured method badge, the path without `/api/v1`, its OpenAPI summary and a lock icon when the API key is required. Line 66 closes the row of panels."
+      "text": "Each endpoint is a row whose `data-endpoint` holds the method and path separated by a space. It shows a coloured method badge, the path without `/api/v1`, its OpenAPI summary and a lock icon when the API key is required. The last line closes the row of panels."
     },
     {
       "from": 67,
@@ -211,7 +211,7 @@
     {
       "from": 112,
       "to": 113,
-      "text": "Briefly fades the body box (opacity 0.4 to 1) so the user notices it changed. Line 114 closes the listener."
+      "text": "Briefly fades the body box (opacity 0.4 to 1) so the user notices it changed. The last line closes the listener."
     },
     {
       "from": 115,
@@ -246,7 +246,7 @@
     {
       "from": 128,
       "to": 131,
-      "text": "`request` throws only when no response arrives at all (for example when the server is down); that case shows `ERR` with the message. Line 132 closes the handler."
+      "text": "`request` throws only when no response arrives at all (for example when the server is down); that case shows `ERR` with the message. The last line closes the handler."
     },
     {
       "from": 133,
@@ -261,7 +261,7 @@
     {
       "from": 137,
       "to": 139,
-      "text": "Copies the command with the async Clipboard API and shows a preview toast cut at 90 characters, or reports that clipboard access was blocked. Line 140 closes the handler."
+      "text": "Copies the command with the async Clipboard API and shows a preview toast cut at 90 characters, or reports that clipboard access was blocked. The last line closes the handler."
     },
     {
       "from": 141,

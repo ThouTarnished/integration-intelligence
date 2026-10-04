@@ -18,10 +18,10 @@ HTML file) and this version (v2), and **why**. Every claim about v1 refers to th
 | Live updates | none (manual refresh) | Server-Sent Events + optional live-traffic generator |
 | Observability | logging only | request IDs, response times, p50/p95/p99, throughput, per-route stats |
 | Protection | API key | API key (constant-time) + token-bucket rate limiting + optional non-demo mode |
-| Tests | 21 | 93 |
+| Tests | 21 | 94 |
 | Tooling | — | `pyproject.toml`, ruff, GitHub Actions CI (Python 3.10 – 3.13), Dockerfile with healthcheck |
 | Frontend | 92-line HTML file, CSS bar charts, Unicode glyph icons | design system, anime.js motion, SVG/canvas charts, dotted world map, command palette, drawers, Risk Lab |
-| Docs | README | README + study roadmap + line-by-line walkthrough (83 files, 3,851 explanations) + technical reference + this file |
+| Docs | README | README with screenshots + study roadmap + line-by-line walkthrough (83 files, 3,882 explanations) + technical reference + this file |
 
 ---
 
@@ -171,7 +171,7 @@ CSS bar charts, and no motion beyond a drawer slide. v2 is a new design system a
 
 ## 8. Testing and delivery
 
-* **21 → 93 tests**: pure engine tests, geo maths, API contract, every scenario end to end, analyst behaviour
+* **21 → 94 tests**: pure engine tests, geo maths, API contract, every scenario end to end, analyst behaviour
   including a monkeypatched OpenAI outage and the signal-breakdown arithmetic, SSE hub, rate limiter and percentile
   maths. Stable across repeated runs, and isolated from a developer's local `.env`.
 * **ruff** configuration, **GitHub Actions** (lint + tests on 3.10 – 3.13), **Dockerfile** with a healthcheck.
@@ -226,6 +226,12 @@ searches with exact counts, definitions that quote the rulebook's thresholds, th
 probe of 20 realistic questions the old version answered 2 correctly and the new one all 20, with every count matching
 a direct SQL count.
 
+**Off-topic questions.** Asking about something unrelated ("Shawerma") still produced the incident queue, as if it
+answered the question. A question with none of the platform's vocabulary is now recognized: the analyst says it isn't
+related, names the odd word, and suggests what to ask, without retrieving records or calling the model, and greetings
+and thanks get a short reply. A probe of 176 questions (44 unrelated, 30 small talk, 102 about the platform) is
+classified without a miss.
+
 | Problem | Effect | Fix |
 |---|---|---|
 | A chart tooltip was only hidden on `pointerleave` | Hovering the world map and switching pages left the tooltip on screen (closing a drawer with Escape, or scrolling, did the same) | The router hides it on every navigation, and the tooltip hides itself on scroll, clicks and key presses |
@@ -233,6 +239,15 @@ a direct SQL count.
 | World-map comet animations looped forever | Each resize or visit to the overview added three animations that never stopped | Comets are kept and cancelled on relayout and when the page is left |
 | Live toasts only knew incidents that were open at start-up | A status change on an investigating incident was announced as a new incident and bumped the badge | Toasts are seeded with every incident; the badge is recounted from the API |
 | The drawer's status control switched before saving | After a failed save it showed a status that was never saved and ignored a retry; the header badge never updated | It reverts on failure, so a retry works, and the header badge follows a successful save |
+| Unrelated questions | "Shawerma" was answered with the incident queue, as if it matched | Questions with none of the platform's vocabulary are told they aren't related, with examples to try; greetings get a short reply; neither reaches the model |
+| The analyst rejected two-letter messages | "hi" got a validation error instead of a greeting | Questions may be two characters long |
+| Answers printed raw asterisks | The terms read back in italics (*Impossible travel · Lagos*) showed their asterisks | The answer renderer supports italics |
+| Long source lists squeezed their links | "INC-0030" broke across two lines under an answer | The sources line wraps between links |
+| Counts ignored the singular | Incident cards, drawers and analyst answers said "1 events" and "1 correlated events" | Every count agrees with its noun |
+| The API console stretched after a response | Long JSON lines pushed the console over the endpoint catalog and could shift the page sideways | Its grid column is `minmax(0, 1fr)`, so long lines scroll inside the code block |
+| The speed meter's airliner label | On very fast trips the label sat near the left end and was cut off | It starts at the marker instead of being centred on it |
+| A map stat label was truncated | "Unverified origins" showed as "UNVERIFIED ORIGI…" on a laptop screen | Renamed "Unverified trips", next to "Plausible trips" |
+| Walkthrough notes quoted stale line numbers | About 30 notes said "Line N closes…" with N a few lines off after earlier edits | They say "the last line closes…", which cannot drift |
 | Events and Risk Lab rendered responses in arrival order | A slower, older response could show results for the wrong filter or selection | Requests are numbered; only the newest may render |
 | The live stream gave up on error responses | A proxy 502 during a restart left the app offline until a reload, and missed messages were never refetched | It reconnects with growing delays, and `live:resync` makes pages refetch |
 | Drawer and palette races | A drawer reopened during the close animation was wiped; a slow failed view overwrote a newer one; the palette dropped focus and could render over the API-key prompt | Close and render guards, focus restore, and Tab kept inside both modals |
@@ -253,7 +268,7 @@ sink), two spotlight targets doing work every frame with no visible effect, thre
 `[hidden]` rule, a never-generated CSS selector, two unused dashboard aggregates (one cost a query on every refresh),
 a duplicate event list in the customer profile, and the old URL-rewriting regex in the metrics middleware.
 
-**Tests:** 83 → 93: six analyst accuracy tests and four regression tests for the review fixes.
+**Tests:** 83 → 94: six analyst accuracy tests, an off-topic test, and four regression tests for the review fixes.
 
 ## Research notes
 

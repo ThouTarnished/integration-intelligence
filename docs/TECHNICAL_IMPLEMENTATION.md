@@ -112,9 +112,9 @@ integration-intelligence/
 │   │   ├── views/            detail drawers (event, incident, customer)
 │   │   └── data/             world-dots.js (generated land mask)
 │   └── vendor/               anime.js 4.5.0 UMD build (MIT)
-├── tests/                    93 pytest tests
+├── tests/                    94 pytest tests
 ├── scripts/                  build_world_dots.py, build_walkthrough.py
-├── docs/                     ROADMAP.html, CODE_WALKTHROUGH.html, this file, IMPROVEMENTS.md
+├── docs/                     ROADMAP.html, CODE_WALKTHROUGH.html, this file, IMPROVEMENTS.md, screenshots/
 ├── .github/workflows/ci.yml  lint + tests on Python 3.10 – 3.13
 ├── Dockerfile, .dockerignore
 ├── pyproject.toml            project metadata, pytest + ruff config
@@ -389,8 +389,17 @@ still running in its worker thread (threads can't be cancelled), so a reset neve
    first names such as "Dev" only when capitalized), signals and attack patterns ("impossible travel", "card
    testing", "account takeover"), cities and countries ("Russia" → Moscow, via `geo.COUNTRY_ALIASES`), risk levels,
    incident statuses, event types, failed or successful outcomes, a time window ("today", "last 24 hours", "6h") and
-   the intent: focus on a record, the most urgent incident, the scoring model, a definition, a count, a summary or a
-   search. Matched phrases are blanked out as they are used, so no words are read twice.
+   the intent: focus on a record, the most urgent incident, the scoring model, a definition, a count, a summary, a
+   search, small talk, or a question about something else. Matched phrases are blanked out as they are used, so no
+   words are read twice.
+
+   **Off-topic questions.** A question with no record ID, customer, signal, pattern, event type or platform word
+   (`ON_TOPIC`: risk, fraud, attack, incident, customer, account…) may still be made only of common words
+   (`COMMON_WORDS`, about 500) and search terms ("What's urgent in Lagos?"). One word outside both ("Shawerma",
+   the "weather" in "What's the weather in Dubai?") makes it `unrelated`: nothing is retrieved, the model is not
+   called, and the reply says the question isn't related to the platform and suggests what to ask. Greetings and
+   thanks (`SMALL_TALK`) get a short reply instead. Words in a non-Latin script, which normalization would drop,
+   count as unknown, so Arabic text is caught too.
 2. `gather_context()` retrieves only what matches: a focused incident, event or customer in full; otherwise SQL
    searches over incidents, events or customers (signals through the indexed `risk_signals` table) with exact totals
    and breakdowns, definitions that quote the rulebook's own thresholds, the scoring model, or an overview of the
@@ -399,15 +408,17 @@ still running in its worker thread (threads can't be cancelled), so a reset neve
 3. `engine_decision(ctx)`: the deterministic verdict for a focused record (subject, score, level, signals, action),
    shown separately in the UI.
 4. With `OPENAI_API_KEY`: POST to `{OPENAI_BASE_URL}/chat/completions` (temperature 0.2, 20 s timeout) with a system
-   prompt restricting the model to the JSON context (which includes the interpretation), forbidding score changes and
-   asking for concise markdown. Context is truncated to 14,000 characters.
+   prompt restricting the model to the JSON context (which includes the interpretation), telling it to say so when a
+   question is about something else, forbidding score changes and asking for concise markdown. Context is truncated
+   to 14,000 characters.
 5. Without a key, or on any HTTP/parse error: `deterministic_answer()` composes markdown from the same context, and
    every answer reads back the terms it understood (*Impossible travel · Lagos · last 24 hours*). A `note` explains a
    fallback.
 6. `sources` lists every record the answer shows; the UI renders them as clickable references.
 
 On a probe of 20 realistic questions the old keyword matcher answered 2 correctly; the parser answers all 20, and the
-counts it quotes match direct SQL counts (pinned by `tests/test_analyst.py`).
+counts it quotes match direct SQL counts (pinned by `tests/test_analyst.py`). A second probe of 176 questions (44
+unrelated, 30 small talk, 102 about the platform) is classified without a single miss.
 
 ---
 
@@ -576,7 +587,7 @@ packet and typed step details; the Risk Lab gauge animating from the previous sc
 
 ## 16. Testing
 
-`pytest` (93 tests, ~8 s) in `tests/`:
+`pytest` (94 tests, ~8 s) in `tests/`:
 
 | File | Covers |
 |---|---|
@@ -584,7 +595,7 @@ packet and typed step details; the Risk Lab gauge animating from the previous sc
 | `test_geo_and_correlation.py` | canonical labels and their country check, haversine against a known distance, travel maths, incident titles |
 | `test_api.py` | seeding, auth, validation (422/404), ingestion + normalization + headers, search/filter/sort, users, triage, dashboard shape, risk endpoints, health catalog, metrics, the page and docs; out-of-range timestamps, blank locations and malformed IDs |
 | `test_simulation.py` | every scenario's 6 stages, no-incident baseline, plausible business trip, brute-force correlation, impossible travel speed, multi-account spray, guards, traffic toggle, reset |
-| `test_analyst.py` | the question parser (IDs, names, places, windows, statuses), searches whose results really match, counts that equal direct SQL counts, event explanations, definitions quoting the real thresholds, honest empty results, focusing by ID and surname, missing records, validation, **OpenAI failure fallback**, and signal breakdowns that add up to the score |
+| `test_analyst.py` | the question parser (IDs, names, places, windows, statuses), searches whose results really match, counts that equal direct SQL counts, event explanations, definitions quoting the real thresholds, honest empty results, focusing by ID and surname, missing records, validation, **OpenAI failure fallback**, signal breakdowns that add up to the score, and off-topic questions and small talk (no records, no model call) |
 | `test_live_and_observability.py` | SSE hub fan-out and cleanup, publish without subscribers, token bucket, percentile maths, unsafe request IDs and unknown-path metrics |
 
 Isolation: `conftest.py` sets `IIP_DB_URL` to a temp directory, a known API key, a huge rate limit, demo mode and an
@@ -601,7 +612,7 @@ Isolation: `conftest.py` sets `IIP_DB_URL` to a temp directory, a known API key,
 * **Docker**: `docker build -t iip . && docker run -p 8000:8000 iip`. Slim Python 3.12 image, binds `0.0.0.0`,
   includes a `HEALTHCHECK` against `/api/v1/integration/health`.
 * **Docs generation**: `python scripts/build_walkthrough.py` validates that every non-blank line of 83 files is
-  explained (and that no annotation is stale), then renders `docs/CODE_WALKTHROUGH.html` (7,704 lines, 3,851
+  explained (and that no annotation is stale), then renders `docs/CODE_WALKTHROUGH.html` (7,822 lines, 3,882
   explanations).
 
 ---

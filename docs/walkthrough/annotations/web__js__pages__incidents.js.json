@@ -56,7 +56,7 @@
     {
       "from": 23,
       "to": 24,
-      "text": "Meta line: customer, peak score, number of correlated events and, pushed to the right, how long ago the incident was updated. Line 24 closes the card."
+      "text": "Meta line: customer, peak score, number of correlated events and, pushed to the right, how long ago the incident was updated. The last line closes the card."
     },
     {
       "from": 26,
@@ -81,12 +81,12 @@
     {
       "from": 37,
       "to": 38,
-      "text": "A severity filter (All, Critical, High, Medium) in the header actions. Line 38 closes the header."
+      "text": "A severity filter (All, Critical, High, Medium) in the header actions. The last line closes the header."
     },
     {
       "from": 39,
       "to": 43,
-      "text": "The board: one `section` per column, each with a header (status pill, hint and an empty count badge) and an empty `data-body` that `draw` fills. Line 43 closes the board and the template."
+      "text": "The board: one `section` per column, each with a header (status pill, hint and an empty count badge) and an empty `data-body` that `draw` fills. The last line closes the board and the template."
     },
     {
       "from": 45,
@@ -111,7 +111,7 @@
     {
       "from": 53,
       "to": 56,
-      "text": "Mounts the cards. A truncated Resolved column ends with a `Show N more` button, and an empty column shows a calm `Nothing here` placeholder. Line 56 closes the loop."
+      "text": "Mounts the cards. A truncated Resolved column ends with a `Show N more` button, and an empty column shows a calm `Nothing here` placeholder. The last line closes the loop."
     },
     {
       "from": 57,
@@ -236,7 +236,7 @@
     {
       "from": 128,
       "to": 130,
-      "text": "Highlights the updated card with a teal ring that fades out over 1.6 s, then removes the inline style, so the user can see which card just changed. Line 129 closes the subscription."
+      "text": "Highlights the updated card with a teal ring that fades out over 1.6 s, then removes the inline style, so the user can see which card just changed. The last line closes the subscription."
     },
     {
       "from": 131,

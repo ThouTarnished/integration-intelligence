@@ -136,7 +136,7 @@
     {
       "from": 57,
       "to": 59,
-      "text": "Account takeover (\"attack\"), the full chain: credential attack, foreign sign-in, admin console, then a $15,000 transfer. Line 59 closes the tuple and the dict comprehension."
+      "text": "Account takeover (\"attack\"), the full chain: credential attack, foreign sign-in, admin console, then a $15,000 transfer. The last line closes the tuple and the dict comprehension."
     },
     {
       "from": 60,
@@ -196,7 +196,7 @@
     {
       "from": 83,
       "to": 85,
-      "text": "Transactions get an amount between $20 and $3,500 (rounded to cents): under the $10,000 review threshold and from a trusted context, so no \"Suspicious transaction\". Resource access gets a routine resource; other kinds get `None`. Line 85 closes the dict."
+      "text": "Transactions get an amount between $20 and $3,500 (rounded to cents): under the $10,000 review threshold and from a trusted context, so no \"Suspicious transaction\". Resource access gets a routine resource; other kinds get `None`. The last line closes the dict."
     },
     {
       "from": 88,

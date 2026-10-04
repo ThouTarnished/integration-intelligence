@@ -20,7 +20,7 @@ const RANK = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
 const card = (i) => html`<article class="inc-card lvl-${i.severity}" draggable="true" data-id="${i.incident_id}" data-severity="${i.severity}" tabindex="0">
   <div class="row">${sev(i.severity)}<span class="mono dim" style="font-size:11.5px">${i.incident_id}</span><span class="grip">${icon("grip", 14)}</span></div>
   <div class="title">${i.title}</div>
-  <div class="meta"><span>${i.user_name}</span><span class="mono">score ${i.risk_score}</span><span>${i.event_count} events</span><span style="margin-left:auto">${fmt.ago(i.updated)}</span></div>
+  <div class="meta"><span>${i.user_name}</span><span class="mono">score ${i.risk_score}</span><span>${fmt.count(i.event_count, "event")}</span><span style="margin-left:auto">${fmt.ago(i.updated)}</span></div>
 </article>`;
 
 export default {

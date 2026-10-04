@@ -141,7 +141,7 @@
     {
       "from": 45,
       "to": 46,
-      "text": "'Reset demo data…' only navigates to the Simulation page, where the real reset button must be pressed and held. A destructive action therefore can't be fired by a stray Enter in the palette. Line 46 closes the list."
+      "text": "'Reset demo data…' only navigates to the Simulation page, where the real reset button must be pressed and held. A destructive action therefore can't be fired by a stray Enter in the palette. The last line closes the list."
     },
     {
       "from": 47,
@@ -181,7 +181,7 @@
     {
       "from": 58,
       "to": 59,
-      "text": "Returns every item in display order: pages, actions, scenarios, incidents, customers. Line 59 closes `build()`."
+      "text": "Returns every item in display order: pages, actions, scenarios, incidents, customers. The last line closes `build()`."
     },
     {
       "from": 61,
@@ -356,7 +356,7 @@
     {
       "from": 117,
       "to": 118,
-      "text": "If loading fails (for example, the server is unreachable) the error is swallowed on purpose: navigation and actions keep working. Line 114 closes the function."
+      "text": "If loading fails (for example, the server is unreachable) the error is swallowed on purpose: navigation and actions keep working. The last line closes the function."
     },
     {
       "from": 120,

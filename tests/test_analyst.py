@@ -96,3 +96,22 @@ def test_defines_signals_with_their_real_thresholds(client):
 def test_says_so_when_nothing_matches(client):
     text = ask(client, "Show password spray incidents in Tokyo")["explanation"]
     assert text.startswith("No incidents match *Password spray · Tokyo*")
+
+
+def test_off_topic_questions_say_so(client, db, monkeypatch):
+    """A question about something else is told so and small talk gets a reply, with no records and no model call;
+    vague questions about the platform still get the incident queue."""
+    assert "INC-" in ask(client, "What should I worry about?")["explanation"]
+    assert ask(client, "hi")["explanation"].startswith("Hi!")  # two letters are enough for a greeting
+    assert ask(client, "thanks!")["explanation"].startswith("Happy to help!")
+    for question in ("What's the weather in Dubai?", "Who won the world cup?", "How high is Mount Everest?"):
+        assert analyst.parse_question(db, question).intent == "unrelated", question
+    monkeypatch.setattr(analyst, "settings", dataclasses.replace(analyst.settings, openai_api_key="sk-test"))
+
+    def no_model(*_, **__):
+        raise AssertionError("an off-topic question must not reach the model")
+
+    monkeypatch.setattr(analyst.httpx, "post", no_model)
+    answer = analyst.ask(db, "Shawerma")
+    assert answer["explanation"].startswith("**Not related to the platform.** I couldn't find anything about “Shawerma")
+    assert (answer["decision"], answer["sources"], answer["source"]) == (None, [], "deterministic")

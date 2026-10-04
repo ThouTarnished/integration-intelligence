@@ -21,7 +21,7 @@
     {
       "from": 11,
       "to": 13,
-      "text": "Usage: with no arguments, validate everything and build the page; with `--check FILE..`, only validate the given files, which is handy while writing annotations. Line 13 closes the docstring."
+      "text": "Usage: with no arguments, validate everything and build the page; with `--check FILE..`, only validate the given files, which is handy while writing annotations. The last line closes the docstring."
     },
     {
       "from": 14,

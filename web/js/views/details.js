@@ -121,7 +121,7 @@ export function openIncident(id) {
   openDrawer(async () => {
     const i = await get(`/incidents/${id}`);
     return {
-      eyebrow: `${i.title} · ${i.event_count} correlated events`, title: i.incident_id,
+      eyebrow: `${i.title} · ${fmt.count(i.event_count, "correlated event")}`, title: i.incident_id,
       badges: html`${sev(i.severity)}${status(i.status)}`,
       body: html`
         <section class="triage">
@@ -169,7 +169,7 @@ export function openUser(id) {
       eyebrow: `${u.segment} customer · home ${u.home_location}`, title: u.name,
       badges: html`${sev(u.risk.risk_level)}<span class="chip mono">${u.user_id}</span>`,
       body: html`${verdict(u.risk.risk_score, u.risk.recommended_action, u.risk.explanation, "current risk")}
-        <section class="drawer-section"><h4>Risk over the last ${u.risk_history.length} events</h4><div data-riskline></div></section>
+        <section class="drawer-section"><h4>Risk over the last ${fmt.count(u.risk_history.length, "event")}</h4><div data-riskline></div></section>
         <div class="two-col">
           <section class="drawer-section"><h4>Devices</h4><div class="device-list">${u.devices.map((d) => html`
             <div class="device ${d.trusted ? "trusted" : ""}">${icon("device", 14)}<span class="mono">${d.device_id}</span>

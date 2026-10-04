@@ -81,7 +81,7 @@
     {
       "from": 39,
       "to": 42,
-      "text": "The weight with an explicit `+` for positive values (negative numbers already carry a minus sign, plus a `neg` class for styling), the description and, when mapped, a MITRE ATT&CK link. Line 42 closes the left column."
+      "text": "The weight with an explicit `+` for positive values (negative numbers already carry a minus sign, plus a `neg` class for styling), the description and, when mapped, a MITRE ATT&CK link. The last line closes the left column."
     },
     {
       "from": 43,
@@ -91,7 +91,7 @@
     {
       "from": 45,
       "to": 48,
-      "text": "Three more empty slots that `evaluate` fills: the level badge (centred), the waterfall and the written formula. Line 48 closes the first grid row."
+      "text": "Three more empty slots that `evaluate` fills: the level badge (centred), the waterfall and the written formula. The last line closes the first grid row."
     },
     {
       "from": 49,
@@ -111,7 +111,7 @@
     {
       "from": 57,
       "to": 60,
-      "text": "The large-transaction amount formatted as US dollars, the score that opens an incident and the correlation window. Line 60 closes the panel and the template."
+      "text": "The large-transaction amount formatted as US dollars, the score that opens an incident and the correlation window. The last line closes the panel and the template."
     },
     {
       "from": 62,
@@ -156,7 +156,7 @@
     {
       "from": 73,
       "to": 76,
-      "text": "Writes the formula, for example `15 + 20 = 35 → MEDIUM · Monitor and log`. The regex turns `+ −` into a plain `−`, an extra `→ clamp →` step appears only when the sum fell outside 0-100, and the level is shown in its colour. Line 74 closes `evaluate`."
+      "text": "Writes the formula, for example `15 + 20 = 35 → MEDIUM · Monitor and log`. The regex turns `+ −` into a plain `−`, an extra `→ clamp →` step appears only when the sum fell outside 0-100, and the level is shown in its colour. The last line closes `evaluate`."
     },
     {
       "from": 77,

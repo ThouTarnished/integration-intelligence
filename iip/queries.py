@@ -78,8 +78,10 @@ def incident_detail(db: Session, incident: Incident) -> dict:
                    "segment": user.segment} if user else None
     out["timeline"] = [event_dict(e) for e in events]
     out["mitre"] = list({m["id"]: m for s in incident.signals if (m := rules.SIGNALS[s].mitre)}.values())
-    out["explanation"] = (f"{len(incident.signals)} distinct signals across {len(events)} correlated events: "
-                          f"{', '.join(incident.signals) or 'none'}. Highest event score {incident.risk_score}/100.")
+    signals, n = len(incident.signals), len(events)
+    out["explanation"] = (f"{signals} distinct {'signal' if signals == 1 else 'signals'} across {n} correlated "
+                          f"{'event' if n == 1 else 'events'}: {', '.join(incident.signals) or 'none'}. "
+                          f"Highest event score {incident.risk_score}/100.")
     return out
 
 

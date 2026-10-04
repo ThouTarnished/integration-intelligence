@@ -3,59 +3,275 @@
   "lines": 91,
   "summary": "The **write path** for a single event, and the one function every ingestion channel calls: the REST endpoint (`routes/events.py`), the Simulation Center (`routes/simulation.py`), the live-traffic generator (`live.py`) and the seeder (`seed.py`). `process_event` normalizes the payload, enriches it with device ownership and recent history from the database, scores it with the pure rulebook in `rules.py`, stores the event plus one `RiskSignal` row per signal, and hands it to `correlation.py`. Keeping all database reads here is what lets `rules.py` stay pure and easy to unit-test.",
   "notes": [
-    {"from": 1, "to": 1, "text": "Module docstring, first line: the five stages of the write path, in order: normalize, enrich, score, persist, correlate."},
-    {"from": 3, "to": 5, "text": "The key design rule: every ingestion channel (REST API, Simulation Center, live-traffic generator, seeder) funnels through `process_event`, so an event is scored by exactly the same rules wherever it came from."},
-    {"from": 6, "to": 6, "text": "`from __future__ import annotations` makes Python keep type hints as unevaluated strings instead of evaluating them at import time. It's a project-wide habit that keeps hints like `tuple[Event, dict]` free of runtime cost and allows forward references."},
-    {"from": 8, "to": 8, "text": "SQLAlchemy 2.0 query builders: `select()` builds a SELECT statement as a Python object, and `func` generates SQL functions such as `count()`."},
-    {"from": 9, "to": 9, "text": "`Session` is SQLAlchemy's unit of work: it tracks the objects you add or change and sends the SQL inside a transaction. Imported here only for type hints."},
-    {"from": 11, "to": 11, "text": "Relative imports (the leading dot means \"from this package\", `iip`): `geo` for city normalization and `rules`, the pure scoring engine."},
-    {"from": 12, "to": 12, "text": "`utcnow` from `clock.py`, the single source of \"now\", used to stamp events that arrive without a timestamp."},
-    {"from": 13, "to": 13, "text": "`correlate` from `correlation.py`, the final stage that groups risky events into incidents."},
-    {"from": 14, "to": 14, "text": "The ORM models (Python classes mapped to database tables in `database.py`) that this file reads and writes."},
-    {"from": 17, "to": 17, "text": "Stage 1. `normalize()` takes the raw payload dict and returns a cleaned copy in one canonical shape, so the later stages can rely on consistent values."},
-    {"from": 18, "to": 18, "text": "Docstring listing its guarantees: a UTC timestamp, a canonical city label and trimmed strings."},
-    {"from": 19, "to": 19, "text": "`dict(payload)` makes a shallow copy, so the caller's dict is never modified as a side effect."},
-    {"from": 20, "to": 20, "text": "A missing or `None` timestamp (REST clients may omit it) becomes the current naive-UTC time; `x or y` evaluates to `y` when `x` is falsy. Timezone-aware REST timestamps were already converted to naive UTC by the Pydantic schema in `schemas.py`."},
-    {"from": 21, "to": 21, "text": "`geo.canonical()` maps free text like `\"  london \"` or `\"dubai\"` to one canonical label (`\"London, UK\"`, `\"Dubai, UAE\"`), so home-city and travel comparisons compare like with like. Unknown cities pass through trimmed."},
-    {"from": 22, "to": 22, "text": "Strips stray whitespace from the IP. REST input was already validated by Pydantic, but internal callers (seeder, simulator, live traffic) skip that layer, so the pipeline cleans again."},
-    {"from": 23, "to": 25, "text": "`setdefault` fills a key only when it is absent: zero failed attempts, a clean IP reputation and a successful status. A safety net for hand-built internal payloads, because `rules.detect` reads these keys directly and would raise `KeyError` without them."},
-    {"from": 26, "to": 27, "text": "When a resource is given, it is trimmed and lower-cased so that, for example, `\"Admin-Console\"` still matches the lowercase names in `rules.PRIVILEGED_RESOURCES`."},
-    {"from": 28, "to": 28, "text": "Returns the normalized copy."},
-    {"from": 31, "to": 31, "text": "Part of Stage 2 (enrichment). `load_history()` gathers what the rules need to know about activity **before** this event and returns it as the immutable `rules.History` dataclass. Doing the database work here is what lets `rules.py` stay pure (no I/O)."},
-    {"from": 32, "to": 32, "text": "Docstring: everything the rules need to know about earlier activity."},
-    {"from": 33, "to": 33, "text": "Every lookback is measured from the event's own timestamp, not the wall clock. That matters for the seeder, which replays a week of past events in order."},
-    {"from": 35, "to": 35, "text": "A nested helper that counts earlier matching events inside a time `window`. Because `window` comes after `*conditions` and has no default, callers must pass it by keyword; `column` defaults to `Event.id` (count events) but can be switched to count distinct users instead."},
-    {"from": 36, "to": 36, "text": "Builds `SELECT count(DISTINCT column) FROM events WHERE timestamp < ts AND timestamp >= ts - window`. The strict `<` means only events strictly earlier than this one are counted."},
-    {"from": 37, "to": 37, "text": "Adds the caller's extra filters (successive `.where()` calls are combined with `AND`) and runs the query. `db.scalar()` returns the single value of the first row; `or 0` guards against `None`."},
-    {"from": 39, "to": 39, "text": "Comment introducing the travel baseline: the last place we can trust the user really was."},
-    {"from": 40, "to": 42, "text": "Fetches this user's most recent earlier event that **succeeded from a clean IP**: newest first, at most one row, and `.first()` returns it or `None`. Failed attempts and flagged IPs (proxies, VPN exits) are skipped because their location is unreliable, so an attacker's sign-in from abroad can't become the reference point the real customer is later judged against."},
-    {"from": 43, "to": 43, "text": "Builds the `History` snapshot handed to the rules."},
-    {"from": 44, "to": 45, "text": "The user's home city, and whether the device is trusted and owned by this user (worked out by the caller)."},
-    {"from": 46, "to": 47, "text": "Where and when the trusted baseline event happened, or `None` if there is none yet. These feed the impossible-travel speed check."},
-    {"from": 48, "to": 49, "text": "How many transactions this user made in the last 10 minutes (`RAPID_TRANSACTION_WINDOW`), the input to the card-testing velocity rule."},
-    {"from": 50, "to": 50, "text": "This user's failed events (in practice, failed logins) in the last hour (`RESET_LOOKBACK`), used to spot a password reset right after repeated failures."},
-    {"from": 51, "to": 53, "text": "Password-spray input: how many **other** accounts failed from this same IP in the last 30 minutes. `column=Event.user_id` counts distinct accounts rather than events, and `Event.user_id != user.id` leaves this user out (the rule adds 1 for the current event). Line 53 closes the `History(...)` call."},
-    {"from": 56, "to": 56, "text": "`process_event()` is the single entry point of the write path. The bare `*` makes `commit` keyword-only, so call sites must spell out `commit=False`; it returns the stored `Event` plus the scoring `assessment` dict."},
-    {"from": 57, "to": 57, "text": "`db.get()` fetches a row by primary key, checking the session's identity map (its cache of already-loaded objects) before issuing SQL."},
-    {"from": 58, "to": 59, "text": "An unknown user raises `LookupError`; the REST route in `routes/events.py` turns it into a 404 response."},
-    {"from": 60, "to": 60, "text": "Stage 1: normalize the payload."},
-    {"from": 62, "to": 62, "text": "Comment for Stage 2: enrichment with what we know about the device."},
-    {"from": 63, "to": 63, "text": "Looks the device up by its id (e.g. `DEV-2000`)."},
-    {"from": 64, "to": 64, "text": "The device counts as owned only if it exists **and** is registered to this user; an id already tied to another account does not count."},
-    {"from": 65, "to": 66, "text": "Callers may state `device_new` explicitly (the scenario generators do). If it is missing or `None`, it is derived: new unless owned."},
-    {"from": 67, "to": 68, "text": "A never-seen device is registered to this user as **untrusted**, so next time it is known but still earns no trust. `db.add()` only stages the row; it is written at the next flush (at the latest, the explicit one below)."},
-    {"from": 69, "to": 69, "text": "Loads the history. `trusted` is true only for an owned device flagged trusted; because `and` short-circuits, `device.trusted` is never read when `device` is `None`."},
-    {"from": 71, "to": 71, "text": "Comment for Stage 3: scoring with the pure rulebook."},
-    {"from": 72, "to": 72, "text": "`rules.detect()` runs every rule and returns the findings (signal name plus human-readable detail) and an enrichment `context`, such as the computed trip that feeds the map."},
-    {"from": 73, "to": 73, "text": "`rules.assess()` turns the findings into a decision: a 0-100 score, its level, the signals heaviest-first, per-signal contributions, the recommended action and an explanation."},
-    {"from": 75, "to": 77, "text": "Stage 4, persist: builds the `Event` ORM object, starting with who, what kind of event and when, the IP address, the canonical location and the device id."},
-    {"from": 78, "to": 80, "text": "Then whether the device was new, failed attempts, IP reputation and status. `transaction_amount` and `resource_accessed` use `.get()` because only some event types carry them."},
-    {"from": 81, "to": 84, "text": "Stores the scoring results with the event: score, level, and the JSON columns `signals`, `contributions` and `context`, so the full explanation can be shown later without re-scoring. The assessment's `recommended_action` goes into the `action` column."},
-    {"from": 85, "to": 85, "text": "`db.add()` stages the new event in the session; no SQL has been sent yet."},
-    {"from": 86, "to": 86, "text": "`flush()` sends pending INSERTs inside the still-open transaction, unlike `commit()`, which makes them permanent. It is needed here because the database assigns the auto-increment `event.id`, which the signal rows and correlation both need."},
-    {"from": 87, "to": 87, "text": "Adds one narrow `RiskSignal` row per raised signal, with its weight. This deliberately duplicates `event.signals`: a plain indexed table turns \"top signals\" analytics into a simple `GROUP BY` instead of digging through JSON."},
-    {"from": 88, "to": 88, "text": "Stage 5: `correlate()` may attach the event to an active incident or open a new one."},
-    {"from": 89, "to": 90, "text": "Commits by default. The seeder passes `commit=False` so hundreds of events share one transaction and a single final commit, which is much faster and all-or-nothing."},
-    {"from": 91, "to": 91, "text": "Returns the event and its assessment. Because the session factory in `database.py` uses `expire_on_commit=False`, the event's attributes stay readable after the commit without being reloaded from the database."}
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring, first line: the five stages of the write path, in order: normalize, enrich, score, persist, correlate."
+    },
+    {
+      "from": 3,
+      "to": 5,
+      "text": "The key design rule: every ingestion channel (REST API, Simulation Center, live-traffic generator, seeder) funnels through `process_event`, so an event is scored by exactly the same rules wherever it came from."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "`from __future__ import annotations` makes Python keep type hints as unevaluated strings instead of evaluating them at import time. It's a project-wide habit that keeps hints like `tuple[Event, dict]` free of runtime cost and allows forward references."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "SQLAlchemy 2.0 query builders: `select()` builds a SELECT statement as a Python object, and `func` generates SQL functions such as `count()`."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "`Session` is SQLAlchemy's unit of work: it tracks the objects you add or change and sends the SQL inside a transaction. Imported here only for type hints."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "Relative imports (the leading dot means \"from this package\", `iip`): `geo` for city normalization and `rules`, the pure scoring engine."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "`utcnow` from `clock.py`, the single source of \"now\", used to stamp events that arrive without a timestamp."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "`correlate` from `correlation.py`, the final stage that groups risky events into incidents."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "The ORM models (Python classes mapped to database tables in `database.py`) that this file reads and writes."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Stage 1. `normalize()` takes the raw payload dict and returns a cleaned copy in one canonical shape, so the later stages can rely on consistent values."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "Docstring listing its guarantees: a UTC timestamp, a canonical city label and trimmed strings."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "`dict(payload)` makes a shallow copy, so the caller's dict is never modified as a side effect."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "A missing or `None` timestamp (REST clients may omit it) becomes the current naive-UTC time; `x or y` evaluates to `y` when `x` is falsy. Timezone-aware REST timestamps were already converted to naive UTC by the Pydantic schema in `schemas.py`."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "`geo.canonical()` maps free text like `\"  london \"` or `\"dubai\"` to one canonical label (`\"London, UK\"`, `\"Dubai, UAE\"`), so home-city and travel comparisons compare like with like. Unknown cities pass through trimmed."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Strips stray whitespace from the IP. REST input was already validated by Pydantic, but internal callers (seeder, simulator, live traffic) skip that layer, so the pipeline cleans again."
+    },
+    {
+      "from": 23,
+      "to": 25,
+      "text": "`setdefault` fills a key only when it is absent: zero failed attempts, a clean IP reputation and a successful status. A safety net for hand-built internal payloads, because `rules.detect` reads these keys directly and would raise `KeyError` without them."
+    },
+    {
+      "from": 26,
+      "to": 27,
+      "text": "When a resource is given, it is trimmed and lower-cased so that, for example, `\"Admin-Console\"` still matches the lowercase names in `rules.PRIVILEGED_RESOURCES`."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Returns the normalized copy."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "Part of Stage 2 (enrichment). `load_history()` gathers what the rules need to know about activity **before** this event and returns it as the immutable `rules.History` dataclass. Doing the database work here is what lets `rules.py` stay pure (no I/O)."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Docstring: everything the rules need to know about earlier activity."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "Every lookback is measured from the event's own timestamp, not the wall clock. That matters for the seeder, which replays a week of past events in order."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "A nested helper that counts earlier matching events inside a time `window`. Because `window` comes after `*conditions` and has no default, callers must pass it by keyword; `column` defaults to `Event.id` (count events) but can be switched to count distinct users instead."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Builds `SELECT count(DISTINCT column) FROM events WHERE timestamp < ts AND timestamp >= ts - window`. The strict `<` means only events strictly earlier than this one are counted."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Adds the caller's extra filters (successive `.where()` calls are combined with `AND`) and runs the query. `db.scalar()` returns the single value of the first row; `or 0` guards against `None`."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "Comment introducing the travel baseline: the last place we can trust the user really was."
+    },
+    {
+      "from": 40,
+      "to": 42,
+      "text": "Fetches this user's most recent earlier event that **succeeded from a clean IP**: newest first, at most one row, and `.first()` returns it or `None`. Failed attempts and flagged IPs (proxies, VPN exits) are skipped because their location is unreliable, so an attacker's sign-in from abroad can't become the reference point the real customer is later judged against."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "Builds the `History` snapshot handed to the rules."
+    },
+    {
+      "from": 44,
+      "to": 45,
+      "text": "The user's home city, and whether the device is trusted and owned by this user (worked out by the caller)."
+    },
+    {
+      "from": 46,
+      "to": 47,
+      "text": "Where and when the trusted baseline event happened, or `None` if there is none yet. These feed the impossible-travel speed check."
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "text": "How many transactions this user made in the last 10 minutes (`RAPID_TRANSACTION_WINDOW`), the input to the card-testing velocity rule."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "This user's failed events (in practice, failed logins) in the last hour (`RESET_LOOKBACK`), used to spot a password reset right after repeated failures."
+    },
+    {
+      "from": 51,
+      "to": 53,
+      "text": "Password-spray input: how many **other** accounts failed from this same IP in the last 30 minutes. `column=Event.user_id` counts distinct accounts rather than events, and `Event.user_id != user.id` leaves this user out (the rule adds 1 for the current event). The last line closes the `History(...)` call."
+    },
+    {
+      "from": 56,
+      "to": 56,
+      "text": "`process_event()` is the single entry point of the write path. The bare `*` makes `commit` keyword-only, so call sites must spell out `commit=False`; it returns the stored `Event` plus the scoring `assessment` dict."
+    },
+    {
+      "from": 57,
+      "to": 57,
+      "text": "`db.get()` fetches a row by primary key, checking the session's identity map (its cache of already-loaded objects) before issuing SQL."
+    },
+    {
+      "from": 58,
+      "to": 59,
+      "text": "An unknown user raises `LookupError`; the REST route in `routes/events.py` turns it into a 404 response."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Stage 1: normalize the payload."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "Comment for Stage 2: enrichment with what we know about the device."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "Looks the device up by its id (e.g. `DEV-2000`)."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "The device counts as owned only if it exists **and** is registered to this user; an id already tied to another account does not count."
+    },
+    {
+      "from": 65,
+      "to": 66,
+      "text": "Callers may state `device_new` explicitly (the scenario generators do). If it is missing or `None`, it is derived: new unless owned."
+    },
+    {
+      "from": 67,
+      "to": 68,
+      "text": "A never-seen device is registered to this user as **untrusted**, so next time it is known but still earns no trust. `db.add()` only stages the row; it is written at the next flush (at the latest, the explicit one below)."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "Loads the history. `trusted` is true only for an owned device flagged trusted; because `and` short-circuits, `device.trusted` is never read when `device` is `None`."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "Comment for Stage 3: scoring with the pure rulebook."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "`rules.detect()` runs every rule and returns the findings (signal name plus human-readable detail) and an enrichment `context`, such as the computed trip that feeds the map."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "`rules.assess()` turns the findings into a decision: a 0-100 score, its level, the signals heaviest-first, per-signal contributions, the recommended action and an explanation."
+    },
+    {
+      "from": 75,
+      "to": 77,
+      "text": "Stage 4, persist: builds the `Event` ORM object, starting with who, what kind of event and when, the IP address, the canonical location and the device id."
+    },
+    {
+      "from": 78,
+      "to": 80,
+      "text": "Then whether the device was new, failed attempts, IP reputation and status. `transaction_amount` and `resource_accessed` use `.get()` because only some event types carry them."
+    },
+    {
+      "from": 81,
+      "to": 84,
+      "text": "Stores the scoring results with the event: score, level, and the JSON columns `signals`, `contributions` and `context`, so the full explanation can be shown later without re-scoring. The assessment's `recommended_action` goes into the `action` column."
+    },
+    {
+      "from": 85,
+      "to": 85,
+      "text": "`db.add()` stages the new event in the session; no SQL has been sent yet."
+    },
+    {
+      "from": 86,
+      "to": 86,
+      "text": "`flush()` sends pending INSERTs inside the still-open transaction, unlike `commit()`, which makes them permanent. It is needed here because the database assigns the auto-increment `event.id`, which the signal rows and correlation both need."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "Adds one narrow `RiskSignal` row per raised signal, with its weight. This deliberately duplicates `event.signals`: a plain indexed table turns \"top signals\" analytics into a simple `GROUP BY` instead of digging through JSON."
+    },
+    {
+      "from": 88,
+      "to": 88,
+      "text": "Stage 5: `correlate()` may attach the event to an active incident or open a new one."
+    },
+    {
+      "from": 89,
+      "to": 90,
+      "text": "Commits by default. The seeder passes `commit=False` so hundreds of events share one transaction and a single final commit, which is much faster and all-or-nothing."
+    },
+    {
+      "from": 91,
+      "to": 91,
+      "text": "Returns the event and its assessment. Because the session factory in `database.py` uses `expire_on_commit=False`, the event's attributes stay readable after the commit without being reloaded from the database."
+    }
   ]
 }

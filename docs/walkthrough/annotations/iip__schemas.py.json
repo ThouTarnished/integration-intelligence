@@ -166,7 +166,7 @@
     {
       "from": 67,
       "to": 68,
-      "text": "`AskIn` is the body of `POST /api/v1/ai/ask`: a question of 3 to 500 characters. The upper limit bounds how much text the analyst scans and, when OpenAI is configured, forwards to the language model."
+      "text": "`AskIn` is the body of `POST /api/v1/ai/ask`: a question of 2 to 500 characters. Two is enough for a greeting such as \"hi\", which the analyst answers. The upper limit bounds how much text the analyst scans and, when OpenAI is configured, forwards to the language model."
     },
     {
       "from": 71,

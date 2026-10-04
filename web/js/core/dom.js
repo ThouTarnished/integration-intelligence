@@ -39,6 +39,7 @@ export const utc = (iso) => (iso ? new Date(/Z|[+-]\d\d:?\d\d$/.test(iso) ? iso 
 
 export const fmt = {
   num: (n) => NUMBER.format(Math.round(n ?? 0)),
+  count: (n, noun) => `${NUMBER.format(n ?? 0)} ${noun}${n === 1 ? "" : "s"}`,
   money: (n) => MONEY.format(n ?? 0),
   pct: (n, digits = 0) => `${(n * 100).toFixed(digits)}%`,
   time: (iso) => utc(iso)?.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) ?? "—",

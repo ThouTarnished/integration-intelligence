@@ -2,7 +2,8 @@
 
 The rule engine decides; the analyst only explains. A question is first parsed into explicit search terms (record
 IDs, a customer, signals, attack patterns, places, risk levels, statuses, event types, an outcome and a time window)
-by plain rules, and only the records matching those terms are pulled from the database. With OPENAI_API_KEY set, the
+by plain rules, and only the records matching those terms are pulled from the database. A question about something
+else entirely ("Shawerma") is recognized and told so, and small talk gets a short reply. With OPENAI_API_KEY set, the
 question plus that context is sent to an OpenAI-compatible chat API. Otherwise (or on any API error) a deterministic
 analyst composes the answer from exactly the same context, so the feature works offline and is fully testable.
 """
@@ -40,9 +41,10 @@ log = logging.getLogger("iip.analyst")
 
 SYSTEM_PROMPT = (
     "You are a security analyst assistant for a bank's identity-risk platform. Answer ONLY from the JSON "
-    "context, which holds how the question was interpreted and the matching records. Risk scores come from a "
-    "deterministic rule engine: explain them, never change them. Be concise (under ~140 words); short markdown "
-    "bullet points and **bold** are welcome. Quote IDs such as INC-0001, EVT-00001 or USR-1001 exactly as given."
+    "context, which holds how the question was interpreted and the matching records; if the question is about "
+    "something else, say so in one sentence. Risk scores come from a deterministic rule engine: explain them, never "
+    "change them. Be concise (under ~140 words); short markdown bullet points and **bold** are welcome. Quote IDs "
+    "such as INC-0001, EVT-00001 or USR-1001 exactly as given."
 )
 LIST_LIMIT = 8  # records listed per answer; totals are always exact
 
@@ -113,8 +115,56 @@ DEFINE = r"^(?:what|whats|what's) (?:is|are|does|do|was)\b|\bdefin\w*|\bmean(?:s
 LISTING = r"\b(?:show|list|find|which|any|display|search|who)\b"
 COUNT = r"\bhow many\b|\bnumber of\b|\bcount\b"
 SUMMARY = r"\bsummar\w*|\boverview\b|\brecap\b|\bbrief\w*|\bwhat'?s (?:going on|happening|new)\b|\bwhat happened\b" \
-          r"|\bstatus report\b|\bsituation\b"
+          r"|\bstatus report\b|\bsituation\b|\banything new\b|\bcatch me up\b|\bwhat did i miss\b"
 RECENT = r"\b(?:latest|newest|most recent|recent(?:ly)?)\b"
+# Off-topic questions. A word from ON_TOPIC (or a record ID, customer, signal, pattern or event type) ties a question
+# to the platform. Without one, every other word must be a COMMON_WORDS word or a search term read above, or the
+# question is about something else: "Shawerma", "What's the weather in Dubai?", "How high is Mount Everest?".
+ON_TOPIC = (r"\b(?:risk\w*|threat\w*|fraud\w*|scam\w*|secur\w*|attack\w*|breach\w*|compromis\w*|hack\w*|phish\w*"
+            r"|malware|launder\w*|steal\w*|stolen|takeovers?|intrusions?|suspicious|malicious|anomal\w*|flagged"
+            r"|red flags?|incidents?|cases?|alerts?|customers?|users?|clients?|accounts?|passwords?|credentials?|mfa"
+            r"|2fa|otp|vpn|ips?|devices?|triage|investigat\w*|severit\w*|mitre|novabank)\b")
+COMMON_WORDS = frozenset("""
+a about above after again against all also am an and another any anybody anyone anything anywhere are around as at away
+back be because been before being below between both but by can could did do does doing done down during each either
+else even ever every everybody everyone everything for from further had has have having he her here him his how i if in
+into is it its itself just me might mine more most much must my myself no nobody none nor not nothing now of off on once
+only onto or other others our ours out over own same she should since so some somebody someone something still such than
+that the their them themselves then there these they this those though through to too u under until up upon us very via
+was we were what whatever when where whether which while who whom whose why will with within without would yes yet you
+your yours yourself
+s t m d ll re ve don doesn didn isn aren wasn weren haven hasn hadn won wouldn couldn shouldn cant dont doesnt didnt
+isnt arent wasnt werent im ive youre whats whos hows wheres thats theres heres lets st nd rd th
+afternoon ago alright assigned begin best big biggest breakdown brief briefing calculated came catch chosen come comes
+coming common computed count currently daily data decided define definition definitions describe detail details
+determined display earlier entries entry evening explain few find fine fire fired fires firing first get gets getting
+give go goes going gone good got happen happened happening happens highest highlights hour hourly hours info information
+item items keep kind know largest last lately latest least less let like list look looking lot lots love lowest made
+make many may maybe mean meaning means minute minutes miss missed month monthly months morning need needs never new
+newest next night number numbers often ok okay oldest one ones overall overnight overview past picture please previous
+put quick recap recent recently record records report right rundown say search see seen set show situation snapshot sort
+start stuff summarise summarize summary sure take tell thing things think today tonight top total totals trigger
+triggered triggers use used using want way week weekend weekly weeks well went work worked works worst yesterday
+action actions activities activity amount amounts analyst app application area areas attention bank banking behavior
+behaviour block blocked call change changes check concern concerning concerns contact danger dangerous dashboard engine
+escalate event events focus freeze handle important issue issues level levels location locations lock locked lockout
+member members money monitor monitoring odd page pattern patterns people person persons place places platform priorities
+prioritise prioritize priority problem problems queue respond response review rule rules safe safety score scored scores
+scoring session sessions shift signal signals site spike spikes staff state statistics stats status strange suspend
+system team tool travel traveled traveling travelled travelling travels trend trending trends trip trips unusual update
+updates urgent value values verify volume watch website weight weights weird worried worry worrying wrong
+""".split())  # noqa: SIM905 - grammar, asking and time words, then everyday words that name no topic of their own
+THANKS = (r"\bthank\w*|\bthx\b|\bty\b|\bcheers\b|\bappreciat\w*|\bshukran\b|\b(?:good ?)?bye\b|\bgood job\b"
+          r"|\bwell done\b|\bgot it\b|\blove (?:you|u|it|this)\b|\b(?:helpful|useful|amazing|awesome|great|nice|cool"
+          r"|perfect|brilliant|excellent)\b|^\W*(?:ok(?:ay)?|alright|good|fine)\W*$")
+SMALL_TALK = (r"\b(?:hi|hello|hey|hiya|howdy|yo|sup|greetings|marhaba\w*|ahlan(?: wa ?sahlan)?)\b"
+              r"|\b(?:as+ ?)?salam\w*(?: (?:alaikum|alaykum|aleikum))?\b|\bgood (?:morning|afternoon|evening|day)\b"
+              r"|\bwhat'?s up\b|\bhow (?:old )?are (?:you|u)\b|\bhow'?s it going\b|\b(?:who|what) are you\b"
+              r"|\bare you (?:an? )?(?:ai|bot|robot|chatbot|human|real|there)\b|\byour (?:name|purpose|job)\b"
+              r"|\bwho (?:made|built|created|designed|developed) (?:you|this|it)\b|\bwhat(?: is|'?s) this\b"
+              r"|\bwhat (?:can|does|do) (?:you|this|it|the) ?(?:\w+ )?do\b|\bwhat can i ask\b|\bhow do i use\b"
+              r"|\bhow (?:does|do) (?:this|it|you)(?: \w+)? work\b|\bhelp\b|\btest(?:ing)?\b|" + THANKS)
+OFF_TOPIC = ("chat", "unrelated")  # intents answered without looking anything up
 
 # Exact trigger conditions, quoted from the rulebook when a signal is defined.
 TRIGGERS = {
@@ -163,7 +213,7 @@ USA = tuple(label for label in geo.CITIES if label.endswith(", USA"))
 class Question:
     """What a question asks for, read with plain rules: no model is involved in deciding what to retrieve."""
     text: str
-    intent: str = "list"  # focus | top | scoring | define | count | summary | list
+    intent: str = "list"  # focus | top | scoring | define | count | summary | list | chat | unrelated
     subject: str | None = None  # incidents | events | customers
     incident_id: int | None = None
     event_id: int | None = None
@@ -181,6 +231,7 @@ class Question:
     recent: bool = False
     one: bool = False  # asks for the single riskiest customer
     not_found: list[str] = field(default_factory=list)
+    unknown: list[str] = field(default_factory=list)  # words with no meaning here, in an off-topic question
 
     @property
     def filtered(self) -> bool:
@@ -289,15 +340,36 @@ def parse_question(db: Session, question: str) -> Question:
         q.user_id = user.id
     q.subject = next((subject for subject, pattern in SUBJECTS if re.search(pattern, plain)), None)
     q.recent, q.one = bool(re.search(RECENT, plain)), bool(re.search(TOP_CUSTOMER, plain))
-    q.intent = _intent(q, plain)
+    off_topic = not (q.incident_id is not None or q.event_id is not None or q.user_id or q.signals or q.patterns
+                     or q.event_types or re.search(ON_TOPIC, plain))
+    if off_topic:  # nothing names the platform's records, so every word left must be a common one
+        q.unknown = _unknown(question, rest)
+    q.intent = _intent(q, plain, off_topic)
     return q
 
 
-def _intent(q: Question, plain: str) -> str:
+def _unknown(question: str, rest: str) -> list[str]:
+    """The words left that are neither common words nor search terms, as typed: "Shawerma" in "Shawerma", "weather"
+    in "What's the weather in Dubai?", and any word in a script without Latin letters, such as Arabic."""
+    rest = re.sub(SMALL_TALK, " ", rest)
+    for _, pattern in OUTCOME_PHRASES:
+        rest = re.sub(pattern, " ", rest)
+    typed = re.findall(r"[^\W\d_]+", question)
+    as_typed = {_normalize(word): word for word in typed}
+    words = [as_typed.get(word, word) for word in re.findall(r"[a-z]+|[+*=^]", rest) if word not in COMMON_WORDS]
+    words += [word for word in typed if not _normalize(word)]  # normalizing drops letters that aren't Latin
+    return list(dict.fromkeys(words))
+
+
+def _intent(q: Question, plain: str, off_topic: bool) -> str:
     named = bool(q.signals or q.patterns)
     narrowed = bool(q.places or q.levels or q.statuses or q.outcome or q.since)
     if q.incident_id is not None or q.event_id is not None or q.user_id:
         return "focus"
+    if q.unknown:
+        return "unrelated"
+    if off_topic and not narrowed and re.search(SMALL_TALK, plain):
+        return "chat"
     if re.search(TOP_INCIDENT, plain):
         return "top"
     if not (named or narrowed or q.event_types or q.subject) and re.search(SCORING, plain):
@@ -520,7 +592,7 @@ def gather_context(db: Session, question: str) -> dict:
         else:
             q.not_found.append(q.user_id)
             q.user_id = None
-    if not any(key in ctx for key in ("incident", "event", "user")):
+    if q.intent not in OFF_TOPIC and not any(key in ctx for key in ("incident", "event", "user")):
         if q.intent == "top" and (top := _top_incident(db)):
             ctx["incident"] = incident_detail(db, top)
         elif q.intent == "scoring":
@@ -688,6 +760,7 @@ def _explain_results(ctx: dict, q: dict) -> str:
 
 def _explain_incident(incident: dict, question: str) -> str:
     q = question.lower()
+    n = incident["event_count"]
     details = _signal_details(incident)
     ranked = sorted(incident["signals"], key=lambda s: -rules.WEIGHTS[s])
     why = "\n".join(f"- **{s}** {rules.WEIGHTS[s]:+d} — {details.get(s, rules.SIGNALS[s].description)}"
@@ -700,7 +773,7 @@ def _explain_incident(incident: dict, question: str) -> str:
         clamp = f", clamped to {peak['risk_score']}" if total != peak["risk_score"] else ""
         return (f"**{incident['incident_id']}** scores **{incident['risk_score']}/100**, the score of its riskiest "
                 f"event {peak['event_id']}, whose weights add up to {total}{clamp}:\n{parts}\n\n"
-                f"All signals seen across its {incident['event_count']} events, heaviest first:\n{why}")
+                f"All signals seen across its {n} {_plural('event', n)}, heaviest first:\n{why}")
     steps = [f"- {_when(e['timestamp'])} · {e['event_type']} ({e['status']}) · {e['location']} · "
              f"score {e['risk_score']}" for e in incident["timeline"][:6]]
     if len(incident["timeline"]) > 6:
@@ -708,7 +781,7 @@ def _explain_incident(incident: dict, question: str) -> str:
     steps_text = "\n".join(steps)
     return (f"**{incident['incident_id']} · {incident['title']}** — {incident['severity']} "
             f"({incident['risk_score']}/100), status {incident['status']}, affecting {incident['user_name']} "
-            f"({incident['user_id']}).\n\n{incident['event_count']} correlated events:\n{steps_text}\n\n"
+            f"({incident['user_id']}).\n\n{n} correlated {_plural('event', n)}:\n{steps_text}\n\n"
             f"**Why it scored this high:**\n{why}\n\n**Recommended action:** {incident['recommended_action']}.")
 
 
@@ -783,6 +856,26 @@ def _explain_overview(o: dict) -> str:
             f"- Riskiest customers right now: {people}\n\n**Most urgent:**\n{urgent}")
 
 
+EXAMPLES = ("Which incidents are most urgent right now?", "Which customers logged in from Lagos?",
+            "What is password spray?", "Summarize the last 24 hours")
+
+
+def _explain_scope(q: dict, question: str) -> str:
+    """Thanks get a short reply, a greeting an introduction, and a question about something else is told so; the
+    last two end with questions the analyst can answer."""
+    examples = "\n".join(f"- {example}" for example in EXAMPLES)
+    if q.get("intent") == "chat":
+        if re.search(THANKS, _normalize(question)):
+            return "Happy to help! Ask me anything else about NovaBank's incidents, events, customers or risk signals."
+        return ("Hi! I'm the platform's analyst. I answer questions about NovaBank's incidents, events, customers and "
+                f"risk signals, for example:\n{examples}")
+    words = [word for word in q.get("unknown", []) if word.isalpha() and len(word) > 1]
+    short = len(words) == 1 and len(question.split()) <= 4 and not re.search(r"\d", question)
+    topic = f"“{words[0]}”" if short else "that"  # a single odd word is named; a longer question isn't echoed
+    return (f"**Not related to the platform.** I couldn't find anything about {topic} in NovaBank's data: I can only "
+            f"look up its incidents, events, customers and risk signals.\n\nTry a question like:\n{examples}")
+
+
 def deterministic_answer(ctx: dict, question: str) -> str:
     q = ctx.get("question", {})
     focused = any(key in ctx for key in ("incident", "event", "user"))
@@ -802,6 +895,8 @@ def deterministic_answer(ctx: dict, question: str) -> str:
         return _explain_overview(ctx["overview"])
     if q.get("intent") == "define":
         return _explain_definitions(ctx["definitions"])
+    if q.get("intent") in OFF_TOPIC:
+        return _explain_scope(q, question)
     return prefix + _explain_results(ctx, q)
 
 
@@ -822,7 +917,7 @@ def _ask_openai(ctx: dict, question: str) -> str:
 def ask(db: Session, question: str) -> dict:
     ctx = gather_context(db, question)
     answer = {"decision": engine_decision(ctx), "sources": sources(ctx), "note": None}
-    if settings.openai_api_key:
+    if settings.openai_api_key and ctx["question"]["intent"] not in OFF_TOPIC:  # off topic: nothing to explain
         try:
             return {**answer, "explanation": _ask_openai(ctx, question), "source": "openai",
                     "model": settings.openai_model}

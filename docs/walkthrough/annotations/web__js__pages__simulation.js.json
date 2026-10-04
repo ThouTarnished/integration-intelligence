@@ -81,7 +81,7 @@
     {
       "from": 37,
       "to": 37,
-      "text": "How many events the background generator has produced since the server started; line 148 keeps it up to date."
+      "text": "How many events the background generator has produced since the server started; the live-event handler further down keeps it up to date."
     },
     {
       "from": 39,
@@ -116,7 +116,7 @@
     {
       "from": 55,
       "to": 57,
-      "text": "Row 3 is the reset button, styled as dangerous and marked `hold`, with the instructions in its description. Line 57 closes the row."
+      "text": "Row 3 is the reset button, styled as dangerous and marked `hold`, with the instructions in its description. The last line closes the row."
     },
     {
       "from": 58,
@@ -176,7 +176,7 @@
     {
       "from": 85,
       "to": 87,
-      "text": "A 60 ms pause between stages (none when motion is off). By this point the scenario has already finished on the server: this is a replay of its trace, not a progress bar. Lines 86-87 close the loop and the function."
+      "text": "A 60 ms pause between stages (none when motion is off). By this point the scenario has already finished on the server: this is a replay of its trace, not a progress bar. The last two lines close the loop and the function."
     },
     {
       "from": 89,
@@ -211,7 +211,7 @@
     {
       "from": 103,
       "to": 105,
-      "text": "Draws the peak-score gauge (slightly delayed so it starts after its panel appears) and the waterfall, this time with each signal's detail line. Line 105 closes `showResult`."
+      "text": "Draws the peak-score gauge (slightly delayed so it starts after its panel appears) and the waterfall, this time with each signal's detail line. The last line closes `showResult`."
     },
     {
       "from": 107,
@@ -266,7 +266,7 @@
     {
       "from": 132,
       "to": 136,
-      "text": "`finally` runs whether the run succeeded or not: it re-enables the cards and removes the highlight. Line 134 closes the listener."
+      "text": "`finally` runs whether the run succeeded or not: it re-enables the cards and removes the highlight. The last line closes the listener."
     },
     {
       "from": 138,
@@ -281,7 +281,7 @@
     {
       "from": 144,
       "to": 148,
-      "text": "If that fails, the switch is put back and a toast explains why. Line 146 closes the listener."
+      "text": "If that fails, the switch is put back and a toast explains why. The last line closes the listener."
     },
     {
       "from": 149,

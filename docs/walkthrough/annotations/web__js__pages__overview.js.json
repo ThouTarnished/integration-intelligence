@@ -91,7 +91,7 @@
     {
       "from": 29,
       "to": 30,
-      "text": "Second line: event ID, local time and the number of signals (pluralised correctly), or `clean` when there are none. `Trusted device` counts as a signal too, so a routine login usually reads `1 signal`. Line 29 closes the text wrapper."
+      "text": "Second line: event ID, local time and the number of signals (pluralised correctly), or `clean` when there are none. `Trusted device` counts as a signal too, so a routine login usually reads `1 signal`. The last line closes the text wrapper."
     },
     {
       "from": 31,
@@ -126,12 +126,12 @@
     {
       "from": 45,
       "to": 47,
-      "text": "Each stat is a `[label, value, cssClass]` tuple. Unverified origins and impossible routes get level classes so their numbers render in orange and red."
+      "text": "Each stat is a `[label, value, cssClass]` tuple. Unverified trips (the map's dashed \"unverified origin\" arcs) and impossible routes get level classes so their numbers render in orange and red. The labels are kept short enough for five columns on a laptop screen."
     },
     {
       "from": 48,
       "to": 49,
-      "text": "The fastest implied speed appears as a formatted km/h figure in red, or as an em dash when no trip was impossible. Line 48 closes the array."
+      "text": "The fastest implied speed appears as a formatted km/h figure in red, or as an em dash when no trip was impossible. The last line closes the array."
     },
     {
       "from": 50,
@@ -211,7 +211,7 @@
     {
       "from": 89,
       "to": 93,
-      "text": "Card 4, **Critical incidents**: active incidents with CRITICAL severity. Its bar splits **all** incidents by severity; each segment's `lvl-…` class sets the `--lvl` colour variable, so a single `background:var(--lvl)` rule colours every segment. Line 92 closes the KPI row."
+      "text": "Card 4, **Critical incidents**: active incidents with CRITICAL severity. Its bar splits **all** incidents by severity; each segment's `lvl-…` class sets the `--lvl` colour variable, so a single `background:var(--lvl)` rule colours every segment. The last line closes the KPI row."
     },
     {
       "from": 95,
@@ -221,7 +221,7 @@
     {
       "from": 98,
       "to": 101,
-      "text": "**Live feed** takes the remaining 4 columns and starts with the 12 most recent events. The arrow function in `.map((e) => feedItem(e))` matters: a plain `.map(feedItem)` would pass the array index as `source`. The pulsing dot in the header is pure CSS (nothing reads `data-live-dot`), and line 100 closes the row."
+      "text": "**Live feed** takes the remaining 4 columns and starts with the 12 most recent events. The arrow function in `.map((e) => feedItem(e))` matters: a plain `.map(feedItem)` would pass the array index as `source`. The pulsing dot in the header is pure CSS (nothing reads `data-live-dot`), and the closing `</div>` ends the row."
     },
     {
       "from": 103,
@@ -231,7 +231,7 @@
     {
       "from": 106,
       "to": 108,
-      "text": "The **Score distribution** panel carries a `√ scale` tag: the histogram uses a square-root axis so the rare high scores stay visible next to the many low ones. Line 107 closes the row."
+      "text": "The **Score distribution** panel carries a `√ scale` tag: the histogram uses a square-root axis so the rare high scores stay visible next to the many low ones. The last line closes the row."
     },
     {
       "from": 110,
@@ -251,7 +251,7 @@
     {
       "from": 117,
       "to": 119,
-      "text": "**Riskiest customers** lists the top six customers with `personRow`. Line 118 closes the row, the template and the `mount` call."
+      "text": "**Riskiest customers** lists the top six customers with `personRow`. The last line closes the row, the template and the `mount` call."
     },
     {
       "from": 121,
@@ -296,7 +296,7 @@
     {
       "from": 140,
       "to": 143,
-      "text": "For `7d`: one point per day, labelled with the weekday (`Mon`, `Tue`…), where risky means that day's HIGH plus CRITICAL count. Line 142 closes the function."
+      "text": "For `7d`: one point per day, labelled with the weekday (`Mon`, `Tue`…), where risky means that day's HIGH plus CRITICAL count. The last line closes the function."
     },
     {
       "from": 144,
@@ -321,7 +321,7 @@
     {
       "from": 157,
       "to": 160,
-      "text": "Opens the matching drawer, checking for an event first, then an incident, then a customer. Line 159 closes the listener."
+      "text": "Opens the matching drawer, checking for an event first, then an incident, then a customer. The last line closes the listener."
     },
     {
       "from": 162,
@@ -361,7 +361,7 @@
     {
       "from": 180,
       "to": 182,
-      "text": "Rolls the Events · 24h counter up by one from its stored value, and also bumps High-risk events when the score is 60 or more (HIGH or CRITICAL). Line 177 closes the subscription."
+      "text": "Rolls the Events · 24h counter up by one from its stored value, and also bumps High-risk events when the score is 60 or more (HIGH or CRITICAL). The last line closes the subscription."
     },
     {
       "from": 184,
@@ -391,7 +391,7 @@
     {
       "from": 193,
       "to": 195,
-      "text": "Re-renders the Recent incidents rows if the table exists; it doesn't when the empty state is showing. Line 188 closes `refresh`."
+      "text": "Re-renders the Recent incidents rows if the table exists; it doesn't when the empty state is showing. The last line closes `refresh`."
     },
     {
       "from": 196,

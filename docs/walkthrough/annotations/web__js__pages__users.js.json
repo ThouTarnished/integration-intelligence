@@ -76,7 +76,7 @@
     {
       "from": 33,
       "to": 35,
-      "text": "Background zones sized 30/30/20/20% so their edges fall exactly on the engine's thresholds (30, 60 and 80), plus axis labels positioned by percentage. Line 35 closes the panel and its grid row."
+      "text": "Background zones sized 30/30/20/20% so their edges fall exactly on the engine's thresholds (30, 60 and 80), plus axis labels positioned by percentage. The last line closes the panel and its grid row."
     },
     {
       "from": 36,

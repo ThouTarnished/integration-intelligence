@@ -8,6 +8,8 @@ live dashboard where an AI analyst explains every decision.
 
 > All people, IPs and events are synthetic. The scoring weights are demo logic, not a security standard.
 
+![Command center: live KPIs, a dotted world map of sign-in routes with an impossible-travel arc in red, and the live event feed](docs/screenshots/overview.png)
+
 ```
 REST / simulator / live traffic → validate → normalize → geo-enrich → score → correlate → SQLite
                                                                        ↓
@@ -27,7 +29,7 @@ The database is created and seeded with a week of synthetic activity on first st
 before a demo for fresh, "recent" data. Turn on **Live traffic** in the sidebar to watch events stream in.
 
 ```bash
-pytest                             # 93 tests
+pytest                             # 94 tests
 ruff check .                       # lint
 docker build -t iip . && docker run -p 8000:8000 iip
 ```
@@ -41,8 +43,29 @@ docker build -t iip . && docker run -p 8000:8000 iip
 | **Cross-account detection** | Password spray (many accounts failing from one IP), card-testing velocity, password-reset abuse. |
 | **Incident correlation** | Risky events for a customer within 30 minutes merge into one incident, titled by pattern ("Card testing", "Account takeover"…). |
 | **Live dashboard** | Server-Sent Events push every event to the browser: a dotted world threat map, live feed, KPI tickers, triage board, Risk Lab, simulator, integration console. |
-| **AI analyst** | Understands plain questions (record IDs, customer names, attack types, cities and countries, risk levels, statuses, time windows), answers from exactly the matching records with exact counts, and can't change scores. Uses OpenAI if `OPENAI_API_KEY` is set, otherwise a deterministic analyst (works offline). |
+| **AI analyst** | Understands plain questions (record IDs, customer names, attack types, cities and countries, risk levels, statuses, time windows), answers from exactly the matching records with exact counts, says so when a question has nothing to do with the platform, and can't change scores. Uses OpenAI if `OPENAI_API_KEY` is set, otherwise a deterministic analyst (works offline). |
 | **Integration-grade plumbing** | Request IDs, response times, p50/p95/p99 latency, throughput, token-bucket rate limiting, constant-time API-key checks, a health endpoint with a generated endpoint catalog. |
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/incident-detail.png" alt="Incident drawer for an account takeover: engine decision, signals with MITRE ATT&amp;CK techniques, affected customer and correlated timeline"><br><sub><b>Explainable incidents.</b> The engine's decision, every signal with its MITRE ATT&amp;CK technique, the affected customer and the correlated timeline.</sub></td>
+    <td width="50%"><img src="docs/screenshots/event-detail.png" alt="Event drawer: score waterfall and a travel check showing Abu Dhabi to Sao Paulo at an impossible 36,345 km/h"><br><sub><b>Every score explained.</b> Each signal's weight and evidence, plus the geo-velocity travel check against airliner speed.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/ai-analyst.png" alt="AI analyst explaining why an event was flagged, with the engine decision shown separately and cited sources"><br><sub><b>AI analyst.</b> Answers from the matching records only; the rule engine's decision is shown apart, and every answer cites its sources.</sub></td>
+    <td><img src="docs/screenshots/ai-analyst-scope.png" alt="AI analyst telling the user that 'Shawerma' is not related to the platform, then listing impossible-travel incidents"><br><sub><b>Knows its scope.</b> Unrelated questions are told so; real ones read back the terms they were understood as.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/simulation.png" alt="Attack simulation: an account takeover traced through ingest, normalize, enrich, score, correlate and publish"><br><sub><b>Attack replay.</b> Scenarios run through the real pipeline, stage by stage, into a scored incident.</sub></td>
+    <td><img src="docs/screenshots/risk-lab.png" alt="Risk Lab: toggled signals summing to 125, clamped to 100, CRITICAL"><br><sub><b>Risk Lab.</b> Toggle signals and watch the score, level and recommended action follow.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/incidents.png" alt="Incident board with open, investigating and resolved columns"><br><sub><b>Incident board.</b> Correlated incidents by status; drag a card to triage it.</sub></td>
+    <td><img src="docs/screenshots/integration.png" alt="Integration health: connection status, latency percentiles, API console with a 201 response and request ID, endpoint catalog"><br><sub><b>Integration health.</b> Latency percentiles, error rate, an API console with request IDs, and the endpoint catalog.</sub></td>
+  </tr>
+</table>
 
 ## Documentation
 
@@ -56,6 +79,13 @@ docker build -t iip . && docker run -p 8000:8000 iip
 Open the HTML docs straight from the repo in a browser. They use the vendored anime.js in `web/vendor/`, so they
 work offline.
 
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/walkthrough.png" alt="Code walkthrough: explanations beside the source of iip/rules.py"><br><sub><b>Code walkthrough.</b> Every line of all 83 files explained beside the source.</sub></td>
+    <td width="50%"><img src="docs/screenshots/roadmap.png" alt="Study roadmap: learn this codebase in nine stages, with an animated architecture diagram"><br><sub><b>Study roadmap.</b> Nine stages from "run it" to "explain every module".</sub></td>
+  </tr>
+</table>
+
 ## Project layout
 
 ```
@@ -64,7 +94,7 @@ iip/            FastAPI backend: config, database, geo, rules, pipeline, correla
 web/            Dashboard: index.html, css/, js/{core,ui,charts,pages,views,data}/, vendor/anime.js
 tests/          pytest suite
 scripts/        build_world_dots.py (map mask) · build_walkthrough.py (docs generator + validator)
-docs/           roadmap, walkthrough, technical reference, improvements
+docs/           roadmap, walkthrough, technical reference, improvements, screenshots/
 ```
 
 ## API

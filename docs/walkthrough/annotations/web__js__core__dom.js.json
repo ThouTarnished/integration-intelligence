@@ -1,6 +1,6 @@
 {
   "path": "web/js/core/dom.js",
-  "lines": 81,
+  "lines": 82,
   "summary": "The small DOM toolkit and the formatters shared by almost every frontend module. Its centrepiece is the `html` tagged template, which escapes every interpolated value unless it is already `html` or `raw` output, so rendering API data through `innerHTML` is **XSS-safe by default** and unescaped markup has to be requested explicitly. It also provides the `$`/`$$` query shortcuts, `mount`, and the `fmt` helpers that turn the backend's naive-UTC timestamps and raw numbers into display strings.",
   "notes": [
     {
@@ -116,101 +116,106 @@
     {
       "from": 42,
       "to": 42,
-      "text": "`money` formats as US dollars, treating a missing value as 0."
+      "text": "`count` writes a number with its noun in the matching form: `fmt.count(1, \"event\")` gives '1 event', and every other number takes an 's' ('0 events', '6 events'). Incident cards, drawers and the Events header use it."
     },
     {
       "from": 43,
       "to": 43,
-      "text": "`pct` turns a fraction into a percentage string with `digits` decimals, so 0.256 becomes `26%`."
+      "text": "`money` formats as US dollars, treating a missing value as 0."
     },
     {
       "from": 44,
       "to": 44,
-      "text": "`time` shows hours and minutes in the viewer's own locale and time zone on a 24-hour clock (`hourCycle` set to `h23`). `?.` and `??` print an em dash when there is no timestamp."
+      "text": "`pct` turns a fraction into a percentage string with `digits` decimals, so 0.256 becomes `26%`."
     },
     {
       "from": 45,
       "to": 45,
-      "text": "`dateTime` does the same with a short month and day added, e.g. `Oct 2, 14:03`."
+      "text": "`time` shows hours and minutes in the viewer's own locale and time zone on a 24-hour clock (`hourCycle` set to `h23`). `?.` and `??` print an em dash when there is no timestamp."
     },
     {
       "from": 46,
-      "to": 49,
+      "to": 46,
+      "text": "`dateTime` does the same with a short month and day added, e.g. `Oct 2, 14:03`."
+    },
+    {
+      "from": 47,
+      "to": 50,
       "text": "`ago` produces relative times: it parses the timestamp, prints an em dash if it is missing, and measures the age in seconds. Subtracting a `Date` converts it to milliseconds, and `Math.max(0, ...)` clamps slightly-future times (small clock differences) to zero."
     },
     {
-      "from": 50,
-      "to": 54,
+      "from": 51,
+      "to": 55,
       "text": "Buckets the age: under 45 seconds is 'just now', then minutes, hours and finally days, each rounded to the nearest whole unit."
     },
     {
-      "from": 55,
-      "to": 57,
+      "from": 56,
+      "to": 58,
       "text": "`duration` splits a number of seconds into days, hours, minutes and seconds using integer division (`Math.floor`) and remainders (`%`)."
     },
     {
-      "from": 58,
-      "to": 59,
+      "from": 59,
+      "to": 60,
       "text": "Shows only the two most significant units, e.g. `2d 4h`, `3h 12m`, `5m 9s` or `42s`; the Integration page uses it for the server's uptime."
     },
     {
-      "from": 60,
-      "to": 60,
+      "from": 61,
+      "to": 61,
       "text": "`initials` turns a name into up to two capital letters for avatars ('Ada Lovelace' becomes 'AL'), using '?' when the name is missing."
     },
     {
-      "from": 61,
-      "to": 62,
+      "from": 62,
+      "to": 63,
       "text": "`type` maps event-type codes from the API to readable labels, falling back to the raw code for anything unknown. The last line closes `fmt`."
-    },
-    {
-      "from": 64,
-      "to": 64,
-      "text": "`LEVELS` lists the risk levels from lowest to highest; components use the position in this list, e.g. to decide how many severity pips to light."
     },
     {
       "from": 65,
       "to": 65,
-      "text": "`levelOf` converts a 0-100 score into a level using the same thresholds as `LEVELS` in `iip/rules.py` (80 critical, 60 high, 30 medium), so charts colour values exactly as the backend classifies them."
+      "text": "`LEVELS` lists the risk levels from lowest to highest; components use the position in this list, e.g. to decide how many severity pips to light."
     },
     {
       "from": 66,
-      "to": 69,
+      "to": 66,
+      "text": "`levelOf` converts a 0-100 score into a level using the same thresholds as `LEVELS` in `iip/rules.py` (80 critical, 60 high, 30 medium), so charts colour values exactly as the backend classifies them."
+    },
+    {
+      "from": 67,
+      "to": 70,
       "text": "`debounce` returns a wrapper that restarts a timer on every call, so `fn` only runs once calls have paused for `ms` milliseconds. The Events search box uses it so typing does not fire one request per keystroke, and the Risk Lab uses it to batch quick toggles."
     },
     {
-      "from": 70,
-      "to": 70,
+      "from": 71,
+      "to": 71,
       "text": "`sleep` returns a Promise that resolves after `ms` milliseconds, so async code can simply `await sleep(260)` between steps, as the boot sequence does."
     },
     {
-      "from": 72,
-      "to": 73,
+      "from": 73,
+      "to": 74,
       "text": "`trapTab(container, e)` keeps keyboard focus inside a modal. The drawer and the palette are marked `aria-modal`, but Tab used to walk out of them into the page behind."
     },
     {
-      "from": 74,
-      "to": 74,
+      "from": 75,
+      "to": 75,
       "text": "Only Tab presses matter, and only for an existing container."
     },
     {
-      "from": 75,
-      "to": 76,
+      "from": 76,
+      "to": 77,
       "text": "Every control that can take focus, keeping only visible ones: `offsetParent` is `null` for elements hidden with `display: none`."
     },
     {
-      "from": 77,
-      "to": 78,
+      "from": 78,
+      "to": 79,
       "text": "Nothing focusable means nothing to trap. Otherwise: the first and last controls, and whether focus is currently on one of them (it may be on the container itself)."
     },
     {
-      "from": 79,
-      "to": 80,
+      "from": 80,
+      "to": 81,
       "text": "Shift+Tab on the first control (or from outside the list) jumps to the last; Tab on the last jumps to the first. `preventDefault` stops the browser's own move."
     },
     {
-      "from": 81,
-      "to": 81,
+      "from": 82,
+      "to": 82,
       "text": "Closes `trapTab()`."
     }
   ]

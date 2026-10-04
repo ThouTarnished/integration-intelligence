@@ -44,7 +44,7 @@ function travelStats(geo) {
   const fastest = Math.max(0, ...geo.arcs.filter((a) => a.impossible).map((a) => a.speed_kmh || 0));
   const stats = [
     ["Active cities", geo.cities.length, ""], ["Plausible trips", count("plausible"), ""],
-    ["Unverified origins", count("hostile"), "lvl-HIGH"], ["Impossible routes", count("impossible"), "lvl-CRITICAL"],
+    ["Unverified trips", count("hostile"), "lvl-HIGH"], ["Impossible routes", count("impossible"), "lvl-CRITICAL"],
     ["Fastest implied", fastest ? `${fmt.num(fastest)} km/h` : "—", fastest ? "lvl-CRITICAL" : ""],
   ];
   return html`<div class="map-stats">${stats.map(([label, value, cls]) => html`<div><small>${label}</small><b class="num ${cls}">${value}</b></div>`)}</div>`;

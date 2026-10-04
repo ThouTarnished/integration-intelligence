@@ -1,6 +1,6 @@
 {
   "path": "web/js/ui/components.js",
-  "lines": 100,
+  "lines": 101,
   "summary": "The shared building blocks of the UI: severity, status and score badges, chips, panels, empty/loading/error states, the segmented control with its sliding pill, a syntax-coloured JSON block and a tiny safe markdown renderer. Every helper returns output from dom.js's auto-escaping `html` template (or `raw` for markup it built and escaped itself), so pages can combine them freely without XSS risk. The pages, the charts and the detail drawers in details.js all import from here.",
   "notes": [
     {
@@ -156,7 +156,7 @@
     {
       "from": 49,
       "to": 50,
-      "text": "One `button` per option. `type=\"button\"` stops it from submitting a surrounding form, and `aria-pressed` (the string 'true' or 'false') tells both assistive technology and the CSS which option is active. Line 52 closes `seg()`."
+      "text": "One `button` per option. `type=\"button\"` stops it from submitting a surrounding form, and `aria-pressed` (the string 'true' or 'false') tells both assistive technology and the CSS which option is active. The last line closes `seg()`."
     },
     {
       "from": 52,
@@ -256,12 +256,12 @@
     {
       "from": 81,
       "to": 82,
-      "text": "Returns the result in a `pre` element with class `code`, which keeps the indentation. It is wrapped in `raw` because escaping was already done by hand on line 72; line 79 closes the function."
+      "text": "Returns the result in a `pre` element with class `code`, which keeps the indentation. It is wrapped in `raw` because the text was already escaped by hand at the top of the function, and the last brace closes it."
     },
     {
       "from": 84,
       "to": 84,
-      "text": "Doc comment: a deliberately tiny, safe markdown renderer (used for the AI Analyst's answers). Everything is escaped first, then only bold text, inline code and dash bullets are allowed."
+      "text": "Doc comment: a deliberately tiny, safe markdown renderer (used for the AI Analyst's answers). Everything is escaped first, then only bold and italic text, inline code and dash bullets are allowed."
     },
     {
       "from": 85,
@@ -270,43 +270,43 @@
     },
     {
       "from": 87,
-      "to": 87,
-      "text": "`inline()` formats text within a line: a phrase wrapped in double asterisks becomes bold, and a phrase wrapped in backticks becomes inline code. Together with the list, paragraph and ref-button markup below, these are the only tags the renderer ever creates."
-    },
-    {
-      "from": 88,
       "to": 88,
-      "text": "Turns record IDs (INC- plus 4 digits, EVT- plus 5, USR- plus 4) into small `ref` buttons carrying the ID in `data-ref`. A document-wide click handler in main.js passes them to `openRef`, so an incident mentioned in an answer opens its drawer when clicked."
+      "text": "`inline()` formats text within a line: a phrase in double asterisks becomes bold, then one in single asterisks becomes italic (the analyst reads its search terms back that way, as in *Impossible travel · Lagos*), and a phrase in backticks becomes inline code. Bold goes first, so the italic pattern only sees single asterisks, and it needs a non-space just inside each one, so a stray \"5 * 3\" is left alone. With the list, paragraph and ref-button markup below, these are the only tags the renderer ever creates."
     },
     {
       "from": 89,
-      "to": 90,
-      "text": "Splits the escaped text into blocks at blank lines (two or more newlines in a row), then splits each block into its lines."
+      "to": 89,
+      "text": "Turns record IDs (INC- plus 4 digits, EVT- plus 5, USR- plus 4) into small `ref` buttons carrying the ID in `data-ref`. A document-wide click handler in main.js passes them to `openRef`, so an incident mentioned in an answer opens its drawer when clicked."
     },
     {
-      "from": 91,
+      "from": 90,
       "to": 91,
-      "text": "If every line in a block starts with '- ', the whole block becomes a bulleted list: each line, minus its first two characters, goes through `inline()` into a list item."
+      "text": "Splits the escaped text into blocks at blank lines (two or more newlines in a row), then splits each block into its lines."
     },
     {
       "from": 92,
       "to": 92,
-      "text": "Otherwise finds the first line that starts with '- ' (or -1 when there is none)."
+      "text": "If every line in a block starts with '- ', the whole block becomes a bulleted list: each line, minus its first two characters, goes through `inline()` into a list item."
     },
     {
       "from": 93,
-      "to": 96,
+      "to": 93,
+      "text": "Otherwise finds the first line that starts with '- ' (or -1 when there is none)."
+    },
+    {
+      "from": 94,
+      "to": 97,
       "text": "When bullets begin part-way through a block (index above 0), the lines before them become one paragraph joined with line breaks, and every line from the first bullet onwards becomes a list item, with the leading '- ' stripped where present."
     },
     {
-      "from": 97,
-      "to": 97,
+      "from": 98,
+      "to": 98,
       "text": "A block without bullets becomes a single paragraph, keeping its line breaks as `br` elements."
     },
     {
-      "from": 98,
-      "to": 100,
-      "text": "Closes the block mapping, then joins the blocks and returns them as `raw` HTML. That is safe because the only markup in the string is what this function inserted after escaping; line 97 closes `markdown()`."
+      "from": 99,
+      "to": 101,
+      "text": "Closes the block mapping, then joins the blocks and returns them as `raw` HTML. That is safe because the only markup in the string is what this function inserted after escaping; the last brace closes `markdown()`."
     }
   ]
 }

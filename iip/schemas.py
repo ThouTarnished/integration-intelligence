@@ -65,7 +65,7 @@ class StatusIn(BaseModel):
 
 
 class AskIn(BaseModel):
-    question: str = Field(min_length=3, max_length=500)
+    question: str = Field(min_length=2, max_length=500)
 
 
 class EvaluateIn(BaseModel):
