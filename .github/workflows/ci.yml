@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned, so the Python 3.10 job keeps a supported image when ubuntu-latest moves on
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
