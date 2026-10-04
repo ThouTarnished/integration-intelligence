@@ -1,0 +1,502 @@
+{
+  "path": "web/js/ui/palette.js",
+  "lines": 166,
+  "summary": "The command palette (Ctrl+K, or ⌘+K on a Mac): a searchable list of pages, actions, scenario replays, open incidents and customers, ranked by a small fuzzy subsequence matcher and fully usable from the keyboard. It caches API data for 15 seconds and doubles as the API-key prompt when a write request is rejected outside demo mode. main.js installs it, passes in shared actions (open a drawer, toggle traffic) and calls `askForKey()` when api.js reports `auth:required`.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "File header: the command palette opens with Ctrl+K (⌘+K on a Mac) and lets you navigate, replay scenarios, toggle settings or jump straight to an incident or customer."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "API helpers: `get` and `post` for data and scenario runs, and `setKey` to store an API key typed into the palette."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "DOM helpers: `$` (a `querySelector` shortcut), the auto-escaping `html` template, `mount`, and `trapTab`, which keeps Tab inside the open palette."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Motion helpers: `animate`; `motionEnabled` and `setMotion` for the motion toggle command; `spring` and `stagger` for the opening and list animations."
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "text": "The icon builder and the toast notifier."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Module-level state: `items` is every available command, `filtered` is what the current search shows, `selected` is the highlighted row's index, `mode` is 'commands' or 'key' (the API-key prompt), `onKey` is the callback to run once a key is saved, and `generation` counts openings so a late close can tell it is stale. `lastFocus` is the element that gets focus back when the palette closes."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "A small cache of API data (incidents, customers, scenarios), with `at` recording when it was fetched."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "`root()` returns the `#palette` container from index.html."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "`paletteOpen()` is exported so main.js can handle Escape and the Ctrl+K toggle correctly."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Doc comment for the fuzzy matcher: the query's letters must appear in the text in order (a subsequence, so 'tgl' matches 'Toggle'), with bonus points for letters at the start of a word."
+    },
+    {
+      "from": 15,
+      "to": 16,
+      "text": "`score(text, query)` returns a number, higher for better matches. An empty query matches everything with the same score, 1."
+    },
+    {
+      "from": 17,
+      "to": 18,
+      "text": "Lower-cases the text, then sets up `s` (the running score) and `t` (the position where the search for the next letter starts)."
+    },
+    {
+      "from": 19,
+      "to": 21,
+      "text": "For each query letter, finds its next occurrence at or after position `t`. If any letter is missing the item doesn't match at all, so the function returns 0."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Points for each letter: 3 if it sits exactly where the search resumed (right after the previous match, or at the very start of the text for the first letter), 2 if it follows a space (a word start), otherwise 1. The search is greedy: it always takes the earliest occurrence."
+    },
+    {
+      "from": 23,
+      "to": 24,
+      "text": "Moves the search position past the matched letter, which is what forces the letters to appear in order; then the loop closes."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "The final score is the points plus the points divided by the text's length. The second term is a smaller tie-breaker that ranks a shorter, more specific text above a longer one with the same points."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "Closes `score()`."
+    },
+    {
+      "from": 28,
+      "to": 29,
+      "text": "`loadData()` refreshes the cache, but skips the network entirely when the data is under 15 seconds old, so opening the palette repeatedly stays instant."
+    },
+    {
+      "from": 30,
+      "to": 31,
+      "text": "Fetches four lists in parallel: up to 40 open incidents, up to 20 under investigation, every customer and the scenario catalog."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Stores the results with a timestamp. Open and investigating incidents are merged into one list; resolved incidents are not offered."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "Closes `loadData()`."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "`build(actions)` turns everything into one flat list of palette items. `actions` is passed in from main.js (`openIncident`, `openUser`, `toggleTraffic`), which keeps page-specific code out of this file."
+    },
+    {
+      "from": 36,
+      "to": 39,
+      "text": "The eight pages, each written as `[route key, label, icon, hint]`. The hint shows the matching two-key shortcut: 'G O' means press g, then o (handled in main.js)."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "Turns each page into an item in the 'Go to' group whose `run` changes `location.hash`; the router in main.js reacts to that and renders the page."
+    },
+    {
+      "from": 41,
+      "to": 42,
+      "text": "The 'Actions' group starts with 'Toggle live traffic', which calls the shared action that starts or stops the demo event generator."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "The motion toggle's label reflects the current state ('Reduce motion' or 'Enable motion'). Running it flips the setting and confirms the new state in a toast."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "Opens FastAPI's interactive API documentation at `/docs` in a new tab; `noopener` isolates the new tab from this page."
+    },
+    {
+      "from": 45,
+      "to": 46,
+      "text": "'Reset demo data…' only navigates to the Simulation page, where the real reset button must be pressed and held. A destructive action therefore can't be fired by a stray Enter in the palette. Line 46 closes the list."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "One 'Run scenario' item per scenario in the cache, with its category (attack, fraud…) as the hint. Its `run` is async because it calls the API."
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "text": "Replays the scenario through the real backend pipeline with `POST /simulation/{key}`."
+    },
+    {
+      "from": 50,
+      "to": 51,
+      "text": "Shows a toast with the customer's name and the peak score and level, coloured by that level. If the run produced an incident, clicking the toast opens it; otherwise `onClick` is `undefined` and the toast simply dismisses."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "Any failure, such as a rejected API key, becomes a red CRITICAL toast showing the server's message."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Closes `run`, the item object and the `map` call."
+    },
+    {
+      "from": 54,
+      "to": 55,
+      "text": "One item per open or investigating incident, labelled like 'INC-0001 · title' and hinted with severity and customer name; running it opens the incident drawer."
+    },
+    {
+      "from": 56,
+      "to": 57,
+      "text": "One item per customer, hinted with their ID and current risk score; running it opens the customer drawer."
+    },
+    {
+      "from": 58,
+      "to": 59,
+      "text": "Returns every item in display order: pages, actions, scenarios, incidents, customers. Line 59 closes `build()`."
+    },
+    {
+      "from": 61,
+      "to": 62,
+      "text": "`renderList(query)` redraws the visible results for the current search text into the `.palette-list` element."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "Scores each item against one combined string of its label, hint and group name, so typing 'customers' lists every customer and typing an incident or customer ID finds that record."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Keeps only matches (score above 0) and sorts them best-first, but only while a query is typed: with an empty query the comparator returns 0, and because JavaScript's sort is stable the build order is kept. At most 40 results are shown."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Clamps `selected` so it still points at a real row after the list shrinks."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "`group` remembers the last group header written, so a header is only printed when the group changes."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "Mounts the results into the list (or, if there are none, the 'No matches' message on line 71)."
+    },
+    {
+      "from": 68,
+      "to": 68,
+      "text": "Emits a group header whenever this item's group differs from the previous one. The assignment `(group = item.group)` inside the template both updates the tracker and prints the name; when results are sorted by score, groups can interleave, so a header may appear more than once."
+    },
+    {
+      "from": 69,
+      "to": 70,
+      "text": "Each result is a `button` with `role=\"option\"`, its index in `data-i` and `aria-selected` marking the highlighted row. Inside are the icon, the label and an optional right-aligned hint."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "Closes the mapping, falls back to 'No matches' when nothing matched, and closes `renderList()`."
+    },
+    {
+      "from": 74,
+      "to": 75,
+      "text": "`highlight()` moves the selection after an arrow-key press without re-rendering the list; it loops over the rows already on screen."
+    },
+    {
+      "from": 76,
+      "to": 77,
+      "text": "A row is selected when its `data-i` equals `selected`. Its `aria-selected` is set to 'true' or 'false' to match, which also drives the highlight style in CSS."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "Scrolls the selected row into view only as far as needed (`block: \"nearest\"`), so the list doesn't jump around."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Closes the loop and `highlight()`."
+    },
+    {
+      "from": 82,
+      "to": 83,
+      "text": "`frame(placeholder)` returns the palette's markup. It starts with a backdrop that closes the palette when clicked (`data-close`)."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "The dialog box, marked as a modal dialog with an accessible name for screen readers."
+    },
+    {
+      "from": 85,
+      "to": 86,
+      "text": "The input row: a key icon in key mode or a search icon otherwise, then the text input with autocomplete and spellcheck turned off. In key mode the input also gets `type=password` so the pasted key is masked (that string has no special characters, so `html` inserts it unchanged); the 'esc' badge reminds users how to close."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "The results container, with `role=\"listbox\"` to match the `option` rows rendered inside it."
+    },
+    {
+      "from": 88,
+      "to": 89,
+      "text": "The footer: in key mode it explains that Enter saves the key for this browser session only (api.js keeps it in `sessionStorage`); otherwise it lists the keyboard controls."
+    },
+    {
+      "from": 90,
+      "to": 91,
+      "text": "Closes the dialog box, the template and `frame()`."
+    },
+    {
+      "from": 93,
+      "to": 94,
+      "text": "`show()` makes the palette visible."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "Every opening bumps `generation`, so a close animation that began before this opening knows not to hide it."
+    },
+    {
+      "from": 96,
+      "to": 96,
+      "text": "When the palette opens from hidden, remembers the element that had focus, so `closePalette()` can give it back."
+    },
+    {
+      "from": 97,
+      "to": 97,
+      "text": "Unhides the overlay."
+    },
+    {
+      "from": 98,
+      "to": 98,
+      "text": "Fades the backdrop in over 200ms."
+    },
+    {
+      "from": 99,
+      "to": 99,
+      "text": "Pops the box in: it fades in, grows from 96% and drops 10px into place with a spring ease."
+    },
+    {
+      "from": 100,
+      "to": 101,
+      "text": "Puts the cursor in the input so the user can start typing immediately; closes `show()`."
+    },
+    {
+      "from": 103,
+      "to": 104,
+      "text": "`openPalette(actions)` opens the command list. If the palette is already open, the same shortcut closes it instead, making Ctrl+K a toggle."
+    },
+    {
+      "from": 105,
+      "to": 107,
+      "text": "Switches to command mode, mounts a fresh frame with the search placeholder and shows it."
+    },
+    {
+      "from": 108,
+      "to": 109,
+      "text": "Builds and renders the list immediately from whatever is cached, so pages and actions work instantly, before any data arrives."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "Remembers which opening this is."
+    },
+    {
+      "from": 111,
+      "to": 112,
+      "text": "Refreshes the cache (a no-op if it is under 15 seconds old)."
+    },
+    {
+      "from": 113,
+      "to": 113,
+      "text": "If the palette was closed, reopened, or turned into the API-key prompt while the data loaded, the stale list is dropped. It used to render the commands into the key prompt."
+    },
+    {
+      "from": 114,
+      "to": 115,
+      "text": "Rebuilds the items with the fresh incidents, customers and scenarios and renders again, keeping whatever the user typed in the meantime."
+    },
+    {
+      "from": 116,
+      "to": 116,
+      "text": "Fades the rows in while sliding them 4px from the left, 8ms apart (`stagger(8)`), a quick ripple down the list."
+    },
+    {
+      "from": 117,
+      "to": 118,
+      "text": "If loading fails (for example, the server is unreachable) the error is swallowed on purpose: navigation and actions keep working. Line 114 closes the function."
+    },
+    {
+      "from": 120,
+      "to": 120,
+      "text": "Doc comment: the palette doubles as the API-key prompt when the server is not running in demo mode (in demo mode the server injects the key into the page)."
+    },
+    {
+      "from": 121,
+      "to": 123,
+      "text": "`askForKey(after)` switches the palette into key mode and stores `after`, the callback to run once a key is saved. main.js calls it when api.js reports a 401 response to a write request."
+    },
+    {
+      "from": 124,
+      "to": 124,
+      "text": "Mounts a frame with a key-specific placeholder. Because `mode` is now 'key', `frame()` renders the key icon, a password input and the session-only footer."
+    },
+    {
+      "from": 125,
+      "to": 125,
+      "text": "Replaces the results area with a lock icon and a one-line explanation of why a key is needed."
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "text": "Shows the palette (which focuses the input) and closes the function."
+    },
+    {
+      "from": 129,
+      "to": 130,
+      "text": "`closePalette()` is async so the exit animation can be awaited."
+    },
+    {
+      "from": 131,
+      "to": 131,
+      "text": "Does nothing if the palette is already hidden."
+    },
+    {
+      "from": 132,
+      "to": 132,
+      "text": "Remembers which opening this close belongs to."
+    },
+    {
+      "from": 133,
+      "to": 133,
+      "text": "Waits for a quick exit animation: fade out while shrinking to 97%, in 140ms."
+    },
+    {
+      "from": 134,
+      "to": 134,
+      "text": "If the palette was opened again during those 140ms (say a palette action got a 401 and `askForKey()` showed the key prompt), this close is stale and must not hide the new content."
+    },
+    {
+      "from": 135,
+      "to": 136,
+      "text": "Otherwise hides the palette and empties it."
+    },
+    {
+      "from": 137,
+      "to": 137,
+      "text": "Gives focus back to where it was before the palette opened, unless the chosen action moved it on purpose (opening a drawer focuses the drawer). Hiding the focused input leaves focus on the page body, which is how the first case is recognized; focus used to stay on the body."
+    },
+    {
+      "from": 138,
+      "to": 138,
+      "text": "Closes the function."
+    },
+    {
+      "from": 140,
+      "to": 141,
+      "text": "`installPalette()` runs once at startup (main.js) and attaches delegated listeners to the permanent `#palette` container."
+    },
+    {
+      "from": 142,
+      "to": 142,
+      "text": "Keeps Tab and Shift+Tab inside the palette box while it is open (see `trapTab` in dom.js)."
+    },
+    {
+      "from": 143,
+      "to": 144,
+      "text": "Clicks: anything marked `data-close` (the backdrop) closes the palette."
+    },
+    {
+      "from": 145,
+      "to": 146,
+      "text": "Clicking a result looks up its item through `data-i` in `filtered`, closes the palette and runs the item's action. The close isn't awaited, so the action starts while the exit animation plays."
+    },
+    {
+      "from": 147,
+      "to": 147,
+      "text": "Closes the click listener."
+    },
+    {
+      "from": 148,
+      "to": 148,
+      "text": "Typing in command mode resets the highlight to the first row and re-filters the list. In key mode typing triggers nothing."
+    },
+    {
+      "from": 149,
+      "to": 150,
+      "text": "Keyboard handling: Escape always closes the palette, and `preventDefault` keeps the browser from also acting on the key."
+    },
+    {
+      "from": 151,
+      "to": 152,
+      "text": "In key mode, Enter with a non-empty value saves the key (`setKey` trims it and stores it in `sessionStorage`), closes the palette, confirms with a toast and runs the `onKey` callback."
+    },
+    {
+      "from": 153,
+      "to": 154,
+      "text": "Returns early so the list-navigation keys below never run in key mode; then closes the `if`."
+    },
+    {
+      "from": 155,
+      "to": 156,
+      "text": "Arrow Up and Down move the highlight; `preventDefault` stops the text cursor from jumping to the start or end of the input."
+    },
+    {
+      "from": 157,
+      "to": 157,
+      "text": "Moves the index by one with wrap-around. Adding `filtered.length` before `%` keeps the result non-negative when going up from row 0, and `Math.max(..., 1)` avoids taking a remainder by zero when there are no results."
+    },
+    {
+      "from": 158,
+      "to": 158,
+      "text": "Updates the highlight and scroll position without re-rendering the list."
+    },
+    {
+      "from": 159,
+      "to": 160,
+      "text": "Otherwise, if Enter is pressed while a result is highlighted, the key press is claimed with `preventDefault`."
+    },
+    {
+      "from": 161,
+      "to": 163,
+      "text": "Takes the highlighted item, closes the palette and runs its action, exactly like clicking it."
+    },
+    {
+      "from": 164,
+      "to": 166,
+      "text": "Closes the `else if`, the keydown listener and `installPalette()`."
+    }
+  ]
+}

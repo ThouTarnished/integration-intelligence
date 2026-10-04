@@ -1,0 +1,31 @@
+{
+  "path": "web/js/charts/sparkline.js",
+  "lines": 29,
+  "summary": "Two tiny charts without axes or tooltips: `sparkline`, a smoothed trend line with a soft fill and an end dot, used on the overview KPI cards and the Integration page metrics, and `microBars`, mini columns for events ingested per minute on the Integration page. Both draw once at the container's current width using `monotonePath`, `resolveColor` and `uid` from charts/core.js.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Header comment: small trend graphics for KPI cards and metrics, showing shape rather than exact values."},
+    {"from": 2, "to": 3, "text": "Imports `drawIn` (the stroke-drawing animation) from motion.js, plus the curve, colour and id helpers from charts/core.js."},
+    {"from": 5, "to": 5, "text": "`sparkline(el, values, options)`: grey `--t3` by default, 34 px tall, with a gradient fill and a draw-in animation unless switched off. The Integration page passes `animateIn: false` because it redraws its sparklines every 4 seconds."},
+    {"from": 6, "to": 6, "text": "The width comes from the container, falling back to 120 px if it hasn't been laid out yet; `uid` gives the gradient a unique id. Sparklines draw once at the current width rather than through `responsive`."},
+    {"from": 7, "to": 7, "text": "Resolves the colour token into a real colour for the SVG attributes."},
+    {"from": 8, "to": 8, "text": "`max` is the largest value (at least 1, avoiding division by zero) and `n` the number of gaps between points (at least 1, so a single value is safe too)."},
+    {"from": 9, "to": 9, "text": "Maps values to pixels: x spreads the points evenly from 2 px to `W - 2`, and y puts 0 three pixels above the bottom and the maximum five pixels below the top, leaving room for the stroke and the end dot. The scale starts at zero, so small wobbles in a high series don't look like wild swings."},
+    {"from": 10, "to": 10, "text": "Smooths the points with the monotone curve, which never overshoots: a curve dipping below the baseline would show a negative value that never happened."},
+    {"from": 11, "to": 11, "text": "Opens the SVG at the container's size; `aria-hidden` because it is decoration and the number on the card carries the information."},
+    {"from": 12, "to": 13, "text": "A vertical gradient from the line colour at 25% opacity down to fully transparent, used for the fill."},
+    {"from": 14, "to": 14, "text": "When `fill` is on, closes the line down to the bottom edge at the last and first x and fills it with the gradient: the soft area under the trend."},
+    {"from": 15, "to": 15, "text": "The line itself, with class `spark-line` so the animation can find it."},
+    {"from": 16, "to": 16, "text": "A small dot on the last point, marking the latest value."},
+    {"from": 17, "to": 17, "text": "Closes the SVG template."},
+    {"from": 18, "to": 18, "text": "Unless disabled, draws the line in from left to right over 1.3 s; `drawIn` animates the stroke's dash pattern from nothing to the full length."},
+    {"from": 19, "to": 19, "text": "Closes `sparkline`."},
+    {"from": 21, "to": 22, "text": "`microBars` draws a mini column chart for small integer series, such as events per minute on the Integration page. Its colour defaults to the aqua `--accent`, which marks live activity rather than risk."},
+    {"from": 23, "to": 23, "text": "The tallest value (at least 1) and the resolved fill colour."},
+    {"from": 24, "to": 24, "text": "The width (fallback 200 px), a 2 px gap, and the bar width that makes n bars plus n − 1 gaps fill the width exactly."},
+    {"from": 25, "to": 25, "text": "Opens the SVG and starts mapping each value to a bar."},
+    {"from": 26, "to": 26, "text": "A non-zero value gets a height proportional to the max, at least 2 px; a zero gets a 1 px stub so the empty minute still has a visible slot."},
+    {"from": 27, "to": 27, "text": "Each bar is a bottom-aligned rect (`y = height - h`) with slightly rounded corners; zero bars are drawn at 18% opacity so they read as empty rather than small."},
+    {"from": 28, "to": 28, "text": "Joins the bars and closes the SVG. There is no animation because the Integration page redraws this chart on every refresh."},
+    {"from": 29, "to": 29, "text": "Closes `microBars`."}
+  ]
+}

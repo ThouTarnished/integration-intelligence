@@ -1,0 +1,27 @@
+{
+  "path": "web/js/ui/toast.js",
+  "lines": 27,
+  "summary": "Small pop-up notifications in the bottom-right corner, used for confirmations, errors and live incident alerts. Toasts stack up to four at a time, dismiss themselves after a timeout, pause while hovered and can run an action when clicked; their left edge shows the risk-level colour. main.js, the palette, the pages and the detail drawers all call `toast()`.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "File header: toasts are short notifications stacked in the bottom-right corner, with the risk-level colour as a stripe on their left edge."},
+    {"from": 2, "to": 2, "text": "Imports `$` (a `querySelector` shortcut) and the auto-escaping `html` template from dom.js."},
+    {"from": 3, "to": 3, "text": "Imports the motion-aware `animate` and the `spring` easing helper."},
+    {"from": 5, "to": 5, "text": "`MAX` caps how many toasts can be on screen at once, so a burst of live alerts can't fill the screen."},
+    {"from": 7, "to": 7, "text": "`toast()` takes one options object: a `title`, an optional `body`, an optional risk `level`, a `timeout` before it dismisses itself (default 5.2 seconds) and an optional `onClick` action. The `= {}` default makes calling it with no argument safe."},
+    {"from": 8, "to": 8, "text": "`#toasts` is the container in index.html. It has `aria-live=\"polite\"`, so screen readers announce new toasts without interrupting the user."},
+    {"from": 9, "to": 10, "text": "Creates the toast element. A `lvl-${level}` class is added only when a level is given; CSS paints the left stripe in that level's colour and falls back to the accent colour otherwise."},
+    {"from": 11, "to": 11, "text": "`role=\"status\"` marks the toast as an advisory status message for assistive technology."},
+    {"from": 12, "to": 12, "text": "Fills the toast with the escaped title and, if given, the escaped body. `String(...)` turns the `SafeHTML` object into the plain string `innerHTML` expects."},
+    {"from": 13, "to": 13, "text": "Adds the toast to the end of the container, so the newest one appears at the bottom of the stack."},
+    {"from": 14, "to": 14, "text": "The stacking limit: while there are more than four toasts, the oldest (the first child) is removed at once."},
+    {"from": 15, "to": 15, "text": "Entrance animation: the toast slides in from 40px to the right, fades in and grows from 97% to full size, with a slightly bouncy spring ease."},
+    {"from": 17, "to": 17, "text": "`timer` holds the id of the auto-dismiss timeout. It is declared here so the handlers below can cancel or restart it."},
+    {"from": 18, "to": 19, "text": "`dismiss()` first cancels any pending timer, so the toast can't be dismissed twice."},
+    {"from": 20, "to": 21, "text": "Waits for the exit animation (slide 30px right and fade out over 200ms), then removes the element from the page."},
+    {"from": 22, "to": 22, "text": "Closes `dismiss()`."},
+    {"from": 23, "to": 23, "text": "Clicking a toast runs its optional action (for example, opening the incident it announced) and then dismisses it."},
+    {"from": 24, "to": 24, "text": "Hover-pause: while the pointer is over the toast its countdown is cancelled, so it stays up for as long as someone is reading it."},
+    {"from": 25, "to": 25, "text": "When the pointer leaves, a new, shorter two-second countdown starts."},
+    {"from": 26, "to": 27, "text": "Starts the initial auto-dismiss countdown and closes the function."}
+  ]
+}

@@ -1,0 +1,202 @@
+{
+  "path": "iip/schemas.py",
+  "lines": 84,
+  "summary": "The API's input contracts, written as Pydantic models. FastAPI validates every request body against these classes before an endpoint runs, rejecting bad input with a `422` response and normalizing the rest (IP addresses, time zones, whitespace). `EventIn` feeds `POST /events` and the pipeline, while the small models back incident triage (`StatusIn`), the AI analyst (`AskIn`), the Risk Lab (`EvaluateIn`, checked against `rules.SIGNALS`) and the live-traffic switch (`TrafficIn`).",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Docstring: request bodies only. **Pydantic** models declare each field's type and constraints; FastAPI validates incoming JSON against them and answers with a `422` error listing the problems when it does not fit, so untrusted input never reaches the engine unchecked."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Postponed annotations: Pydantic resolves these string hints when each class is built, which is why `datetime` and `Literal` must be real imports below."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "`ipaddress` (standard library) parses and validates IPv4 and IPv6 addresses."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "`datetime` for the optional event timestamp, `timedelta` for the allowed clock skew, and `timezone` to convert timestamps to UTC."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "`Literal[...]` restricts a field to an exact set of values; Pydantic enforces it and the OpenAPI docs list the allowed options."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Pydantic building blocks: `BaseModel` (the parent of every schema), `ConfigDict` (typed model settings), `Field` (defaults plus constraints such as lengths, patterns and ranges) and `field_validator` (custom code that checks or transforms one field)."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "Imports the rulebook so `EvaluateIn` can check signal names against the real catalogue."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "`utcnow`, the platform clock, for the future-timestamp check."
+    },
+    {
+      "from": 13,
+      "to": 16,
+      "text": "A sample request body for the generated API docs: a deliberately risky login (new device, five failed attempts, suspicious IP) that scores at least 65 (HIGH) when tried from `/docs`. `203.0.113.45` comes from a block reserved for documentation (RFC 5737), so it can never belong to a real host."
+    },
+    {
+      "from": 17,
+      "to": 20,
+      "text": "The accepted range for event timestamps, used by the validator below."
+    },
+    {
+      "from": 23,
+      "to": 24,
+      "text": "`EventIn` is the body of `POST /api/v1/events`. `str_strip_whitespace` trims every text field **before** the length and pattern checks, so a location of only spaces is rejected instead of being stored empty (it used to raise \"Unusual location\" and even \"Impossible travel\"). `json_schema_extra` attaches `EXAMPLE_EVENT` as the example request in the interactive docs."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "Required customer ID matching the regular expression `^USR-\\d+$`: the literal `USR-` followed by one or more digits and nothing else (`^` and `$` anchor the start and end). A value such as `bob` gets a 422."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "Required event type, limited to four values; anything else is a 422."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Optional timestamp, `None` by default. Pydantic parses ISO-8601 strings such as `2026-01-01T12:00:00Z` into `datetime`, and when the field is missing `pipeline.normalize` stamps the event with the current UTC time."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "Required IP address as a string; the `_valid_ip` validator below checks and normalizes it."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "Required location label of 2 to 80 characters; 80 matches the `String(80)` column in `database.py`."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "Required device ID: `DEV-` followed by digits."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Optional on purpose: `None` means \"let the server decide\", and `pipeline.process_event` then derives it from whether the device is already registered to this user."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "Failed attempts default to 0; `ge=0, le=100` (greater-or-equal, less-or-equal) rejects negative or absurd counts."
+    },
+    {
+      "from": 34,
+      "to": 34,
+      "text": "IP reputation, one of three values, defaulting to `clean`."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "Optional amount, non-negative and capped at one billion (`1e9`) to reject garbage values."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Optional resource name of at most 80 characters, matching its database column."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Outcome of the action, defaulting to `success`."
+    },
+    {
+      "from": 39,
+      "to": 41,
+      "text": "A custom validator for `ip_address`. In Pydantic v2 validators are class methods, so `@field_validator` sits on top of `@classmethod`; it runs after the basic type check (the default \"after\" mode), and whatever it returns becomes the field's value."
+    },
+    {
+      "from": 42,
+      "to": 43,
+      "text": "After `.strip()` removes stray spaces, `ipaddress.ip_address()` accepts IPv4 or IPv6 and raises `ValueError` for anything else. Converting back with `str()` gives the canonical spelling (`2001:0DB8::0001` becomes `2001:db8::1`), so one address is always stored the same way."
+    },
+    {
+      "from": 44,
+      "to": 45,
+      "text": "Re-raises with a short message: Pydantic turns a `ValueError` raised inside a validator into a normal 422 error reading \"Value error, invalid IP address\". `from None` drops the original exception from the traceback chain."
+    },
+    {
+      "from": 47,
+      "to": 50,
+      "text": "A validator for `timestamp`: it stores naive UTC and rejects times the engine can't reason about. In Pydantic v2 validators are class methods, so `@field_validator` sits on top of `@classmethod`."
+    },
+    {
+      "from": 51,
+      "to": 52,
+      "text": "A missing timestamp stays `None`; `pipeline.normalize` then stamps the event with the current time."
+    },
+    {
+      "from": 53,
+      "to": 56,
+      "text": "Converts a timezone-aware timestamp to the project's naive-UTC convention: `astimezone(timezone.utc)` shifts the clock time to UTC and `replace(tzinfo=None)` drops the label. Shifting a year-1 date by an offset overflows, and that now becomes a normal 422 instead of a server error."
+    },
+    {
+      "from": 57,
+      "to": 59,
+      "text": "The range check. A date before 2000 used to crash the pipeline with a 500 when the correlation window was subtracted from it, and a far-future date stayed the customer's latest event forever: it kept their incident open to every later event and topped every list. Five minutes of leeway allows for clock skew between the client and the server."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Returns the normalized value."
+    },
+    {
+      "from": 63,
+      "to": 64,
+      "text": "`StatusIn` is the body of `PATCH /api/v1/incidents/{id}`: the new triage status, one of three values (a test checks that `BOGUS` gets a 422)."
+    },
+    {
+      "from": 67,
+      "to": 68,
+      "text": "`AskIn` is the body of `POST /api/v1/ai/ask`: a question of 3 to 500 characters. The upper limit bounds how much text the analyst scans and, when OpenAI is configured, forwards to the language model."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "`EvaluateIn` is the body of `POST /api/v1/risk/evaluate` (the Risk Lab): a list of signal names. `default_factory=list` builds a new empty list when the field is omitted (never a shared mutable default), and `max_length=len(rules.SIGNALS)` caps the list at the catalogue's size, currently 11."
+    },
+    {
+      "from": 74,
+      "to": 76,
+      "text": "Custom validator for `signals`, using the same decorator pattern as above."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "Collects every requested name missing from `rules.SIGNALS` (the `in` test checks the dictionary's keys), so the error can list all of them, not just the first."
+    },
+    {
+      "from": 78,
+      "to": 79,
+      "text": "Rejects the request with a message such as `unknown signal(s): Nope`, which FastAPI returns as a 422. Without this check `rules.what_if` would hit a `KeyError`, which the app's catch-all handler would turn into a 500 error."
+    },
+    {
+      "from": 80,
+      "to": 80,
+      "text": "Returns the list unchanged when every name is valid."
+    },
+    {
+      "from": 83,
+      "to": 84,
+      "text": "`TrafficIn` is the body of `POST /api/v1/simulation/traffic`: `{\"enabled\": true}` starts the live-traffic generator and `false` stops it."
+    }
+  ]
+}

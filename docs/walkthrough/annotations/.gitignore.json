@@ -1,0 +1,62 @@
+{
+  "path": ".gitignore",
+  "lines": 15,
+  "summary": "Tells git which files never to track: local secrets, the runtime database and Python tool caches. Everything listed is either private or regenerated automatically, so the repository holds only source code and configuration.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Section comment: local configuration and secrets."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "The real `.env` file may hold the API key and an OpenAI key, so it must never be committed; `.env.example` is the shareable template."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Section comment: runtime data. The database is created and seeded on first start, so there is nothing worth committing."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "The top-level `data/` folder, where `iip/config.py` places the default SQLite database. The leading slash anchors the rule to the repository root: a bare `data/` would also ignore `web/js/data/`, which holds the world map's dot mask, so a fresh clone would have shown a broken map."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Any SQLite database file, wherever it ends up."
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "text": "SQLite's companion files: `-wal` is the write-ahead log and `-shm` its shared-memory index. They exist because `iip/database.py` switches SQLite to WAL mode so the live-traffic writer and the dashboard readers can work at the same time."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "Section comment: Python tooling."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "The local virtual environment (the installed packages), which is large and specific to one machine."
+    },
+    {
+      "from": 12,
+      "to": 13,
+      "text": "Compiled bytecode that Python writes automatically when it imports modules."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "pytest's cache (for example, which tests failed on the last run)."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "Ruff's cache of lint results."
+    }
+  ]
+}

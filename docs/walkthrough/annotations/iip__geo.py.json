@@ -1,0 +1,187 @@
+{
+  "path": "iip/geo.py",
+  "lines": 99,
+  "summary": "Pure geographic helpers with no database or network access. It holds a small table of known cities and their coordinates, normalizes free-text location labels to one canonical spelling (called by `pipeline.normalize`), computes great-circle distances with the haversine formula, and packages a trip's distance, duration and speed into a `Travel` record. `rules.py` judges those trips for impossible travel, and `queries.py` uses the coordinates to place markers and arcs on the dashboard's world map.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Docstring title: geographic enrichment, i.e. turning a location label into something the rule engine can measure."
+    },
+    {
+      "from": 3,
+      "to": 6,
+      "text": "Locations arrive as free text in many spellings. Known cities are normalized to one canonical label and given latitude/longitude, so the engine can reason about **physical** travel (distance divided by time) rather than merely noticing that the label changed."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "Postponed evaluation of annotations (type hints stored as strings), the standard header in this codebase."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "`math` supplies the trigonometry for the distance formula (`sin`, `cos`, `asin`, `sqrt`, `radians`) plus `math.inf` and `math.isinf` for zero-duration trips."
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "text": "`dataclass` for the `Travel` record, and `datetime` for the two timestamps a trip is measured between."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "Mean Earth radius in kilometres (6371.0088, the IUGG value). Treating the Earth as a perfect sphere costs well under 1% accuracy, irrelevant next to a 900 km/h threshold."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "`CITIES` maps each canonical label to `(latitude, longitude)` in decimal degrees, north and east positive, south and west negative. This table is the platform's entire geography: there is no real geo-IP lookup."
+    },
+    {
+      "from": 16,
+      "to": 21,
+      "text": "Middle East and Turkey. Abu Dhabi and Dubai are home cities in the seed data and only about 120 km apart, a hop the travel rule deliberately ignores; Doha and Istanbul are business-trip destinations, while Riyadh and Cairo are recognised if a client sends them."
+    },
+    {
+      "from": 22,
+      "to": 26,
+      "text": "Europe and Russia. London and Berlin are the other seed home cities, Paris and Frankfurt are trip destinations, and Moscow is one of the foreign cities attack scenarios come from; London's longitude is negative because it lies just west of the Greenwich meridian."
+    },
+    {
+      "from": 27,
+      "to": 37,
+      "text": "The rest of the world. Lagos, Singapore, New York and Sao Paulo are the seed's other foreign attacker locations (`Sao Paulo` is written without the accent, so clients must spell it that way to match), while Nairobi, Mumbai, Hong Kong, Tokyo, Sydney and Toronto are available to API clients. Negative latitudes mark the southern hemisphere and negative longitudes the Americas; Singapore and Hong Kong carry no country suffix, and the `}` ends the table."
+    },
+    {
+      "from": 39,
+      "to": 40,
+      "text": "Builds the alias lookup by merging two dictionary comprehensions with `|` (dictionary union, Python 3.9+): one keyed by the full lower-case label (`dubai, uae`), one keyed by the city part before the comma (`dubai`). As the comment says, both resolve to `Dubai, UAE`; for comma-less labels like `Singapore` the two keys coincide harmlessly."
+    },
+    {
+      "from": 43,
+      "to": 46,
+      "text": "`COUNTRY_ALIASES` maps other names for the countries in `CITIES` to the short form used in the labels, so \"Dubai, United Arab Emirates\" still resolves. The AI analyst reuses this table to read country names in questions."
+    },
+    {
+      "from": 49,
+      "to": 50,
+      "text": "`canonical()` normalizes one label: known cities come back canonical, unknown ones trimmed but otherwise unchanged. `pipeline.normalize` runs it on every incoming event, so the database stores one spelling per city."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "Builds the lookup key: `label.split()` breaks the text on any run of whitespace (dropping leading and trailing spaces), `\" \".join` rejoins the words with single spaces, and `.lower()` makes matching case-insensitive, so `\"  DUBAI,   uae \"` becomes `\"dubai, uae\"`."
+    },
+    {
+      "from": 52,
+      "to": 53,
+      "text": "An exact match on the full label or the bare city name (\"dubai, uae\", \"dubai\") wins immediately."
+    },
+    {
+      "from": 54,
+      "to": 55,
+      "text": "Otherwise the label is split at the first comma into city and country, and the city part is looked up on its own."
+    },
+    {
+      "from": 56,
+      "to": 59,
+      "text": "A city match counts only when no country was given, the city is a city-state, or the country agrees once aliases are resolved. The old fallback ignored the country, so \"London, Ontario\" became London, UK: a Londoner signing in from Canada looked at home, and a Toronto → London, Ontario trip looked impossible."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Anything else is an unknown place: trimmed, and without coordinates."
+    },
+    {
+      "from": 63,
+      "to": 64,
+      "text": "`coords()` returns `(lat, lon)` for any spelling of a known city, or `None` for an unknown one (`dict.get` returns `None` for a missing key). `queries.py` uses it to place map markers and travel arcs."
+    },
+    {
+      "from": 67,
+      "to": 68,
+      "text": "`haversine_km()` computes the **great-circle distance**, the shortest route between two points along the surface of a sphere (roughly what a plane flies). Each argument is a `(lat, lon)` tuple in degrees."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "`(*a, *b)` unpacks both tuples into one four-item tuple, and `map(math.radians, ...)` converts every value from degrees to radians, because Python's trigonometric functions work in radians. The four results land in named variables."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "The haversine formula: `h` adds the squared sine of half the latitude difference to the squared sine of half the longitude difference, the latter scaled by the cosines of both latitudes because degrees of longitude shrink towards the poles. `h` runs from 0 (same point) to 1 (opposite sides of the globe)."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "Turns `h` into the central angle between the points (`2 * asin(sqrt(h))`, in radians) and multiplies by the Earth's radius to get kilometres. The tests check that London to Paris comes out at about 344 km."
+    },
+    {
+      "from": 74,
+      "to": 75,
+      "text": "`Travel` is an immutable record (`frozen=True`) describing one move between two labelled places; in practice, from the user's last trusted location to the current event's location."
+    },
+    {
+      "from": 76,
+      "to": 78,
+      "text": "The two city labels and the elapsed time in minutes."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Distance and speed are `None` when either city is unknown, as the inline comment notes, because without coordinates nothing can be measured. `speed_kmh` can also be `math.inf` when no time elapsed."
+    },
+    {
+      "from": 82,
+      "to": 83,
+      "text": "`as_dict()` produces the JSON-friendly version stored in the event's `context[\"travel\"]`, read by the world map, the events table and the Simulation Center. Its keys are `from`/`to` although the fields are `origin`/`destination`, because `from` is a reserved word in Python and cannot be a field name."
+    },
+    {
+      "from": 84,
+      "to": 86,
+      "text": "Copies the city labels and rounds the minutes to one decimal place."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "Rounds the distance to whole kilometres while keeping `None` as `None` (calling `round(None)` would raise an error)."
+    },
+    {
+      "from": 88,
+      "to": 89,
+      "text": "Rounds the speed to whole km/h, but turns an infinite speed into `None` too: JSON cannot represent infinity, so the value is replaced before it reaches the database or an API response. The `}` closes the dictionary."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "`travel_between()` measures a trip between two labelled points in time; `rules.detect` calls it with the user's trusted baseline (location and time) and the current event."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "Elapsed minutes: subtracting two datetimes gives a `timedelta`, `.total_seconds() / 60` converts it, and `max(..., 0.0)` clamps a negative duration (an arrival stamped before the departure) to zero."
+    },
+    {
+      "from": 94,
+      "to": 96,
+      "text": "Looks up both cities; if either is unknown, returns a `Travel` with only the time filled in, and `rules.impossible_travel` then falls back to a simpler time-window rule."
+    },
+    {
+      "from": 97,
+      "to": 97,
+      "text": "Great-circle distance between the two cities in kilometres."
+    },
+    {
+      "from": 98,
+      "to": 98,
+      "text": "Average speed is distance divided by hours. When no time elapsed the speed is `math.inf` instead of a `ZeroDivisionError`, and infinity correctly counts as faster than any threshold."
+    },
+    {
+      "from": 99,
+      "to": 99,
+      "text": "Returns the complete measurement."
+    }
+  ]
+}

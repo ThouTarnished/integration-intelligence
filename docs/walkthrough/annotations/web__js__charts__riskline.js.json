@@ -1,0 +1,31 @@
+{
+  "path": "web/js/charts/riskline.js",
+  "lines": 37,
+  "summary": "The risk-history chart in the customer drawer (views/details.js): the customer's last 30 event scores as a smoothed neutral line with level-coloured dots, drawn over faint bands for LOW, MEDIUM, HIGH and CRITICAL. It uses `responsive`, `linear`, `monotonePath` and `LEVEL_COLORS` from charts/core.js, the clip-path reveal from motion.js and the shared tooltip.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Header comment: one customer's risk across their recent events, drawn over bands for the engine's four levels."},
+    {"from": 2, "to": 5, "text": "Imports: escaping and date formatting from dom.js, `clipReveal` for the entrance, the shared tooltip, and the core helpers including `LEVEL_COLORS`."},
+    {"from": 7, "to": 7, "text": "`riskLine(el, points, options)`. `points` is the customer's `risk_history` from the API: up to 30 recent events, oldest first, each with `timestamp`, `risk_score`, `risk_level` and `event_id`."},
+    {"from": 8, "to": 8, "text": "A unique id for this chart's clip path."},
+    {"from": 9, "to": 9, "text": "Draws through `responsive`, so the chart fits the drawer's width and redraws on resize."},
+    {"from": 10, "to": 10, "text": "Resolves the four level colours from CSS for the band and dot fills, which are SVG attributes."},
+    {"from": 11, "to": 12, "text": "Padding (28 px on the left for the band labels) and the inner plot size."},
+    {"from": 13, "to": 13, "text": "The x scale maps an event's index to a pixel; `Math.max(..., 1)` keeps the domain non-zero when there is only one point."},
+    {"from": 14, "to": 14, "text": "The y scale is fixed at 0–100, the full score range, and inverted so higher scores sit higher. A fixed scale keeps the bands in the same place for every customer."},
+    {"from": 15, "to": 15, "text": "The four level bands as score ranges, matching the 30/60/80 thresholds."},
+    {"from": 16, "to": 16, "text": "The smoothed line through every score. The monotone curve matters here: a curve that overshoots could poke into a higher band and suggest a level the customer never reached."},
+    {"from": 17, "to": 17, "text": "Opens the SVG with `role=\"img\"` and an accessible label."},
+    {"from": 18, "to": 18, "text": "A clip path with a full-size rect; the entrance animation grows its width to reveal the line from the left."},
+    {"from": 19, "to": 20, "text": "For each band, a rect from its upper to its lower boundary tinted in that level's colour at 5.5% opacity, plus a label with the band's lower bound (0, 30, 60, 80) on the left axis, just above the boundary."},
+    {"from": 21, "to": 21, "text": "Inside the clipped group, the line itself in neutral grey (`--t2`); the line carries no colour so that colour on this chart only ever means risk level."},
+    {"from": 22, "to": 23, "text": "A dot per event, filled with its level's colour; HIGH and CRITICAL events (score 60 and up) get a larger radius so they stand out, and a ring in the panel background colour separates each dot from the line. `data-i` links the dot back to its point for the tooltip."},
+    {"from": 24, "to": 24, "text": "Instead of crowded dates, the x axis simply says 'older' on the left and 'latest' on the right; exact times are in the tooltip."},
+    {"from": 25, "to": 25, "text": "Closes the SVG template."},
+    {"from": 26, "to": 26, "text": "Keeps a reference to the SVG."},
+    {"from": 27, "to": 29, "text": "One delegated `pointermove` listener: if the pointer isn't over a dot (`closest(\"circle[data-i]\")`), it hides the tooltip and stops."},
+    {"from": 30, "to": 33, "text": "Looks up the point and shows its event id and time as the title, then its score and level. The closing `});` ends the handler."},
+    {"from": 34, "to": 34, "text": "Hides the tooltip when the pointer leaves the chart."},
+    {"from": 35, "to": 35, "text": "First draw only: the clip-path reveal grows the clip rect from 0 to the full width over 1.1 s, so the line and dots sweep in from the left; the bands sit outside the clipped group and are visible straight away."},
+    {"from": 36, "to": 37, "text": "Closes the `responsive` callback and `riskLine`."}
+  ]
+}

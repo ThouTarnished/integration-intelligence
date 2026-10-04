@@ -1,0 +1,192 @@
+{
+  "path": "web/js/pages/analyst.js",
+  "lines": 91,
+  "summary": "The AI Analyst chat answers questions about incidents, customers and signals. Each question goes to `POST /ai/ask`, and the reply keeps two things visibly apart: the rule engine's deterministic decision (score, level and action), shown as its own card, and the explanation written by OpenAI or by the offline deterministic analyst, with clickable source references. Other pages can hand a question over through the exported `askLater`, which `main.js` calls when the incident drawer's **Ask analyst** button is pressed.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Header comment stating the page's core principle: the engine's deterministic decision is displayed separately from the explanation, so it is always clear that the rule engine decided and the language model (or the deterministic writer) only explained."
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "text": "API helpers and DOM helpers."
+    },
+    {
+      "from": 5,
+      "to": 7,
+      "text": "Motion helpers, plus `markdown` (a small, safe renderer for the explanation text), the panel frame, the severity badge and icons."
+    },
+    {
+      "from": 9,
+      "to": 16,
+      "text": "Starter questions shown as clickable chips, so first-time users can try the analyst without typing. Each shows a different skill: the incident queue, a search by attack type, a search by place, an explanation of the most urgent incident, a definition, and a summary."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Status messages rotated while an answer is pending. They roughly mirror the backend's steps: gather context, attach the engine's decision, write the explanation."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "A module-level slot for a question handed over from another page. As a module variable it survives navigation, unlike anything declared inside `render`."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "`askLater` is exported for `main.js`: on the `analyst:ask` bus event (the drawer's **Ask analyst** button) it queues the question and then navigates here."
+    },
+    {
+      "from": 22,
+      "to": 24,
+      "text": "Page module titled `AI Analyst`; `render` receives the view and the cleanup context."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Fetches integration health only to learn which explanation mode is active (`ai_mode`, plus `ai_model` when OpenAI is configured)."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "Mounts the page markup."
+    },
+    {
+      "from": 27,
+      "to": 31,
+      "text": "Header with the eyebrow **Explanations, not decisions**, a tip listing what the analyst understands (record IDs, customer names, attacks, places, risk levels, statuses and time windows), and the AI mode tag on the right: `deterministic` without an API key, or `openai` with the model name."
+    },
+    {
+      "from": 32,
+      "to": 33,
+      "text": "The chat column takes 8 of the 12 grid columns."
+    },
+    {
+      "from": 34,
+      "to": 35,
+      "text": "Suggestion buttons (`data-q` holds the question) and the message thread. `aria-live=polite` makes screen readers announce new answers as they appear."
+    },
+    {
+      "from": 36,
+      "to": 38,
+      "text": "The composer form, with autocomplete off and `maxlength=500`, matching the backend's limit on question length. Line 36 closes the chat column."
+    },
+    {
+      "from": 39,
+      "to": 40,
+      "text": "A side panel explaining the pipeline in four steps. Step 1, **Retrieve**: plain rules (no model) turn the question into search terms such as IDs, customer names, signals, places, risk levels, statuses and time windows, and only the matching records are pulled from the database."
+    },
+    {
+      "from": 41,
+      "to": 42,
+      "text": "Step 2, **Decide**: the engine's score is attached unchanged and the model cannot alter it. Step 3, **Explain**: the wording depends on the mode, either OpenAI or the offline deterministic writer."
+    },
+    {
+      "from": 43,
+      "to": 45,
+      "text": "Step 4, **Cite**: every answer lists the records it used. Lines 42-43 close the panel, the grid and the template."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "References to the thread and the text input."
+    },
+    {
+      "from": 49,
+      "to": 51,
+      "text": "`ask(question)` runs one exchange. Blank questions are ignored, and the input is cleared straight away."
+    },
+    {
+      "from": 52,
+      "to": 53,
+      "text": "Appends the user's bubble (escaped by `html`, so typed markup shows up as plain text) and fades it in."
+    },
+    {
+      "from": 54,
+      "to": 55,
+      "text": "Immediately appends the analyst's bubble with a shimmering placeholder (`data-thinking`) where the answer will go."
+    },
+    {
+      "from": 56,
+      "to": 58,
+      "text": "Keeps a reference to that bubble, fades it in and scrolls it into view, smoothly only when motion is enabled."
+    },
+    {
+      "from": 59,
+      "to": 60,
+      "text": "Every 900 ms the placeholder cycles to the next status message, so a slow model call still looks alive. The `if (t)` check leaves a bubble alone once its placeholder has been replaced."
+    },
+    {
+      "from": 61,
+      "to": 62,
+      "text": "Sends the question and, in parallel, waits at least 700 ms (0 with reduced motion), so a fast deterministic answer doesn't make the thinking state flash by. `[r]` keeps only the API result."
+    },
+    {
+      "from": 63,
+      "to": 64,
+      "text": "Stops the ticker. `d` is the engine's decision, which is `null` when the question wasn't about a specific incident or customer."
+    },
+    {
+      "from": 65,
+      "to": 68,
+      "text": "Replaces the placeholder. When there is a decision it comes **first**, as its own card: the big score, the subject ID, a severity badge, the recommended action and a `deterministic` tag. The reader sees the rule engine's verdict before any generated text."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "The explanation, rendered through `markdown`: it escapes everything first, then allows only bold, code and bullet lists, and turns IDs such as `INC-0001` into clickable reference buttons."
+    },
+    {
+      "from": 70,
+      "to": 71,
+      "text": "A footer saying who wrote the explanation (`OpenAI` with the model name, or `Deterministic analyst`) and listing the source records as `button.ref` chips. A global click listener in `main.js` opens the matching drawer when one is clicked."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "An optional note, for example that OpenAI was unavailable and the deterministic analyst answered instead."
+    },
+    {
+      "from": 73,
+      "to": 74,
+      "text": "Reveals the decision card, each part of the answer and the footer one after another, 110 ms apart."
+    },
+    {
+      "from": 75,
+      "to": 78,
+      "text": "On failure (for example a 429 from the endpoint's rate limit) stops the ticker and shows the error inside the bubble."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Scrolls again, because the finished answer is usually taller than the placeholder. Line 78 closes `ask`."
+    },
+    {
+      "from": 81,
+      "to": 81,
+      "text": "Exposes `ask` on the page context. When an incident drawer's 'Ask analyst' button is pressed while this page is open, main.js hands the question straight to it, so the conversation so far stays on screen. The hook disappears with the context when the page is left."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "Submitting the form (Enter or the Ask button) calls `preventDefault()` to stop a full page reload, then asks the typed question."
+    },
+    {
+      "from": 84,
+      "to": 87,
+      "text": "A click on a suggestion chip asks that question."
+    },
+    {
+      "from": 88,
+      "to": 89,
+      "text": "If a question was handed over, takes it, clears the slot so it runs only once, and asks it right away. Otherwise focuses the input, with `preventScroll` so the page doesn't jump."
+    },
+    {
+      "from": 90,
+      "to": 91,
+      "text": "Closes `render` and the page object."
+    }
+  ]
+}

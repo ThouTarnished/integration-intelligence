@@ -1,0 +1,87 @@
+{
+  "path": "web/js/core/live.js",
+  "lines": 42,
+  "summary": "The Server-Sent Events client. It opens one `EventSource` to `/api/v1/stream` (served by `LiveHub.stream()` in `iip/live.py`), re-publishes each named server message on the bus as `live:event`, `live:incident`, `live:traffic` or `live:reset`, and tracks the connection state (`connecting`, `live`, `offline`) that `main.js` shows in the rail. Reconnecting is left to the browser, paced by the `retry: 3000` line the server sends first. It also reconnects when the browser gives up, and announces `live:resync` after every reconnect so pages can refetch what they missed.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 4,
+      "text": "Header comment: the browser's `EventSource` retries a dropped connection by itself (the server's first message, `retry: 3000`, sets the delay), but it gives up for good when a retry receives an error response, for example a proxy's 502 while the server restarts. This module handles that case with growing delays, and announces `live:resync` after every reconnect, because messages sent while the connection was down are lost."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "Imports the bus that live messages are re-published on."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "Shared, exported state: `state` is `connecting`, `live` or `offline`. `main.js` and the overview read it to paint their connection dots."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "`opened` turns true after the first successful connection, so every later open counts as a reconnect. `retryDelay` is the wait before the next manual reconnect: 2 seconds, doubling up to 30."
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "text": "`liveDotClass()` maps a state to the dot's classes, shared by the rail (main.js) and the overview's live-feed panel: no modifier when live (an accent pulse), `warn` while reconnecting, `off` when offline."
+    },
+    {
+      "from": 13,
+      "to": 17,
+      "text": "`setState()` ignores repeats of the current state, so listeners only hear about real changes; otherwise it stores the new state and announces it as `live:state` on the bus."
+    },
+    {
+      "from": 19,
+      "to": 20,
+      "text": "`connectLive()` opens the stream: `main()` calls it at startup, and it calls itself again after the browser has given up. `EventSource` is the browser's built-in Server-Sent Events client: one long-lived GET request on which the server pushes named messages."
+    },
+    {
+      "from": 21,
+      "to": 26,
+      "text": "`onopen` fires on the first connection and after every reconnect. A reconnect emits `live:resync`, so pages refetch whatever they missed (the overview's counters, the Incidents badge). A successful open also resets the retry delay and marks the connection live."
+    },
+    {
+      "from": 27,
+      "to": 28,
+      "text": "`onerror` fires while the browser is retrying on its own (`readyState` is still `CONNECTING`), which the rail shows as 'Reconnecting'..."
+    },
+    {
+      "from": 29,
+      "to": 31,
+      "text": "...and when it has given up for good (`CLOSED`). The rail then shows 'Offline' and a fresh `connectLive()` is scheduled, waiting twice as long each time up to 30 seconds. Before, the app stayed offline until the page was reloaded."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Closes the error handler."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "The four message names the server publishes (the `event:` line written by `LiveHub.publish`): new events, created or updated incidents, traffic on/off, and demo resets."
+    },
+    {
+      "from": 34,
+      "to": 34,
+      "text": "Named SSE messages reach only listeners registered for that name (not `onmessage`), hence one listener per name."
+    },
+    {
+      "from": 35,
+      "to": 36,
+      "text": "Parses the JSON payload and re-emits it on the bus with a `live:` prefix (`live:event`, `live:incident`, `live:traffic`, `live:reset`), so pages subscribe without knowing about SSE."
+    },
+    {
+      "from": 37,
+      "to": 39,
+      "text": "A message that is not valid JSON is logged and skipped instead of throwing inside the listener."
+    },
+    {
+      "from": 40,
+      "to": 42,
+      "text": "Close the listener, the loop and the function."
+    }
+  ]
+}

@@ -1,0 +1,467 @@
+{
+  "path": "scripts/build_walkthrough.py",
+  "lines": 194,
+  "summary": "The build tool for this very walkthrough. It reads every source file listed in `GROUPS`, syntax-highlights it with Pygments, pairs each line range with its explanation from `docs/walkthrough/annotations/*.json`, and injects the result as JSON into `docs/walkthrough/template.html` to produce `docs/CODE_WALKTHROUGH.html`. Its validator refuses to build unless every non-blank line is explained exactly once and each annotation's line count still matches its file, so explanations can't silently go stale.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Docstring first line: what the script builds. `main` later reuses this line as the `--help` description."
+    },
+    {
+      "from": 3,
+      "to": 6,
+      "text": "Documents the annotation naming rule (each `/` in the path becomes `__`) and the JSON shape: the source path, its line count, a summary, and notes covering line ranges."
+    },
+    {
+      "from": 8,
+      "to": 9,
+      "text": "States the guarantee the validator enforces: complete, non-overlapping coverage plus a matching line count."
+    },
+    {
+      "from": 11,
+      "to": 13,
+      "text": "Usage: with no arguments, validate everything and build the page; with `--check FILE..`, only validate the given files, which is handy while writing annotations. Line 13 closes the docstring."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Makes annotations lazy, so hints such as `dict | None` are never evaluated at runtime."
+    },
+    {
+      "from": 16,
+      "to": 18,
+      "text": "Standard-library imports: `argparse` for the command line, `html` for escaping code, `json` for the annotations and the page payload."
+    },
+    {
+      "from": 19,
+      "to": 21,
+      "text": "`sys` for the exit code, `date` for the generated-on stamp, and `Path` for file handling."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "`get_lexer_for_filename` picks a Pygments lexer from a file name (Python for `.py`, Docker for `Dockerfile`, and so on); `TextLexer` is the plain-text fallback."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Pygments token types, which the script maps onto a handful of CSS classes."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "`ClassNotFound` is the exception Pygments raises when no lexer matches a file name."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "The project root: this file's absolute path, up two levels (past `scripts/`)."
+    },
+    {
+      "from": 28,
+      "to": 30,
+      "text": "Where the annotations live, the HTML template to fill, and the page to generate."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "`GROUPS` defines the walkthrough's sidebar as an ordered list of (section name, files). It also decides which files a full build must validate."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "Entry points and configuration first, so a reader starts with the basics."
+    },
+    {
+      "from": 34,
+      "to": 35,
+      "text": "The data layer and the rule engine."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "App wiring, the live hub, observability and the AI analyst."
+    },
+    {
+      "from": 37,
+      "to": 39,
+      "text": "Every API route module."
+    },
+    {
+      "from": 40,
+      "to": 41,
+      "text": "The frontend's HTML entry point and its core JavaScript modules."
+    },
+    {
+      "from": 42,
+      "to": 43,
+      "text": "Reusable UI components."
+    },
+    {
+      "from": 44,
+      "to": 46,
+      "text": "The hand-written chart modules."
+    },
+    {
+      "from": 47,
+      "to": 49,
+      "text": "One module per dashboard page."
+    },
+    {
+      "from": 50,
+      "to": 51,
+      "text": "Stylesheets and the favicon."
+    },
+    {
+      "from": 52,
+      "to": 53,
+      "text": "The test suite."
+    },
+    {
+      "from": 54,
+      "to": 56,
+      "text": "Scripts, packaging and delivery configuration, including this script itself."
+    },
+    {
+      "from": 57,
+      "to": 57,
+      "text": "Closes the `GROUPS` list."
+    },
+    {
+      "from": 58,
+      "to": 59,
+      "text": "Maps a file extension to the language label shown in the UI. `Path(\".env.example\").suffix` is `.example`, hence the `Env` entry; files without a suffix (Dockerfile, .gitignore) get `Config` from `build_file`."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Comment introducing the next table: a few broad token classes keep the stylesheet small, and order matters."
+    },
+    {
+      "from": 61,
+      "to": 64,
+      "text": "Pairs of (Pygments token type, short CSS class). The first matching entry wins, so specific types must come before general ones: in Pygments, `String` and `Number` are sub-types of `Literal`, which is why they are listed before the catch-all `(Literal, \"num\")`."
+    },
+    {
+      "from": 67,
+      "to": 68,
+      "text": "Maps a source path to its annotation file; for example `tests/test_api.py` becomes `tests__test_api.py.json`."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "Flattens `GROUPS` into one ordered list of every file in the walkthrough."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "Highlights a whole file and returns one HTML string per source line."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "Docstring: tokens become per-line HTML, and no `<span>` may cross a line break, so each line can be rendered on its own."
+    },
+    {
+      "from": 77,
+      "to": 78,
+      "text": "Chooses a lexer from the file name. `stripnl=False` and `ensurenl=False` stop Pygments from trimming leading and trailing newlines or adding a final one, so the output lines stay exactly aligned with the file's line numbers."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "No lexer for this name (the comment cites `.gitignore` and `.env.example`): fall back to plain text with the same newline settings."
+    },
+    {
+      "from": 81,
+      "to": 81,
+      "text": "`lines` collects finished HTML lines; `current` collects the fragments of the line being built."
+    },
+    {
+      "from": 82,
+      "to": 82,
+      "text": "Iterates over (token type, text) pairs in source order."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "Finds the CSS class: the first table entry whose type contains this token type (`ttype in t` is true for `t` itself and all its sub-types). Plain `Token.Text`, such as whitespace, gets no class."
+    },
+    {
+      "from": 84,
+      "to": 87,
+      "text": "Splits the token's text on newlines. Every piece after the first means a newline was crossed, so the current line is finished and a new one begins; this is how multi-line tokens such as docstrings are spread across rows."
+    },
+    {
+      "from": 88,
+      "to": 90,
+      "text": "Non-empty pieces are HTML-escaped (so a `<` in the code can't break the page) and wrapped in a span carrying the token's class, or left bare when unclassed."
+    },
+    {
+      "from": 91,
+      "to": 91,
+      "text": "Flushes the last line, which has no newline after it to close it."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "Trims the list to the file's line count, discarding any extra empty line a lexer might emit."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "Checks one file's annotation and returns the list of problems together with the parsed annotation."
+    },
+    {
+      "from": 96,
+      "to": 96,
+      "text": "Docstring: an empty problem list means every line is explained."
+    },
+    {
+      "from": 97,
+      "to": 99,
+      "text": "A missing source file is reported straight away."
+    },
+    {
+      "from": 100,
+      "to": 101,
+      "text": "So is a missing annotation file; the message shows the expected annotation path relative to the project root."
+    },
+    {
+      "from": 102,
+      "to": 103,
+      "text": "Reads the source and splits it into lines. `read_text` uses universal-newline mode, so Windows CRLF line endings arrive as plain newlines."
+    },
+    {
+      "from": 104,
+      "to": 105,
+      "text": "A file ending in a newline yields one empty string after the split; dropping it makes the count match what an editor shows."
+    },
+    {
+      "from": 106,
+      "to": 109,
+      "text": "Parses the annotation JSON; a syntax error becomes a reported problem instead of a crash."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "Collects every problem, so one run reports them all."
+    },
+    {
+      "from": 111,
+      "to": 112,
+      "text": "Staleness check: the recorded `lines` must equal the file's current line count. If code was added or removed, the annotation has to be revisited."
+    },
+    {
+      "from": 113,
+      "to": 114,
+      "text": "The summary must exist and not be blank."
+    },
+    {
+      "from": 115,
+      "to": 116,
+      "text": "`covered` maps each line number to the note that covers it; `last_end` remembers where the previous note ended."
+    },
+    {
+      "from": 117,
+      "to": 118,
+      "text": "Loops over the notes, reading `from`, `to` and the trimmed `text`."
+    },
+    {
+      "from": 119,
+      "to": 121,
+      "text": "A range must be two integers with `from` no greater than `to`; otherwise it is reported and skipped."
+    },
+    {
+      "from": 122,
+      "to": 123,
+      "text": "A note starting at or before the previous note's end either overlaps it or is out of order; both are reported."
+    },
+    {
+      "from": 124,
+      "to": 125,
+      "text": "A note may not run past the file's last line."
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "text": "Every note needs non-empty text."
+    },
+    {
+      "from": 128,
+      "to": 128,
+      "text": "Advances `last_end`; `max` stops it moving backwards after an out-of-order note."
+    },
+    {
+      "from": 129,
+      "to": 130,
+      "text": "Marks every line in the note's range as covered."
+    },
+    {
+      "from": 131,
+      "to": 131,
+      "text": "Lists every non-blank line no note covers. Blank lines (empty or whitespace-only) are exempt."
+    },
+    {
+      "from": 132,
+      "to": 133,
+      "text": "If any lines are missing, compresses them into ranges for a readable message, starting the first run at the first missing line."
+    },
+    {
+      "from": 134,
+      "to": 136,
+      "text": "Extends the current run while the line numbers are consecutive."
+    },
+    {
+      "from": 137,
+      "to": 140,
+      "text": "Otherwise saves the finished run and starts a new one; after the loop, the last run is saved too."
+    },
+    {
+      "from": 141,
+      "to": 141,
+      "text": "Reports the gaps as text, for example `unexplained lines 5-9, 12`."
+    },
+    {
+      "from": 142,
+      "to": 142,
+      "text": "Returns the problems together with the parsed annotation."
+    },
+    {
+      "from": 145,
+      "to": 145,
+      "text": "Turns one validated file into the data structure the page renders."
+    },
+    {
+      "from": 146,
+      "to": 147,
+      "text": "Reads and highlights the file."
+    },
+    {
+      "from": 148,
+      "to": 149,
+      "text": "Drops the empty last element created by the file's final newline."
+    },
+    {
+      "from": 150,
+      "to": 150,
+      "text": "Sorts the notes by starting line."
+    },
+    {
+      "from": 151,
+      "to": 151,
+      "text": "One row will be built per note."
+    },
+    {
+      "from": 152,
+      "to": 153,
+      "text": "The first row always starts at line 1, so anything before the first note is still displayed."
+    },
+    {
+      "from": 154,
+      "to": 154,
+      "text": "A row's code runs to the line before the next note starts (or to the end of the file), so blank lines between notes attach to the row above and no line is lost."
+    },
+    {
+      "from": 155,
+      "to": 156,
+      "text": "Stores the note's text and range, the first displayed line number and the highlighted code lines for the row."
+    },
+    {
+      "from": 157,
+      "to": 158,
+      "text": "Returns the language label (`Config` when the extension isn't in `LANGUAGES`), the line count, the summary and the rows."
+    },
+    {
+      "from": 161,
+      "to": 161,
+      "text": "The command-line entry point; it returns the process exit code."
+    },
+    {
+      "from": 162,
+      "to": 162,
+      "text": "Creates the argument parser, reusing the docstring's first line as its description."
+    },
+    {
+      "from": 163,
+      "to": 163,
+      "text": "`--check` accepts zero or more file paths (`nargs=\"*\"`). When the flag is absent, `args.check` is `None`; when given without files, it is an empty list."
+    },
+    {
+      "from": 164,
+      "to": 164,
+      "text": "Parses the command line."
+    },
+    {
+      "from": 165,
+      "to": 165,
+      "text": "Validates the named files, or every file in `GROUPS` when none are named, so `--check` on its own validates everything without building."
+    },
+    {
+      "from": 166,
+      "to": 166,
+      "text": "Accumulators for problems and built files."
+    },
+    {
+      "from": 167,
+      "to": 169,
+      "text": "Validates each target, collecting all problems."
+    },
+    {
+      "from": 170,
+      "to": 171,
+      "text": "Builds a file only when it is valid and this is a full build (no `--check` flag at all)."
+    },
+    {
+      "from": 172,
+      "to": 175,
+      "text": "Any problem prints the list and a count, then returns 1. The non-zero exit code makes scripts and CI treat the run as failed, and no page is written."
+    },
+    {
+      "from": 176,
+      "to": 178,
+      "text": "In check mode, success prints `OK` with the number of files and returns 0."
+    },
+    {
+      "from": 179,
+      "to": 180,
+      "text": "Starts the payload that gets embedded in the page; `generated` records today's date as the build stamp."
+    },
+    {
+      "from": 181,
+      "to": 181,
+      "text": "The sidebar groups, keeping only the files that were actually built."
+    },
+    {
+      "from": 182,
+      "to": 183,
+      "text": "Every built file's data (language, line count, summary and rows), keyed by path; the closing brace ends the payload."
+    },
+    {
+      "from": 184,
+      "to": 185,
+      "text": "Fills the template by replacing the placeholder `/*__WALKTHROUGH_DATA__*/null`, which sits inside a `<script type=\"application/json\">` tag, with the payload JSON. `ensure_ascii=False` keeps characters such as arrows readable, and replacing `</` with `<\\/` stops a `</script>` inside some source code from closing the tag early (`\\/` is a valid JSON escape for `/`)."
+    },
+    {
+      "from": 186,
+      "to": 186,
+      "text": "Writes the finished HTML page. `newline=\"\\n\"` keeps Unix line endings on every OS (in text mode Windows would turn each `\\n` into `\\r\\n`), so a rebuild produces the same bytes wherever it runs."
+    },
+    {
+      "from": 187,
+      "to": 189,
+      "text": "Prints a summary: files written, total lines and total notes."
+    },
+    {
+      "from": 190,
+      "to": 190,
+      "text": "Success exit code."
+    },
+    {
+      "from": 193,
+      "to": 194,
+      "text": "Runs `main` only when executed as a script, passing its return value to `sys.exit` so the shell sees the exit code."
+    }
+  ]
+}

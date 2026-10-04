@@ -1,0 +1,302 @@
+{
+  "path": "tests/test_api.py",
+  "lines": 106,
+  "summary": "End-to-end tests of the REST API through FastAPI's `TestClient` (the session-wide `client` fixture from `conftest.py`). They pin down the HTTP contract an integrating bank would rely on: what each status code means (201, 401, 404, 422), that ingestion normalizes, scores and explains, and that every read endpoint returns the shape the dashboard in `web/` expects. All tests share one seeded database, so they assert properties (counts above a floor, valid levels) rather than exact random values. The last two tests pin fixes from the code review: timestamp range checks, blank locations and malformed IDs.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Docstring listing what this file covers: the API's public contract."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Imports the shared header and sample payload from `conftest.py`. This works because `pyproject.toml` adds `tests` to `pythonpath`; pytest has already imported conftest under that name, so the same module (and the same temp database) is reused."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "Checks that the app seeded itself when the session's `client` started against an empty database (the lifespan hook in `iip/app.py`)."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "The seeder always creates exactly `USER_COUNT`, 25 customers."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "Asks for up to 500 events but checks `total`, which counts every matching row regardless of page size. The fixed-seed data (about 476 events) comfortably clears the 300 floor."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "The seeded attack scenarios must have produced at least one correlated incident."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "Write endpoints are protected by `require_api_key`, part of the `WRITE` dependency list in `routes/deps.py`."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "No `X-API-Key` header at all: rejected with 401 Unauthorized before the event is processed."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "A wrong key is rejected the same way. The server compares keys with `secrets.compare_digest`, a constant-time comparison, so response timing can't reveal how much of a guess was right."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "Shows that Pydantic (`schemas.EventIn`) rejects malformed input with 422 before it reaches the pipeline, while a well-formed but unknown reference gets 404."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "`nope` isn't an IP address; the `_valid_ip` validator, built on Python's `ipaddress` module, rejects it."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "`x` isn't one of the four allowed `event_type` values."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "`bob` doesn't match the required `^USR-\\d+$` pattern."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "`USR-9999` passes validation (the shape is right), but no such customer exists: `process_event` raises `LookupError`, which the route turns into 404 Not Found. This separates a badly shaped request (422) from a valid request for a missing resource (404)."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "The main happy-path test: one event goes through normalization, scoring and storage."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Starts from `EVENT` and changes three things: a messy lowercase location padded with spaces, a device ID never seen before, and a suspicious IP reputation."
+    },
+    {
+      "from": 25,
+      "to": 26,
+      "text": "Posts with the valid key. A successful ingest answers 201 Created, set by `status_code=201` on the route."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "Parses the JSON body, which holds `event` (the stored record), `risk` (the assessment) and `incident_id`."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "The padded `london` was trimmed and mapped to the canonical label `London, UK`, proving normalization ran before storage."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "`<=` on sets means is-a-subset-of: all three expected signals must be present, and others may appear too. DEV-7777 is unknown (New device), London isn't USR-1001's home city (Abu Dhabi in the seed data), and the reputation is suspicious (Suspicious IP)."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "Contributions are sorted heaviest first, so the top one must be Suspicious IP (+30). Impossible travel (+40) can't outrank it, because travel is never judged on a flagged IP."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "Every response carries the headers added by `RequestContextMiddleware`: a request ID for tracing and the server-side processing time, formatted like `3.2ms`."
+    },
+    {
+      "from": 32,
+      "to": 33,
+      "text": "Reads the new event back by its public ID (such as `EVT-00477`) and checks the owner, proving the event was really stored and the ID format round-trips."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Unknown or malformed IDs must produce a clean 404, never a 500 crash."
+    },
+    {
+      "from": 37,
+      "to": 38,
+      "text": "Loops over four paths: an event ID that is well-formed but missing, a malformed one (`garbage`, which `parse_ref` turns into `None`), a missing incident and a missing user. Each must answer 404."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "Tests the query parameters of `GET /api/v1/events`."
+    },
+    {
+      "from": 42,
+      "to": 43,
+      "text": "Filtering by level is case-insensitive (the route upper-cases `critical`): every returned item must be CRITICAL, and `limit=5` caps the page size."
+    },
+    {
+      "from": 44,
+      "to": 45,
+      "text": "Free-text search `q` also matches customer names: `fenwick` finds Ayla Fenwick, who is always USR-1001 because the seeder pairs the `FIRST` and `LAST` name lists in order. Every hit must belong to that customer."
+    },
+    {
+      "from": 46,
+      "to": 47,
+      "text": "`sort=asc` returns the oldest events first. Timestamps are ISO-8601 strings, which sort chronologically even when compared as plain text."
+    },
+    {
+      "from": 50,
+      "to": 51,
+      "text": "Fetches the customer list behind the Users page."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "`dict.keys()` returns a set-like view, so `<=` checks that each user row carries the computed fields the dashboard needs."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "Requests a profile with a lowercase ID (`usr-1004`); the route upper-cases it, and the profile must include devices and a risk history."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "The current-risk endpoint must return one of the four valid levels. The exact level depends on seeded random activity, so the test checks the contract rather than a specific value."
+    },
+    {
+      "from": 58,
+      "to": 59,
+      "text": "Picks the first open incident (the route upper-cases `open`). The seeder always adds attacks from the last 15-120 minutes and only moves incidents older than a day out of OPEN, so an open one is guaranteed."
+    },
+    {
+      "from": 60,
+      "to": 61,
+      "text": "The detail view must include a timeline of correlated events, a generated title and a list of MITRE ATT&CK techniques."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "Builds the incident's URL once for the three PATCH calls below."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "Changing status is a write, so it needs the API key: without it, 401. The body is valid, so missing authentication is the only possible reason for failure."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "With the key but an invalid status: 422, because `StatusIn` only allows OPEN, INVESTIGATING or RESOLVED. Each of these calls isolates exactly one failure mode."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "A valid transition succeeds, and the response already reflects the new status."
+    },
+    {
+      "from": 68,
+      "to": 69,
+      "text": "Fetches the aggregate payload behind the Overview screen."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "Events exist, and there is exactly one bucket per day for the last seven days."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "24 hourly buckets for the last day, and 21 histogram buckets for scores 0, 5, 10 ... 100. Every weight is a multiple of 5, so every possible score lands on one of those buckets."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "The threat map needs coordinates: cities must be present and each must carry `lat` (cities without coordinates are skipped by `geo_overview`)."
+    },
+    {
+      "from": 75,
+      "to": 76,
+      "text": "The rulebook endpoint lists every signal (11 today); `>= 10` tolerates future additions."
+    },
+    {
+      "from": 77,
+      "to": 78,
+      "text": "The what-if scorer returns 45 for New device + Suspicious IP, the same number `test_rules.py` gets from the engine directly, showing the API runs the same code. No key is needed because this dry run stores nothing."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "Unknown signal names are rejected with 422 by `EvaluateIn`'s validator before they reach the engine."
+    },
+    {
+      "from": 82,
+      "to": 83,
+      "text": "Fetches the integration health endpoint."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "`CONNECTED` means the database answered a `select 1`. `deterministic` proves that `conftest.py` really removed `OPENAI_API_KEY`, so no test can reach the real OpenAI API."
+    },
+    {
+      "from": 85,
+      "to": 85,
+      "text": "Collects every path with at least one operation that needs the key. The catalog is generated from the OpenAPI schema, where `require_api_key` shows up as an `x-api-key` header parameter."
+    },
+    {
+      "from": 86,
+      "to": 86,
+      "text": "Both ingestion and incident triage must be listed as secured. If someone removed `WRITE` from either route, this assertion would catch it."
+    },
+    {
+      "from": 87,
+      "to": 88,
+      "text": "The metrics endpoint must have counted requests (the global counter includes every API call made so far in the session) and must return a 30-minute throughput series, one value per minute."
+    },
+    {
+      "from": 91,
+      "to": 92,
+      "text": "Fetches the dashboard page served at `/`."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "The page loads, and because `IIP_DEMO_MODE` defaults to true, the server replaced the `__IIP_API_KEY__` placeholder in `index.html` with the real key (`test-key`), as the inline comment says."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "FastAPI's automatic Swagger UI at `/docs` must be available."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "The favicon route serves the SVG icon, so browsers don't log a 404 for it."
+    },
+    {
+      "from": 98,
+      "to": 98,
+      "text": "Timestamps the engine can't use are rejected with a 422, never accepted."
+    },
+    {
+      "from": 99,
+      "to": 100,
+      "text": "A far-future date (which would keep the customer's incident open to every later event), a year-1 date with an offset (which used to overflow into a 500) and a date before 2000 are all refused."
+    },
+    {
+      "from": 103,
+      "to": 104,
+      "text": "Client mistakes stay client errors: a location of only spaces is now trimmed before the length check, so it fails validation instead of being stored empty."
+    },
+    {
+      "from": 105,
+      "to": 106,
+      "text": "A superscript digit (which `isdigit()` accepts but `int()` rejects) and a 20-digit number (which overflows SQLite) are a plain 404, not a server error."
+    }
+  ]
+}

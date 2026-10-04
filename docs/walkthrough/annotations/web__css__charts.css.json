@@ -1,0 +1,312 @@
+{
+  "path": "web/css/charts.css",
+  "lines": 79,
+  "summary": "Styles for the hand-built SVG, canvas and HTML charts: shared axis labels, the score histogram, horizontal bar lists, the semicircle risk gauge, the score waterfall, and the dot-matrix world map with its arcs, city markers, legend and stats strip. Most colours come from `var(--lvl)` on elements that carry a `lvl-` class; that works because these are CSS rules, whereas SVG presentation attributes don't reliably accept `var()`, which is why charts/core.js resolves tokens to real colours when it writes attributes.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Section comment, then the axis labels of every SVG chart (the chart JS gives them `class=\"axis\"`): 10px mono in the faintest grey. SVG text is coloured with `fill`, not `color`."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "Chart containers span the full panel width and keep at least 60px of height before the chart JS has drawn into them."
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "text": "Section comment, then the score histogram bars. Each `rect` has a `lvl-` class, so `fill: var(--lvl)` colours it by the level its score falls in; bars sit at 88% opacity with an opacity transition."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "The hovered bar becomes fully opaque while the tooltip shows its count."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "The histogram's baseline (the x-axis line) uses the stronger hairline colour."
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "text": "The level thresholds (30, 60 and 80) are faint dashed vertical lines (`stroke-dasharray: 2 3` means 2px dash, 3px gap) labelled with small mono numbers, so you can see where LOW becomes MEDIUM and so on."
+    },
+    {
+      "from": 12,
+      "to": 13,
+      "text": "Section comment, then the horizontal bar list (Top signals, a customer's locations): a grid of rows 11px apart."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Each bar row is a two-column grid (a flexible label column and a 34px value column) with named areas: the first row is `\"label value\"` and the second `\"track track\"`, so the bar spans the full width underneath."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "The label cell: a flex row of text and an optional extra (a MITRE chip or \"home\" tag) in secondary grey; `min-width: 0` allows its text to truncate."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "The label text is cut off with an ellipsis instead of wrapping, using the standard trio of `overflow: hidden`, `text-overflow: ellipsis` and `white-space: nowrap`."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "The 4px rounded track on `--s3`, placed in the `track` area and clipping its fill."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "The fill bar: neutral `--t3` grey by default, with its width set inline as a share of the largest value, and `transform-origin: left` so bars.js can grow it from 0 to full with `scaleX`."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "Only MEDIUM and HIGH bars switch to their risk colour (the only levels any caller passes; a CRITICAL variant nothing produced was removed). LOW and unlevelled bars stay grey, so colour picks out only what is risky."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "The value cell: right-aligned medium-weight mono in white."
+    },
+    {
+      "from": 22,
+      "to": 23,
+      "text": "Section comment, then the gauge wrapper: up to 260px wide and centred, with `position: relative` so the number readout can be overlaid on the SVG."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "The gauge SVG scales with its wrapper (`height: auto` keeps the 220×124 viewBox proportions), and `overflow: visible` stops the browser clipping anything past the viewBox, such as the \"0\" and \"100\" tick labels and the arc's glow."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "The background track: the full semicircle in `--s3`, 14 units thick with round caps."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "Four faint zone arcs (13% opacity), one per level and each coloured by its own `lvl-` class, show where LOW, MEDIUM, HIGH and CRITICAL begin on the dial."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "The value arc: the same thickness with round caps, coloured `var(--lvl)` and given a glow by a `drop-shadow` filter mixing 45% of the level colour. gauge.js reveals it with `stroke-dasharray` and swaps its `lvl-` class as the animated value crosses each threshold, so the arc changes colour as it climbs."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "The knob riding at the end of the arc: a dark `--s1` centre with a 3-unit ring in the level colour."
+    },
+    {
+      "from": 29,
+      "to": 30,
+      "text": "The tick marks at 0, 30, 60, 80 and 100 are thin faint strokes, and their numbers are 9.5px faint mono."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "The readout is absolutely positioned across the bottom of the gauge, so the number sits inside the semicircle."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "The big score: 46px Geist with tight negative letter-spacing for a display-style number (it also has `.num`, so its digits keep a fixed width while it counts up)."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "The caption under the number (\"risk score\", \"peak score\"): small uppercase letter-spaced mono in `--t3`."
+    },
+    {
+      "from": 35,
+      "to": 37,
+      "text": "Section comment, then `.waterfall` (the whole chart) and `.wf-rows` (the list of signal rows), both simple grids with 4px gaps."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "Each row is a three-column grid: the signal label (at least 150px), the bar track (the widest, flexible column) and a fixed 92px weight column, with a 38px minimum height."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "The label cell stacks its two lines with `display: grid`; `min-width: 0` lets the detail text truncate."
+    },
+    {
+      "from": 40,
+      "to": 41,
+      "text": "The signal name is medium-weight 12.5px; the detail line under it is small `--t3` text cut off with an ellipsis."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "The track: an 18px rounded strip with an inset hairline (`box-shadow`) and a `repeating-linear-gradient` that draws a 1px `--s2` gridline every 10% of the width as a scale; `position: relative` lets the bar be placed inside it."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "A step bar: absolutely positioned 3px in from the top and bottom and coloured `var(--lvl)`, with `left` and `width` set inline by waterfall.js so it starts where the running total stood and spans that signal's weight; these floating steps are what make it a waterfall. `transform-origin: left` lets the JS grow it in from the left."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "Negative (risk-reducing) bars grow from the right, since they subtract, and are drawn as slate diagonal hatching (a 135° `repeating-linear-gradient` of 3px stripes and 3px gaps) with a slate outline, so they differ from positive bars in pattern as well as colour."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "The weight cell (such as \"+30\" plus an optional MITRE chip): a right-aligned flex row in bold white mono."
+    },
+    {
+      "from": 46,
+      "to": 46,
+      "text": "Negative weights are slate instead of white."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "The final \"Risk score\" row is separated by a dashed line above it, like the total line under a written sum."
+    },
+    {
+      "from": 48,
+      "to": 48,
+      "text": "The final score is 20px and takes the level colour of the result, because that cell carries its own `lvl-` class."
+    },
+    {
+      "from": 50,
+      "to": 51,
+      "text": "Section comment, then the map container: full width with `position: relative` so its layers can stack; worldmap.js sets its height from the map's aspect ratio."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "The canvas (the dot-matrix land) and the SVG overlay (cities, arcs, pings) are both absolutely positioned to fill the container, so the overlay sits exactly on top of the canvas."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Inline SVGs clip to their own box by default; `overflow: visible` lets pulses, labels and arcs near the edges draw beyond it."
+    },
+    {
+      "from": 54,
+      "to": 54,
+      "text": "Travel arcs: unfilled curves, 1.3 units wide with round ends."
+    },
+    {
+      "from": 55,
+      "to": 57,
+      "text": "Arc types: `.plausible` trips are slate at 55% opacity, `.hostile` ones (origin flagged by IP reputation, speed not judged) are orange and dashed at 70%, and `.impossible` ones are thicker critical red with a red `drop-shadow` glow, so the most serious arcs stand out most."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "A hovered arc thickens to 2.6 and becomes fully opaque; this rule comes after the type rules with equal specificity, so it overrides their width and opacity."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "The \"comet\" that worldmap.js sends along up to three of the most recent impossible-travel arcs: a white dot with a red glow."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Each city is an SVG `g` group with a pointer cursor (clicking opens Events filtered by that city). SVG elements scale around the SVG's own origin by default, so `transform-box: fill-box` with `transform-origin: center` makes the entrance `scale` animation grow each city from its own centre instead of sweeping in from the top-left corner."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "The city dot is filled with its level colour and outlined with a 1.5-unit `--bg` stroke that separates it from the dots and arcs beneath."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "Low-risk cities use plain light grey (`--t2`) instead of slate, keeping colour for cities that carry real risk."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "An invisible 10px-radius hit circle around each city that enlarges the pointer target. `fill: transparent` still counts as painted for SVG pointer events (`fill: none` would not), so it catches hovers and clicks."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "City labels in small mono. `paint-order: stroke` draws the 3px `--bg`-coloured stroke before the fill, so the stroke becomes a dark halo around each letter instead of eating into it, keeping labels legible over dots and arcs."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Hovering a city outlines its dot in white."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "The sonar ring around high-risk cities (peak score of 60 or more): an unfilled circle in the level colour looping the `mappulse` animation every 2.4s, with `transform-box: fill-box` so it scales around its own centre."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "The one-off ripple drawn when a live event arrives; worldmap.js animates its radius and opacity in JS and removes it afterwards, so only its stroke is styled here."
+    },
+    {
+      "from": 68,
+      "to": 68,
+      "text": "The `mappulse` keyframes grow the ring to 4.2 times its size while fading it from 90% opacity to invisible."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "Space between the map and the legend row below it."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "The stats strip under the map: five equal columns with 1px gaps on a container whose background is the hairline colour. The cells cover that background, so only the gaps show through as thin dividers, a neat way to get internal borders without bordering each cell."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "Each stat cell: padding on an `--s1` background, which hides the container's hairline colour everywhere except the gaps."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "The stat label: block-level, tiny uppercase mono in the faintest grey, cut off with an ellipsis if the cell is narrow."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "The stat value: 17px medium-weight mono."
+    },
+    {
+      "from": 74,
+      "to": 74,
+      "text": "Only HIGH and CRITICAL values (flagged-IP origins, impossible routes, the fastest implied speed) take their risk colour."
+    },
+    {
+      "from": 75,
+      "to": 76,
+      "text": "The legend: a wrapping flex row in small `--t3` text, where each item is an inline-flex pair of swatch and label 7px apart."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "A line swatch: an 18px-wide, zero-height element whose 1.6px top border is the visible line."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "The swatches copy the arc styles: `.plausible` slate, `.hostile` orange and dashed, `.impossible` red."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "A 7px round swatch for \"Risky city\"; its colour (critical red) is set inline by `MAP_LEGEND()`."
+    }
+  ]
+}

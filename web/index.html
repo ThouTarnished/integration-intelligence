@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-motion="on">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IIP · Integration Intelligence</title>
+  <meta name="description" content="Identity & risk-events integration for the fictional NovaBank: explainable scoring, incident correlation and a live threat dashboard.">
+  <meta name="iip-api-key" content="__IIP_API_KEY__">
+  <meta name="theme-color" content="#0a0b0d">
+  <link rel="icon" href="/static/assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap">
+  <link rel="stylesheet" href="/static/css/tokens.css">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/charts.css">
+  <link rel="stylesheet" href="/static/css/pages.css">
+  <!-- anime.js v4 (MIT), vendored so the demo works offline. Exposes window.anime. -->
+  <script src="/static/vendor/anime.umd.min.js" defer></script>
+  <script type="module" src="/static/js/main.js"></script>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+  <div class="top-progress" aria-hidden="true"><i></i></div>
+
+  <div id="boot" class="boot" hidden>
+    <div class="boot-inner">
+      <div class="boot-logo">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path class="trace" d="M7 11h8l3 5-3 5H7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="trace" d="M11 16h7" stroke-width="1.6" stroke-linecap="round"/>
+          <circle class="core" cx="22.5" cy="16" r="3.2"/>
+        </svg>
+        <div class="boot-title">Integration <em>Intelligence</em></div>
+      </div>
+      <div class="boot-lines"></div>
+      <div class="boot-bar"><i></i></div>
+      <div class="boot-skip">press any key to skip</div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="rail">
+      <a class="brand" href="#/overview" aria-label="IIP home">
+        <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x=".5" y=".5" width="31" height="31" rx="8.5" fill="#111215" stroke="rgba(255,255,255,.12)"/>
+          <path class="trace" d="M7 11h8l3 5-3 5H7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path class="trace" d="M11 16h7" stroke-width="1.8" stroke-linecap="round"/>
+          <circle class="core" cx="22.5" cy="16" r="3.2"/>
+        </svg>
+        <span class="brand-name">IIP<small>integration intelligence</small></span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <span class="nav-indicator" aria-hidden="true"></span>
+        <div class="nav-group eyebrow">Monitor</div>
+        <a href="#/overview" data-page="overview"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span>Overview</span><span class="kbd">G O</span></a>
+        <a href="#/events" data-page="events"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Events</span><span class="kbd">G E</span></a>
+        <a href="#/incidents" data-page="incidents"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg><span>Incidents</span><span class="count" id="open-count" hidden></span></a>
+        <a href="#/users" data-page="users"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Customers</span><span class="kbd">G C</span></a>
+        <div class="nav-group eyebrow">Engine</div>
+        <a href="#/lab" data-page="lab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"/><path d="M8.5 2h7"/><path d="M7 16h10"/></svg><span>Risk Lab</span><span class="kbd">G L</span></a>
+        <a href="#/simulation" data-page="simulation"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span>Simulation</span><span class="kbd">G S</span></a>
+        <div class="nav-group eyebrow">Platform</div>
+        <a href="#/integration" data-page="integration"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg><span>Integration</span><span class="kbd">G N</span></a>
+        <a href="#/analyst" data-page="analyst"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg><span>AI Analyst</span><span class="kbd">G A</span></a>
+      </nav>
+      <div class="rail-foot">
+        <div class="rail-card">
+          <div class="row"><span style="display:flex;align-items:center;gap:8px"><span class="live-dot warn" id="live-dot"></span><b id="live-label" style="font-weight:500">Connecting</b></span>
+            <span class="eyebrow">SSE</span></div>
+        </div>
+        <div class="rail-card">
+          <div class="row"><span><b style="font-weight:500">Live traffic</b><small class="dim" style="display:block;font-size:11px">demo generator</small></span>
+            <button class="switch" role="switch" aria-checked="false" id="traffic-switch" aria-label="Live traffic generator"></button></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="crumbs"><span>NovaBank</span><span class="faint">/</span><b id="crumb">Overview</b></div>
+        <span class="spacer"></span>
+        <button class="search-trigger" id="search-trigger" aria-label="Open command palette">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+          <span class="label">Search or run a command…</span><span class="kbd">Ctrl K</span>
+        </button>
+        <span class="clock" id="clock" aria-label="Current UTC time"></span>
+      </header>
+      <main id="view" class="view" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div id="drawer" class="drawer" hidden></div>
+  <div id="palette" class="palette" hidden></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <noscript><p style="padding:24px">The IIP dashboard needs JavaScript. The API is documented at <a href="/docs">/docs</a>.</p></noscript>
+</body>
+</html>

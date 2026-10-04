@@ -1,0 +1,312 @@
+{
+  "path": "web/js/ui/components.js",
+  "lines": 100,
+  "summary": "The shared building blocks of the UI: severity, status and score badges, chips, panels, empty/loading/error states, the segmented control with its sliding pill, a syntax-coloured JSON block and a tiny safe markdown renderer. Every helper returns output from dom.js's auto-escaping `html` template (or `raw` for markup it built and escaped itself), so pages can combine them freely without XSS risk. The pages, the charts and the detail drawers in details.js all import from here.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "File header. Every helper here returns `html` or `raw` output (a `SafeHTML` object from dom.js), so a page can drop the result into another `html` template without it being escaped twice and without opening an XSS hole."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Imports from dom.js: `LEVELS` (the ordered list LOW, MEDIUM, HIGH, CRITICAL), the `fmt` formatters, the auto-escaping `html` template, `levelOf` (score to level at the 30/60/80 thresholds) and `raw` (marks trusted markup)."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "Imports `movePill` from the motion wrapper. It slides the highlight 'pill' of a segmented control under the pressed button."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Imports the SVG icon builder and the event-type-to-icon map from icons.js."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Doc comment stating the accessibility rule: severity is shown three ways (colour, a 4-pip signal bar and the level word), so it still reads correctly for colour-blind users or in greyscale."
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "text": "`sev(level)` builds a severity badge. `LEVELS.indexOf(level) + 1` turns the level into how many pips to light: LOW 1, MEDIUM 2, HIGH 3, CRITICAL 4 (an unknown level gives -1 + 1 = 0, so none)."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Creates four small `i` elements and adds the class `on` to the first `lit` of them. components.css gives the pips rising heights (5, 7, 9 and 11px, like a phone's signal bar) and dims unlit ones to 25% opacity; `raw` is safe here because the markup is fixed and contains no data."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "Returns the badge. The `lvl-${level}` class sets the `--lvl` colour variables that tint it, followed by the pips and the level word itself, so the number of lit bars and the text carry the meaning even without colour."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "Closes `sev()`."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "`status(value)` renders an incident status (OPEN, INVESTIGATING or RESOLVED). CSS draws a dot before the text, the value doubles as a class that colours it, and the word itself is always printed too."
+    },
+    {
+      "from": 15,
+      "to": 16,
+      "text": "`score(value, level)` renders a risk score as a number plus a 44px mini bar. The level defaults to `levelOf(value)`, and because scores run from 0 to 100 the score is used directly as the bar's width percentage."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Closes `score()`."
+    },
+    {
+      "from": 19,
+      "to": 20,
+      "text": "`signalChips(signals, max)` shows signal names as chips, at most `max` of them (default 3). An empty list shows a faint 'none' rather than an empty table cell."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "Takes the first `max` signals and wraps each in a chip; `html` escapes the signal text."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Outputs the chips plus, when there were more than `max`, an overflow chip such as '+2', which keeps table rows compact."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "Closes `signalChips()`."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "`mitre(m)` renders a MITRE ATT&CK technique (for example T1110.001) as a small link to attack.mitre.org, with the technique name as a hover title. `target=\"_blank\"` opens a new tab, `rel=\"noopener\"` stops that tab from reaching back into this one, and a signal with no mapping returns an empty string."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "`avatar(name, large)` shows a customer's initials in a rounded square (`fmt.initials` takes the first letters of up to two words). It is `aria-hidden` because the full name is always printed beside it; `large` adds the bigger `lg` size used in drawers."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "`eventIcon(type, size)` picks the icon for an event type from `EVENT_ICONS`, falling back to the generic `activity` icon for an unknown type."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "`panel({...})` builds the standard dashboard card. All options are named and all except `title` have defaults, so a page passes only what it needs: the `title`, an optional `idx` number, `tools` for the header's right side, the `body`, extra classes or an `id`."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Opens the `section` with any extra classes. (An `id` option that no page used was removed; it was also built with `raw()`, an unescaped HTML sink.)"
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "The header row: an optional small index label (like '01'), the `h3` title, and a `tools` slot that CSS pushes to the right edge for buttons, tags or a segmented control."
+    },
+    {
+      "from": 34,
+      "to": 34,
+      "text": "The body wrapper, with optional extra classes such as `flush` for edge-to-edge tables."
+    },
+    {
+      "from": 35,
+      "to": 36,
+      "text": "Closes the section, the template literal and the function."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "`empty(text, iconName)` is the standard empty state: a 22px icon (default `layers`) above a short message, used when a list or chart has nothing to show."
+    },
+    {
+      "from": 40,
+      "to": 42,
+      "text": "`skeleton(rows, height)` draws grey placeholder bars while data loads. Each bar's width cycles through 92%, 78% and 64% (`92 - (i % 3) * 14`) so it looks like ragged lines of text, and the `skeleton` class adds a moving shimmer in CSS."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "`errorBox(message)` shows a red error panel with an alert icon. The message is escaped by `html`, so error text from the server cannot inject markup."
+    },
+    {
+      "from": 46,
+      "to": 46,
+      "text": "Doc comment: `seg()` only produces markup; behaviour is attached later with `bindSeg` once the HTML is in the page."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "`seg(name, options, value)` renders a segmented control, a row of mutually exclusive buttons. `name` identifies it, `options` is a list of `[value, label]` pairs and `value` is the option selected initially."
+    },
+    {
+      "from": 48,
+      "to": 48,
+      "text": "The container gets `role=\"group\"` and a `data-seg` attribute so `bindSeg` can find it. Its first child is the empty `pill` span: CSS places it absolutely behind the buttons (z-index 0 versus 1), and it is the highlight that slides from option to option."
+    },
+    {
+      "from": 49,
+      "to": 50,
+      "text": "One `button` per option. `type=\"button\"` stops it from submitting a surrounding form, and `aria-pressed` (the string 'true' or 'false') tells both assistive technology and the CSS which option is active. Line 52 closes `seg()`."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "`bindSeg(root, name, onChange)` brings a mounted segmented control to life. `onChange` is called with the newly selected value."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "Finds the control inside `root` by its `data-seg` name, and returns `null` instead of throwing if it isn't there."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "Places the pill for the first time on the next animation frame (just before the browser paints), after the rest of the current rendering code has run. `movePill` reads the pressed button's `offsetLeft` and `offsetWidth` and snaps the pill there without animation (`instant = true`)."
+    },
+    {
+      "from": 56,
+      "to": 59,
+      "text": "`select()` presses one button and releases the others (`aria-pressed` is the standard way to mark a toggle button for assistive technology), then animates the pill over to it with a spring, or moves it instantly when motion is off."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "A single click listener on the whole control handles every button (event delegation). It is `async` because it may wait for the caller's work."
+    },
+    {
+      "from": 61,
+      "to": 62,
+      "text": "Finds the clicked button. Clicks between buttons, or on the option that is already active, are ignored, so `onChange` only fires for a real change."
+    },
+    {
+      "from": 63,
+      "to": 64,
+      "text": "Remembers the option pressed before, then presses the clicked one straight away, so the control feels instant."
+    },
+    {
+      "from": 65,
+      "to": 66,
+      "text": "Hands the new value (the button's `data-value`, always a string) to the caller. A caller whose work can fail, like the incident drawer's status save, returns `false` on failure and the control goes back to the previous option. It used to keep showing a status that was never saved, and ignored a second click on it."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "Closes the click handler."
+    },
+    {
+      "from": 68,
+      "to": 69,
+      "text": "Returns the control's element for callers that want it, and closes `bindSeg()`."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "One module-level listener: when the window is resized, responsive layout can change the buttons' sizes, so every segmented control on the page re-snaps its pill instantly. It is registered once, when this module first loads."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "Doc comment for `jsonBlock`: the JSON text is HTML-escaped first, and only then are colour spans wrapped around its tokens."
+    },
+    {
+      "from": 73,
+      "to": 74,
+      "text": "`jsonBlock(value)` turns any value into a syntax-coloured code block (the Raw record in the event drawer and the API console use it). `JSON.stringify(value, null, 2)` produces pretty-printed text indented by two spaces."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "Escapes the three characters that matter inside an HTML element. `&` goes first so the entities created by the next two replacements aren't escaped again; quotes can stay as they are because the text becomes element content, not an attribute."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "One regular expression finds every token, with a capture group for each kind: a quoted string (escaped characters allowed) optionally followed by a colon, the words `true`, `false` or `null`, or a number with optional decimals and exponent. The scan runs left to right, so digits inside a string are consumed with the string and never coloured on their own."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "A string followed by a colon is an object key: it gets class `k` and the colon gets class `p` (punctuation). Any other string is a value and gets class `s`."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "Booleans and `null` get class `b`."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "Whatever else matched must be a number, class `n`. The colours for `k`, `s`, `b`, `n` and `p` are defined in components.css."
+    },
+    {
+      "from": 80,
+      "to": 80,
+      "text": "Closes the replacement callback and the chain of `.replace` calls."
+    },
+    {
+      "from": 81,
+      "to": 82,
+      "text": "Returns the result in a `pre` element with class `code`, which keeps the indentation. It is wrapped in `raw` because escaping was already done by hand on line 72; line 79 closes the function."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "Doc comment: a deliberately tiny, safe markdown renderer (used for the AI Analyst's answers). Everything is escaped first, then only bold text, inline code and dash bullets are allowed."
+    },
+    {
+      "from": 85,
+      "to": 86,
+      "text": "`markdown(text)` converts the input to a string (`?? \"\"` turns `null` or `undefined` into an empty string) and escapes `&`, `<` and `>`. From this point on, any HTML in the text, even HTML an AI model produced, is just harmless characters."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "`inline()` formats text within a line: a phrase wrapped in double asterisks becomes bold, and a phrase wrapped in backticks becomes inline code. Together with the list, paragraph and ref-button markup below, these are the only tags the renderer ever creates."
+    },
+    {
+      "from": 88,
+      "to": 88,
+      "text": "Turns record IDs (INC- plus 4 digits, EVT- plus 5, USR- plus 4) into small `ref` buttons carrying the ID in `data-ref`. A document-wide click handler in main.js passes them to `openRef`, so an incident mentioned in an answer opens its drawer when clicked."
+    },
+    {
+      "from": 89,
+      "to": 90,
+      "text": "Splits the escaped text into blocks at blank lines (two or more newlines in a row), then splits each block into its lines."
+    },
+    {
+      "from": 91,
+      "to": 91,
+      "text": "If every line in a block starts with '- ', the whole block becomes a bulleted list: each line, minus its first two characters, goes through `inline()` into a list item."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "Otherwise finds the first line that starts with '- ' (or -1 when there is none)."
+    },
+    {
+      "from": 93,
+      "to": 96,
+      "text": "When bullets begin part-way through a block (index above 0), the lines before them become one paragraph joined with line breaks, and every line from the first bullet onwards becomes a list item, with the leading '- ' stripped where present."
+    },
+    {
+      "from": 97,
+      "to": 97,
+      "text": "A block without bullets becomes a single paragraph, keeping its line breaks as `br` elements."
+    },
+    {
+      "from": 98,
+      "to": 100,
+      "text": "Closes the block mapping, then joins the blocks and returns them as `raw` HTML. That is safe because the only markup in the string is what this function inserted after escaping; line 97 closes `markdown()`."
+    }
+  ]
+}

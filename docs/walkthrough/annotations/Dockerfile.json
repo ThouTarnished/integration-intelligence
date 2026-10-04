@@ -1,0 +1,17 @@
+{
+  "path": "Dockerfile",
+  "lines": 16,
+  "summary": "Builds a container image that runs the platform, for example `docker build -t iip .` followed by `docker run -p 8000:8000 iip`. It installs only the runtime requirements and copies only the `iip` package and the `web` assets; on first start the app creates and seeds its own SQLite database inside the container.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Starts from the official slim Python 3.12 image (Debian with minimal extra packages), which keeps the image small."},
+    {"from": 3, "to": 3, "text": "`PYTHONDONTWRITEBYTECODE=1` stops Python writing `.pyc` files, which are pointless in a throwaway container. The trailing backslash continues the `ENV` instruction onto the next line."},
+    {"from": 4, "to": 4, "text": "`PYTHONUNBUFFERED=1` sends output straight to the console without buffering, so logs show up immediately in `docker logs`."},
+    {"from": 5, "to": 5, "text": "`IIP_HOST=0.0.0.0` makes the server listen on all network interfaces. The app's default, `127.0.0.1`, would only accept connections from inside the container itself."},
+    {"from": 7, "to": 7, "text": "Sets `/app` as the working directory for the instructions that follow and for the running app."},
+    {"from": 8, "to": 9, "text": "Copies only `requirements.txt` and installs the dependencies **before** copying the code. Docker caches each step, so editing code doesn't trigger a reinstall; only a change to the requirements does. `--no-cache-dir` skips pip's download cache to keep the image smaller."},
+    {"from": 11, "to": 12, "text": "Copies just what the app needs at runtime: the `iip` package and the `web` frontend that `iip/app.py` serves. Tests, scripts and docs stay out of the image."},
+    {"from": 14, "to": 14, "text": "Documents that the app listens on port 8000. It doesn't publish the port by itself; `docker run -p 8000:8000` does that."},
+    {"from": 15, "to": 15, "text": "Every 30 seconds Docker runs a Python one-liner that requests the health endpoint; an error, or no answer within 3 seconds, counts as a failure, and three failures in a row (Docker's default) mark the container unhealthy. It uses Python's built-in `urllib`, so curl isn't needed. The check only proves the server answers, because database trouble is reported inside the JSON (status DEGRADED) with HTTP 200."},
+    {"from": 16, "to": 16, "text": "The default command, in exec (JSON array) form so Python runs as the main process and receives stop signals directly. `python -m iip` runs `iip/__main__.py`, which starts uvicorn on `IIP_HOST` and port 8000; the database is created under `/app/data` and disappears with the container unless a volume is mounted there."}
+  ]
+}

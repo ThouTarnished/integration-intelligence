@@ -1,0 +1,252 @@
+{
+  "path": "web/js/pages/events.js",
+  "lines": 111,
+  "summary": "The Events page: a searchable, filterable and pageable log of every event NovaBank has sent, each row showing the engine's score and signals. It calls `GET /events` with the current search text, event type, risk level, sort order and offset (100 rows per page), and clicking a row opens the event drawer from `views/details.js`. Live events from the `live:event` bus are counted behind a **show** pill instead of being inserted into the table, so rows never move while someone is reading or clicking.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Header comment stating the page's key design decision: new live events are announced by a pill instead of being pushed into the table, so rows never shift under the reader's cursor."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "Imports the `get` API helper, which prefixes `/api/v1` and throws on HTTP errors."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "DOM helpers, including `debounce`, which delays a function until calls stop arriving; the search box uses it."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "`animate` for the pill's drop-in and `enter` for the staggered fade-up of table rows."
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "text": "UI fragments: segmented controls, empty and error states, event icons, the panel frame, score bars, signal chips and a loading skeleton, plus the `icon` helper."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Drawers for an event (a row click) and for an incident (the incident link inside a row)."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "Page size: 100 rows per request, the API's default `limit` (the API caps it at 500)."
+    },
+    {
+      "from": 12,
+      "to": 14,
+      "text": "`row` renders one table row. `trip` is the travel analysis the pipeline stored on the event, if any (`?.` yields `undefined` when there is no context). The row carries `data-event` so a click opens that event's drawer."
+    },
+    {
+      "from": 15,
+      "to": 17,
+      "text": "Event ID, local date and time, and customer ID in monospace so IDs line up for scanning."
+    },
+    {
+      "from": 18,
+      "to": 19,
+      "text": "Type icon and label. The location cell adds a red plane tag with the implied speed when the pipeline judged the trip **impossible**, so suspicious travel stands out without opening the row."
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "text": "Score bar coloured by the stored risk level, and at most two signal chips (a `+N` chip stands for the rest)."
+    },
+    {
+      "from": 22,
+      "to": 24,
+      "text": "The linked incident as a button carrying `data-incident`, or a faint dash when the event didn't join an incident. Lines 23-24 close the row and the function."
+    },
+    {
+      "from": 26,
+      "to": 28,
+      "text": "Page module titled `Events`. `render` also receives `params`: the query string after the hash route (for example `#/events?q=Lagos`) as a `URLSearchParams` object."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "All filter state in one object, with keys named exactly like the API's query parameters so line 53 can send it as is. `q` comes from the URL when the overview map links here, and a `?level=` value is uppercased to match stored levels like `CRITICAL`."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "`items` holds the rows loaded so far, `total` the server's count for the current filters and `pending` the live events not yet shown."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Mounts the page markup in one step."
+    },
+    {
+      "from": 33,
+      "to": 37,
+      "text": "Header: eyebrow, title, a description inviting the user to click a row for the score explanation, and a total-count tag that shows `—` until the first load finishes."
+    },
+    {
+      "from": 38,
+      "to": 40,
+      "text": "The filter bar starts with the search box, prefilled from `state.q`. The `/` key hint advertises the keyboard shortcut wired up on line 105."
+    },
+    {
+      "from": 41,
+      "to": 44,
+      "text": "Three segmented controls: event type, risk level (an exact match, so `High` shows only HIGH events; it can be preselected from the URL) and sort order. Their values are the exact strings the API expects, such as `resource_access`, `HIGH` or `asc`. Line 44 closes the filter bar."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "The new-events pill, `hidden` until a live event arrives. CSS makes it sticky just below the top bar, so it stays visible however far the user has scrolled."
+    },
+    {
+      "from": 46,
+      "to": 47,
+      "text": "Results panel. The table area shows an 8-row loading skeleton until data arrives; the footer holds a `Showing x of y` label and a hidden `Load 100 more` button."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "The results container that `load` fills."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "`latest` numbers the loads, so a response that has been overtaken can be recognized and dropped."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "`load(append)` fetches one page. With `append` false it replaces the table (a new search or filter); with `true` it adds the next page underneath."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "A fresh query always restarts at offset 0."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Takes a ticket: every call gets the next number, and only the newest may render."
+    },
+    {
+      "from": 54,
+      "to": 54,
+      "text": "The `try` block covers both the request and the rendering."
+    },
+    {
+      "from": 55,
+      "to": 56,
+      "text": "Turns the state plus `limit` into a query string and calls `GET /events`. Empty values such as `event_type=` are sent too, and the API treats them as no filter. (This local `params` shadows the `render` argument of the same name.)"
+    },
+    {
+      "from": 57,
+      "to": 57,
+      "text": "If another load started while this one was waiting (a new search, a filter click or Load more), this answer is stale and is dropped. Requests used to render in arrival order, so a slower, older response could show results for the wrong filter, and a late Load-more reply could even crash into an error box."
+    },
+    {
+      "from": 58,
+      "to": 59,
+      "text": "Stores the server's total and either replaces or extends the list of loaded items."
+    },
+    {
+      "from": 60,
+      "to": 63,
+      "text": "On a fresh load, mounts the full table with its header row, or an empty state with a filter icon when nothing matches."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Fades the rows up in quick succession: no blur, a 6 px rise, 18 ms apart. `max: 24` animates only the first 24 rows, so a 100-row page appears without a long ripple."
+    },
+    {
+      "from": 65,
+      "to": 67,
+      "text": "When appending, takes the existing table body and remembers how many rows it already holds."
+    },
+    {
+      "from": 68,
+      "to": 70,
+      "text": "Adds only the new page's rows to the end with `insertAdjacentHTML`, so existing rows and the scroll position stay put, then animates just those new rows (`slice(before)`)."
+    },
+    {
+      "from": 71,
+      "to": 73,
+      "text": "Updates the header tag (for example `2,431 events`) and the footer label, and hides `Load more` once every matching row is loaded."
+    },
+    {
+      "from": 74,
+      "to": 77,
+      "text": "Any failure, network or HTTP, replaces the table with an error box showing the message, unless a newer load has taken over. Line 74 closes `load`."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "The search box sets `state.q` and reloads only after typing pauses for 220 ms, so a whole word costs one request instead of one per keystroke."
+    },
+    {
+      "from": 81,
+      "to": 83,
+      "text": "Each segmented control writes its value into the matching state key and reloads. `bindSeg` calls back only when the pressed value actually changes."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "`Load more` moves the offset forward by one page and appends."
+    },
+    {
+      "from": 85,
+      "to": 87,
+      "text": "Delegated clicks for the table: the incident link opens the incident drawer, `stopPropagation()` stops the click from bubbling past the view, and `return` keeps the row's event drawer from opening too."
+    },
+    {
+      "from": 88,
+      "to": 90,
+      "text": "Any other click inside a row opens that event's drawer."
+    },
+    {
+      "from": 92,
+      "to": 93,
+      "text": "Gets the pill and subscribes to `live:event` through `ctx`, so the subscription ends when the user leaves the page."
+    },
+    {
+      "from": 94,
+      "to": 95,
+      "text": "Counts the waiting events and updates the label, for example `3 new events · show`. Every live event counts, even ones the current filters would hide."
+    },
+    {
+      "from": 96,
+      "to": 100,
+      "text": "Only on the first waiting event: unhides the pill and drops it in with a slight overshoot (`outBack`). Later events just change the number, so the pill doesn't keep bouncing."
+    },
+    {
+      "from": 101,
+      "to": 103,
+      "text": "Clicking the pill means the user is ready to see the new events: the counter resets and the pill hides."
+    },
+    {
+      "from": 104,
+      "to": 106,
+      "text": "The page then scrolls smoothly to the top and reloads the first page with the current filters, so new rows appear only when the user asks for them."
+    },
+    {
+      "from": 108,
+      "to": 108,
+      "text": "Stores a `focusSearch` function on the context. `main.js` calls `current.focusSearch()` when the user presses `/`, so the shortcut works only while this page is open."
+    },
+    {
+      "from": 109,
+      "to": 109,
+      "text": "Awaits the first page, so `render` finishes, and the router's top progress bar completes, only once the table is filled."
+    },
+    {
+      "from": 110,
+      "to": 111,
+      "text": "Closes `render` and the page object."
+    }
+  ]
+}

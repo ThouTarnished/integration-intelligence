@@ -1,0 +1,217 @@
+{
+  "path": "tests/test_analyst.py",
+  "lines": 98,
+  "summary": "Tests for the AI analyst (`iip/analyst.py`) and its `POST /api/v1/ai/ask` endpoint. Because `conftest.py` removes `OPENAI_API_KEY`, the deterministic analyst answers, so the tests can check exactly which record each question focuses on. The last test fakes an OpenAI key and a network failure with `monkeypatch` to prove the fallback never leaves the user without an answer. The newer tests check the question parser itself, and that searches, counts, event explanations and definitions agree with the database.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "`dataclasses.replace` is used to make a modified copy of the frozen `Settings` object."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "httpx is the HTTP client the analyst uses to call OpenAI; the test needs it to raise a realistic `httpx.ConnectError`."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "SQLAlchemy's `select` and `func.count` let a test count records straight from the database: the ground truth the analyst's answers are checked against."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "The analyst module itself, so tests can call `analyst.parse_question` and `analyst.ask` directly and patch names inside it, plus the rulebook, whose real constants the definition test expects to see quoted."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "The `Incident` model, for counting critical unresolved incidents directly."
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "text": "Helper that posts a question and returns the parsed JSON, keeping each test to one readable line per question. No API key is sent: `/ai/ask` is rate-limited but changes no data, so it isn't behind `WRITE`."
+    },
+    {
+      "from": 14,
+      "to": 15,
+      "text": "A generic question with no ID or name. It contains focus words (`why`, `this incident`), so `gather_context` picks the top-ranked incident (unresolved first, then highest score) as the subject."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "The answer came from the deterministic analyst (there is no OpenAI key in tests) and includes the rule engine's `decision`, which the UI shows separately from the prose."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "The explanation must mention the decision's subject (the incident ID), and `sources` must list the records it was based on, so a reader can verify the claims."
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "text": "Takes a real incident ID from the API instead of hard-coding one, since IDs depend on the seeded data."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "A question naming an incident (such as `Summarize INC-0007`) must focus on exactly that incident; the analyst finds the ID with the regex `\\binc-(\\d+)` on the lower-cased question."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "A question naming a customer ID focuses on that customer."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Customers can also be found by surname: Fenwick belongs to USR-1001 (Ayla Fenwick). The match uses regex word boundaries, so a surname buried inside a longer word doesn't count."
+    },
+    {
+      "from": 27,
+      "to": 28,
+      "text": "Asks about an incident that doesn't exist."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "The explanation must say INC-9999 couldn't be found, and `decision` must be `None`. The analyst deliberately does **not** swap in a different incident, even though `explain` is one of its focus words."
+    },
+    {
+      "from": 32,
+      "to": 33,
+      "text": "A one-character question breaks `AskIn`'s `min_length=3` rule, so the request is rejected with 422 before any analysis runs."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Requests two fixtures: `db`, a real database session, and pytest's built-in `monkeypatch`, which temporarily replaces attributes and restores them automatically when the test ends."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Pretends an OpenAI key is configured. `Settings` is a frozen dataclass and can't be edited, so `dataclasses.replace` builds a copy with `openai_api_key` set and `monkeypatch` swaps it into the `analyst` module. Only that module's reference changes, because `analyst.py` holds its own name for the object via `from .config import settings`."
+    },
+    {
+      "from": 39,
+      "to": 40,
+      "text": "A stand-in for `httpx.post` that accepts and ignores any arguments (the `_` and `__` names signal they're unused) and always raises `ConnectError`, simulating a network outage."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "Replaces `post` on the httpx module (`analyst.httpx` **is** the httpx module), so `_ask_openai` calls `boom` instead of making a real request. monkeypatch puts the real function back afterwards."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "Calls `analyst.ask` directly with the session, skipping HTTP. Because of the patched settings, it tries OpenAI first."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "`ConnectError` is a subclass of `httpx.HTTPError`, which `ask` catches, so an answer still arrives: built by the deterministic analyst, with a note saying OpenAI was unavailable. This proves an outage degrades gracefully instead of returning an error."
+    },
+    {
+      "from": 47,
+      "to": 48,
+      "text": "A regression test for a bug the walkthrough review caught: an incident's score is the score of its **riskiest event**, so an explanation that adds up every signal seen across the incident would quote the wrong arithmetic."
+    },
+    {
+      "from": 49,
+      "to": 52,
+      "text": "For up to 15 incidents, loads the detail and finds the peak event, the one that set the score, then sums that event's stored contribution weights."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Asks the analyst which signals contributed to this incident."
+    },
+    {
+      "from": 54,
+      "to": 54,
+      "text": "The answer must name the peak event and quote exactly its weight total."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "And the engine itself must be consistent: that total, clamped into 0–100, is the incident's score."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "A unit test of the question parser itself, with no HTTP involved: it checks the exact search terms read from free text."
+    },
+    {
+      "from": 59,
+      "to": 60,
+      "text": "One sentence carries a customer's first name (Kira → USR-1011), an event type (\"sign-ins\" → login), an outcome (\"failed\") and a country that maps to a known city (Russia → Moscow)."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "\"in the last 24h\" becomes a 24-hour window with a readable label and a start time."
+    },
+    {
+      "from": 62,
+      "to": 64,
+      "text": "A counting question: the intent is `count` and the subject is incidents; \"critical\" is a level, and \"open\" means unresolved, so both OPEN and INVESTIGATING."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Incident numbers work in plain words too, not only as INC-0012."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Guards against false positives: the customer Dev Okonkwo's first name is also an ordinary word, so a short first name only counts when it is capitalized."
+    },
+    {
+      "from": 69,
+      "to": 70,
+      "text": "Search accuracy, end to end: before the rewrite, this question got the same generic \"top incidents\" list as every other unrecognized question."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "The answer must cite incidents, and carry no single engine decision, because it is a list rather than one record."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "Every incident the analyst cites is loaded through the API and must really carry the Impossible travel signal."
+    },
+    {
+      "from": 76,
+      "to": 78,
+      "text": "The ground truth, counted straight from the database: critical incidents that are not resolved."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "The answer must open with exactly that number in bold, or say that no incidents match when there are none."
+    },
+    {
+      "from": 83,
+      "to": 84,
+      "text": "Takes the newest event from the events API and asks why it scored as it did."
+    },
+    {
+      "from": 85,
+      "to": 87,
+      "text": "The answer must focus on that event: the engine decision names it, and the explanation quotes its score."
+    },
+    {
+      "from": 90,
+      "to": 93,
+      "text": "A definition quotes the rulebook's real constants (the 900 km/h speed limit) and the signal's weight, and carries no engine decision because it is about a concept, not a record."
+    },
+    {
+      "from": 96,
+      "to": 98,
+      "text": "An empty search is reported honestly, reading the terms back (password spray in Tokyo, where there is no activity), instead of listing unrelated incidents as if they matched."
+    }
+  ]
+}

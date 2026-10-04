@@ -1,0 +1,92 @@
+{
+  "path": "web/js/ui/icons.js",
+  "lines": 46,
+  "summary": "The app's icon set: a table of Lucide-style SVG shapes keyed by name, plus `icon()`, which wraps a shape in a correctly sized `svg` element and marks it as trusted markup with `raw()`. Pages, charts, the command palette, the drawer and components.js all call `icon()`, and `EVENT_ICONS` gives each event type a consistent symbol. Keeping the icons inline means no icon font and no extra downloads.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "File header comment. The icons copy the Lucide style (shapes drawn on a 24×24 grid with a 1.6px stroke) and live inline in this file as SVG markup, so the app needs no icon font and no extra downloads."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Imports `raw()` from the DOM helpers. `raw` marks a string as trusted HTML, so when an icon is placed inside the auto-escaping `html` template it is inserted as markup instead of being shown as text."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "`PATHS` maps each icon name to the inner shapes of that icon (`path`, `circle`, `rect`, `polyline`...). Only the shapes are stored; the outer `svg` element is added by `icon()` below, so every icon shares the same size and stroke settings."
+    },
+    {
+      "from": 5,
+      "to": 9,
+      "text": "Page icons: `overview` (four dashboard tiles), `activity` (a pulse line for Events, and the fallback for unknown names), `shield` (Incidents), `users` (two people for Customers) and `user` (one person, shown on customer entries in the command palette)."
+    },
+    {
+      "from": 10,
+      "to": 13,
+      "text": "More page icons: `flask` (Risk Lab), `zap` (a lightning bolt for Simulation and scenario replays), `plug` (Integration) and `sparkles` (AI Analyst). The side navigation in `index.html` inlines the same shapes, and the command palette's Go to entries use these names."
+    },
+    {
+      "from": 14,
+      "to": 16,
+      "text": "Interface glyphs: `search` (a magnifier for the palette and search boxes), `x` (the drawer's Close button) and `chevron` (a right-pointing arrowhead that hints 'this opens something')."
+    },
+    {
+      "from": 17,
+      "to": 18,
+      "text": "`back` (a left-pointing arrowhead for the drawer's Back button) and `arrow` (a right arrow on links such as 'Board' and 'Open')."
+    },
+    {
+      "from": 19,
+      "to": 22,
+      "text": "The four event-type icons that `EVENT_ICONS` (at the end of the file) points to: `login` (an arrow entering a door), `card` (a payment card for transactions), `database` (a cylinder for resource access) and `key` (password resets; the palette also shows it when asking for the API key)."
+    },
+    {
+      "from": 23,
+      "to": 26,
+      "text": "`globe` (the Enrich stage of the Simulation pipeline), `radio` (broadcast waves for live traffic and the Publish stage), `refresh` (a circular arrow for resetting demo data) and `check` (a tick)."
+    },
+    {
+      "from": 27,
+      "to": 29,
+      "text": "`device` (a phone, listed beside each customer device), `plane` (the travel card and the impossible-travel tag in the events table) and `copy` (two overlapping sheets for the Copy as cURL button)."
+    },
+    {
+      "from": 30,
+      "to": 33,
+      "text": "`send` (a paper plane for Send/Ask buttons and the Ingest stage), `lock` (a padlock in the API-key prompt and on secured endpoints), `alert` (a warning triangle used by `errorBox`) and `gauge` (a speedometer for the Score stage)."
+    },
+    {
+      "from": 34,
+      "to": 38,
+      "text": "`layers` (stacked sheets, the default empty-state icon), `wind` (the palette's motion toggle), `book` (API documentation), `target` (a bullseye on the Critical incidents card) and `grip` (a six-dot drag handle on the incident board's draggable cards)."
+    },
+    {
+      "from": 39,
+      "to": 40,
+      "text": "`filter` (a funnel for the Normalize stage and the 'No events match' state). Every icon left in the table is used: nine spares no screen referenced (clock, command, cpu, external, message, pin, power, server, terminal) were removed. The last line closes `PATHS`."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "`icon(name, size, cls)` returns one icon as trusted markup. `size` defaults to 16 pixels and `cls` lets a caller add extra CSS classes."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "Wraps the stored shapes in an `svg` element: `viewBox=\"0 0 24 24\"` matches the Lucide grid so the icon scales cleanly to any `size`, `stroke=\"currentColor\"` makes it take the colour of the surrounding text, and `aria-hidden=\"true\"` hides it from screen readers because icons are decorative (icon-only buttons carry their own `aria-label`). Unknown names fall back to the `activity` shape. `size` and `cls` go in unescaped, which is fine because only code passes them, never user data."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "Closes `icon()`."
+    },
+    {
+      "from": 46,
+      "to": 46,
+      "text": "`EVENT_ICONS` maps each backend `event_type` to an icon name: `login` → `login`, `transaction` → `card`, `resource_access` → `database`, `password_reset` → `key`. `eventIcon()` in components.js uses it so every event type always gets the same symbol."
+    }
+  ]
+}

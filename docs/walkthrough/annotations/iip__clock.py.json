@@ -1,0 +1,27 @@
+{
+  "path": "iip/clock.py",
+  "lines": 6,
+  "summary": "A one-function module that defines what \"now\" means for the whole backend. Every timestamp the platform stores is **naive UTC** (a `datetime` without timezone info, implicitly in UTC), and this helper is the single place that produces one.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring. It states the project-wide convention: the database stores timestamps as naive UTC, so comparisons between stored values never mix time zones."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Imports `datetime` (the date-time type) and `timezone` (which provides the `timezone.utc` constant) from Python's standard library."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "Defines `utcnow()`, annotated to return a `datetime`. Centralising this means tests or future code could swap the clock in one place."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "`datetime.now(timezone.utc)` gets the current time as an **aware** UTC value; `.replace(tzinfo=None)` then strips the timezone label so it matches the naive UTC values SQLite stores. (The older `datetime.utcnow()` is deprecated, which is why it isn't used.)"
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "path": "tests/test_geo_and_correlation.py",
+  "lines": 43,
+  "summary": "Unit tests for two pure helpers: `iip/geo.py` (city-label normalization, great-circle distance and travel speed) and the incident-naming function from `iip/correlation.py`. Like `test_rules.py` they need no database, and they check the geographic maths against real-world distances, so the impossible-travel rule rests on verified numbers. The last test checks that a city name only counts when its country agrees.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "`datetime` and `timedelta` build the departure and arrival times for the travel test."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "pytest supplies `parametrize` and `approx`, which compares floating-point numbers within a tolerance."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "The geo module: `canonical`, `haversine_km`, `travel_between` and the `CITIES` coordinate table."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Only the pure naming function is imported. `correlate` itself needs a database, so it is exercised end-to-end by `test_simulation.py` instead."
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "text": "Four label-normalization cases: a bare lowercase city gains its country; messy spacing and capitals are cleaned up; a city-state with no country part stays as it is; an unknown place is returned unchanged instead of being guessed."
+    },
+    {
+      "from": 11,
+      "to": 12,
+      "text": "Asserts that `geo.canonical` produces exactly the expected label. This matters because the risk engine compares labels (home city against event city), so dubai and Dubai, UAE must end up as the same string."
+    },
+    {
+      "from": 15,
+      "to": 16,
+      "text": "Checks the haversine (great-circle) formula against a known real distance: London to Paris is about 344 km. `pytest.approx(344, abs=5)` accepts anything within 5 km, allowing for rounding in the city coordinates."
+    },
+    {
+      "from": 19,
+      "to": 20,
+      "text": "A fixed departure time (midnight, 1 January 2026)."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "Computes a Dubai-to-London trip that takes exactly one hour."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "The distance must be about 5,470 km (within 1%, via `rel=0.01`). Because the trip took exactly one hour, the speed in km/h must equal the distance, which proves the speed formula divides by hours correctly."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "A trip to an unknown city, converted with `as_dict()` into the JSON-friendly form stored in an event's `context`."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "With no coordinates there is no distance or speed, so both are `None`, not zero (zero would wrongly suggest a trip of no length). That `None` is what sends the rule engine to its time-window fallback."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "Parametrizes the incident-title test over seven (signals, expected title) cases, one per line."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Failed logins plus privileged access is named Account takeover rather than Credential attack: `_PATTERNS` is ordered most specific first, so the two-signal pattern is checked before the single-signal one."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "Rapid transactions gives Card testing; the extra Suspicious IP has no pattern of its own, so it doesn't change the title."
+    },
+    {
+      "from": 30,
+      "to": 31,
+      "text": "Single-signal patterns: Impossible travel keeps its own name, and failed logins on their own are a Credential attack."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Password spray wins. New device alone matches nothing, because the Unfamiliar sign-in pattern needs New device **and** Unusual location."
+    },
+    {
+      "from": 33,
+      "to": 35,
+      "text": "When no pattern matches, including an empty signal list, the title falls back to the default, Anomalous activity. `])` closes the list of cases."
+    },
+    {
+      "from": 36,
+      "to": 37,
+      "text": "The test itself runs once per case: it asserts `incident_title` returns the expected name. These titles appear in the incident queue, the incident detail and the AI analyst's answers."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "The city fallback must respect the country."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "\"London, Ontario\" is not London, UK: it stays an unknown place without coordinates (it used to make a Londoner in Canada look at home, and a Toronto trip look impossible)."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "A long country name still resolves, through `geo.COUNTRY_ALIASES`."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "City-states have no country part, so any suffix naming the city itself is fine."
+    }
+  ]
+}

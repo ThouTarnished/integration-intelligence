@@ -1,0 +1,37 @@
+{
+  "path": "web/assets/favicon.svg",
+  "lines": 6,
+  "summary": "The browser-tab icon, linked from web/index.html as an SVG favicon. It is a standalone copy of the brand mark shown in the sidebar and on the boot screen (a connector trace leading to a bright core dot), with its colours hard-coded because an image file can't read the app's CSS variables.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "The root `svg` element. The `xmlns` namespace is required because the browser loads the favicon as a standalone image rather than as markup inside the page; `viewBox=\"0 0 32 32\"` defines a 32-unit drawing square that scales to any icon size, and `fill=\"none\"` leaves shapes unfilled unless they set a fill."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "The background tile: a 32 × 32 square with 8-unit rounded corners in near-black `#0B0C0E`, close to the app's `--bg`."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "The connector outline, the same `M7 11h8l3 5-3 5H7` path as the `trace` path of the brand mark in index.html: from (7,11) it runs 8 units right, angles down to a point at (18,16), back to (15,21), then left to (7,21), forming an open tag shape that points right. It is stroked in muted grey, 2 units wide, with round caps and joins."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "A horizontal line from (11,16) to the tag's point at (18,16), so the shape reads as something flowing to the right."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "The `core` dot: a filled circle at (22.5,16) just past the point, and the icon's only bright colour: the aqua accent `#3EE6D1`, matching the brand mark inside the app."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Closes the SVG."
+    }
+  ]
+}

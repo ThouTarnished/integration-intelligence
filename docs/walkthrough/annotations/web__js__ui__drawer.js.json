@@ -1,0 +1,292 @@
+{
+  "path": "web/js/ui/drawer.js",
+  "lines": 100,
+  "summary": "The right-hand detail sheet used for events, incidents and customers. It keeps a history stack of render functions so you can drill from an incident into an event and go Back, mounts its outer frame only once per opening so the slide-in animation always finishes, ignores stale API responses, and returns keyboard focus to where it was on close. details.js supplies the views; main.js calls `installDrawer()` at startup and closes the drawer on Escape. A close that is still animating can't wipe a drawer reopened meanwhile, each view can return a teardown from `after()`, and Tab stays inside the open sheet.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "File header: the drawer is the right-hand detail sheet, and it keeps a small history so you can drill from an incident into one of its events and then go Back."
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "text": "The key design decision. The outer frame (backdrop and sheet) is built only when the drawer opens, and navigating inside it swaps just the header and body. If the whole frame were re-rendered whenever data arrived, a fast API response would replace the sheet mid-animation and cut the slide-in short."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Imports `$` (a `querySelector` shortcut), the auto-escaping `html` template and `mount` (replaces an element's content) from dom.js. `trapTab` keeps Tab inside the open sheet."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "Imports the motion-aware `animate` and `enter` (a staggered blur-and-fade-up entrance) from the anime.js wrapper."
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "text": "Imports `skeleton` for the loading placeholder and `icon` for the Back and Close buttons."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "`root()` looks up the `#drawer` element from index.html (hidden by default) each time it is called, rather than caching it when the module loads."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "`stack` is the drawer's history: render functions, newest last. Storing functions rather than finished HTML means going Back re-runs the previous view's render, so it shows fresh data."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "`lastFocus` remembers which element had keyboard focus before the drawer opened, so focus can go back there when it closes. `cleanup` holds the teardown the current view returned from `after()`. `closing` is set while the exit animation runs."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "`shell()` returns the frame markup, starting with a full-screen backdrop. Its `data-close` attribute means a click on it closes the drawer."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "The sheet is an `aside` with `role=\"dialog\"` and `aria-modal=\"true\"`, so screen readers treat it as a modal dialog. `tabindex=\"-1\"` lets code focus it without adding it to the Tab order."
+    },
+    {
+      "from": 15,
+      "to": 17,
+      "text": "Empty header and body containers that `show()` fills and refills during navigation; then the `aside` and the template close."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "`head()` builds the header from a view's `title`, `eyebrow` (the small label above the title) and `badges`. Every field has a default and so does the argument itself (`= {}`), so it works with partial data, as in the loading state."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "A Back button appears only when the history holds more than one view. Its `data-back` attribute is what `installDrawer`'s click handler looks for, and `aria-label` gives the icon-only button a name screen readers can announce."
+    },
+    {
+      "from": 21,
+      "to": 23,
+      "text": "The title block: `min-width:0` lets a long title shrink and wrap inside the flex header, followed by the eyebrow line and the `h2` title, both escaped by `html`."
+    },
+    {
+      "from": 24,
+      "to": 25,
+      "text": "An optional row of badge chips (severity, status, IDs) with a small top margin; then the title block closes."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "The Close button (an X icon) carries `data-close`, like the backdrop, so a single handler covers both."
+    },
+    {
+      "from": 28,
+      "to": 32,
+      "text": "`teardown()` runs the current view's cleanup, if it returned one, and forgets it. The customer drawer returns the risk chart's resize-observer disconnect; without this it kept observing a detached element after every drawer."
+    },
+    {
+      "from": 34,
+      "to": 34,
+      "text": "`show(render)` displays one view inside the existing frame. `render` is the async function that fetches data and describes the view."
+    },
+    {
+      "from": 35,
+      "to": 36,
+      "text": "Grabs the drawer element and its body container."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Before showing a new view, the previous view's cleanup runs."
+    },
+    {
+      "from": 38,
+      "to": 39,
+      "text": "Shows a loading state straight away (a header reading 'Loading…' and six skeleton bars), so the user gets feedback while the request is in flight."
+    },
+    {
+      "from": 40,
+      "to": 41,
+      "text": "Runs the render function and waits for its view object (`title`, `eyebrow`, `badges`, `body` and an optional `after`)."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "The stale-response guard. If another view was pushed while this one was loading, or the drawer was closed (which empties `stack`), the result is thrown away, so a slow response can never overwrite a newer view."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "Replaces the 'Loading…' header with the real one."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "Labels the dialog with the view's title (or 'Details'), so assistive technology announces what the drawer is showing."
+    },
+    {
+      "from": 45,
+      "to": 46,
+      "text": "Puts the content into the body and scrolls back to the top, so a new view doesn't open half-way down just because the previous one was scrolled."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "Animates the body's sections in: each fades in, rises 10px and sharpens from a 4px blur, 55ms after the one before."
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "text": "Calls the view's optional `after(body)` hook now that the HTML is in the page (views draw charts and wire listeners there). If the hook returns a function, it is kept as this view's teardown."
+    },
+    {
+      "from": 50,
+      "to": 53,
+      "text": "If fetching or rendering throws, the body shows the error in a red box (escaped by `html`), but only if this view is still the current one: a slow view that failed after the user moved on used to overwrite the newer view."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "Doc comment describing the contract with callers: `render` is async and resolves to `{ title, eyebrow, badges, body, after(bodyEl) }`."
+    },
+    {
+      "from": 56,
+      "to": 57,
+      "text": "`openDrawer(render)` is the public entry point; details.js calls it for every event, incident and customer view."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "A frame is built when the drawer is closed, and also when it is still animating out: opening during those 220 ms used to show the new view, only for the finishing close to wipe it."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "Saves the element that had focus, typically the row or button that was clicked (not when reopening during a close: focus never left)."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Cancels the close in progress: when its animation finishes, it sees that `closing` changed and leaves this drawer alone."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "Clears any old history. Setting `length = 0` empties the array in place."
+    },
+    {
+      "from": 62,
+      "to": 63,
+      "text": "Mounts the frame (once per opening) and makes the drawer visible."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Moves keyboard focus into the dialog so keyboard and screen-reader users land inside it; `preventScroll` stops the page behind from jumping."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Fades the backdrop in over 260ms."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Slides the sheet in from 56px to the right while fading it in, over 560ms with an `outExpo` ease (fast start, gentle stop). Nothing re-renders the frame while the view loads, so this animation always plays to the end."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "Closes the opening block."
+    },
+    {
+      "from": 68,
+      "to": 69,
+      "text": "Pushes the view onto the history and starts showing it. `show()` is deliberately not awaited, so loading and the slide-in happen at the same time."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "Closes `openDrawer()`."
+    },
+    {
+      "from": 72,
+      "to": 74,
+      "text": "`closeDrawer()` is async so callers can wait for the exit animation. Nothing happens if the drawer is hidden or already closing."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "Marks this close with a fresh object, so it can tell later whether the drawer was reopened while it animated."
+    },
+    {
+      "from": 76,
+      "to": 77,
+      "text": "Empties the history, which also cancels a view still loading (through the stale-response guard in `show()`), and runs the current view's cleanup."
+    },
+    {
+      "from": 78,
+      "to": 81,
+      "text": "Runs both exit animations at once and waits for both: the sheet slides 40px right while fading out, and the backdrop fades, in 220 ms."
+    },
+    {
+      "from": 82,
+      "to": 82,
+      "text": "If `openDrawer()` ran during the animation, `closing` no longer holds this close's marker, so the new drawer is left alone."
+    },
+    {
+      "from": 83,
+      "to": 85,
+      "text": "Otherwise the close completes: the drawer is hidden and emptied, which also throws away any listeners views attached inside it."
+    },
+    {
+      "from": 86,
+      "to": 86,
+      "text": "Focus goes back to the element saved on open. The optional calls cope with an element that no longer exists."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "Closes `closeDrawer()`."
+    },
+    {
+      "from": 89,
+      "to": 89,
+      "text": "`drawerOpen()` reports whether the drawer is visible; main.js uses it so that Escape closes the drawer."
+    },
+    {
+      "from": 91,
+      "to": 92,
+      "text": "`installDrawer()` runs once at startup (main.js). It puts one click listener on `#drawer`, which survives every re-mount of the frame inside it."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "A click on or inside anything marked `data-close` (the backdrop or the X button) closes the drawer."
+    },
+    {
+      "from": 94,
+      "to": 97,
+      "text": "A click on the Back button, when there is a previous view, removes the current view from the history and shows the one beneath it again, re-running its render function for fresh data."
+    },
+    {
+      "from": 98,
+      "to": 98,
+      "text": "Closes the click listener."
+    },
+    {
+      "from": 99,
+      "to": 99,
+      "text": "A keydown listener keeps Tab and Shift+Tab inside the open sheet (see `trapTab` in dom.js), as a modal dialog should."
+    },
+    {
+      "from": 100,
+      "to": 100,
+      "text": "Closes `installDrawer()`."
+    }
+  ]
+}

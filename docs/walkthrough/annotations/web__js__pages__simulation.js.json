@@ -1,0 +1,322 @@
+{
+  "path": "web/js/pages/simulation.js",
+  "lines": 167,
+  "summary": "The Simulation Center replays attack scenarios through the real ingestion pipeline, then animates the six pipeline stages from the trace the server returns. It loads the scenario catalog, the traffic status and the customer list, runs a scenario with `POST /simulation/{scenario}` (optionally against a chosen customer), and shows the peak event's gauge and waterfall, any incident opened, and a timeline of the generated events. It also controls the background traffic generator (`POST /simulation/traffic`) and a hold-to-confirm demo reset (`POST /simulation/reset`), staying in sync through `live:traffic` and `live:event`.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Header comment: a scenario runs through the real pipeline, and each stage lights up as its trace is replayed."
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "text": "API helpers and DOM helpers, including `sleep` (a promise that resolves after a given number of milliseconds)."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Motion helpers: `motionEnabled` reports whether animation is allowed, and `typeText` types text into an element a couple of characters at a time."
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "text": "The gauge and waterfall charts for the result panels."
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "text": "Empty state, panel frame, severity badge and icons."
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "text": "Toasts, the event and incident drawers, and `timelineList`, the vertical event timeline shared with the drawers."
+    },
+    {
+      "from": 12,
+      "to": 15,
+      "text": "The six pipeline stages as `[key, label, icon]`. The keys match the `stage` field of the `steps` array the simulation endpoint returns, which is how each step finds its node."
+    },
+    {
+      "from": 17,
+      "to": 19,
+      "text": "`holdButton` turns a button into hold-to-confirm: the action fires only if the user keeps it pressed for `ms` milliseconds. `timer` is the pending confirmation."
+    },
+    {
+      "from": 20,
+      "to": 22,
+      "text": "`start` runs on press. For keyboard presses only Space and Enter count, and a hold already in progress ignores further presses (a held key auto-repeats `keydown`)."
+    },
+    {
+      "from": 23,
+      "to": 24,
+      "text": "Cancels the press's default browser behaviour with `preventDefault()`, then sets `data-holding`, which CSS uses to sweep a soft red fill across the button over 1200 ms."
+    },
+    {
+      "from": 25,
+      "to": 26,
+      "text": "If the timer completes, the button is reset first and then the confirmed action runs."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "`cancel` clears the timer and removes `data-holding`, so the CSS fill snaps back."
+    },
+    {
+      "from": 28,
+      "to": 31,
+      "text": "Pointer or key down starts the hold; releasing, sliding off the button, key-up or losing focus cancels it. A deliberate 1.2 s hold replaces an are-you-sure dialog for the destructive reset."
+    },
+    {
+      "from": 33,
+      "to": 35,
+      "text": "Page module titled `Simulation`; `render` receives the view and the cleanup context."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Three requests in parallel with `Promise.all`: the scenario catalog, the live-traffic status and all customers (for the target picker)."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "How many events the background generator has produced since the server started; line 148 keeps it up to date."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "Mounts the page markup."
+    },
+    {
+      "from": 40,
+      "to": 43,
+      "text": "Header stressing that scenarios are not mocked: their events take the real ingestion path, are stored in SQLite and stream to every open dashboard."
+    },
+    {
+      "from": 44,
+      "to": 46,
+      "text": "First row. The **Scenarios** panel (8 columns) has a customer picker in its header: `Random customer` (an empty value) or any customer by name and ID."
+    },
+    {
+      "from": 47,
+      "to": 49,
+      "text": "One card per scenario: a category tag styled by its class (baseline, benign, suspicious, attack or fraud), the title and a one-line summary. `data-scenario` carries the key sent to the API."
+    },
+    {
+      "from": 50,
+      "to": 52,
+      "text": "**Controls** panel. Row 1 is the live-traffic switch: a button with `role=switch` and `aria-checked`, so assistive technology announces it as an on/off toggle."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "Row 2 shows the generator's event count (`data-generated`)."
+    },
+    {
+      "from": 55,
+      "to": 57,
+      "text": "Row 3 is the reset button, styled as dangerous and marked `hold`, with the instructions in its description. Line 57 closes the row."
+    },
+    {
+      "from": 58,
+      "to": 61,
+      "text": "Full-width **Pipeline** panel: a run label in the header and, per stage, a node with an icon, the stage name, an empty detail line for the typed text, and a pipe with a `packet` dot that travels to the next stage."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "The results row (`data-results`), which shows an empty state until the first run replaces it."
+    },
+    {
+      "from": 64,
+      "to": 65,
+      "text": "`resetStages` clears the previous run, starting by removing each stage's `active` and `done` classes."
+    },
+    {
+      "from": 66,
+      "to": 68,
+      "text": "It also empties the stage's typed detail text and switches its pipe off."
+    },
+    {
+      "from": 70,
+      "to": 71,
+      "text": "`animateStages` replays the server's trace one step at a time. `entries()` supplies the index, so the last stage can be treated differently."
+    },
+    {
+      "from": 72,
+      "to": 73,
+      "text": "Finds the node for this step's stage and skips any step the page doesn't know."
+    },
+    {
+      "from": 74,
+      "to": 75,
+      "text": "Lights the stage up (`active` adds the accent glow) and pops its node in with an overshoot."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "Types the backend's description of this step (for example the travel distance and implied speed) and waits until it is finished. The typing reads like a live processing log and paces the replay, so each stage can be read before the next one lights up."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "Marks the stage as `done`, which settles its glow."
+    },
+    {
+      "from": 78,
+      "to": 80,
+      "text": "For every stage except the last, lights the pipe leading to the next stage."
+    },
+    {
+      "from": 81,
+      "to": 84,
+      "text": "If motion is allowed, sends the packet dot along the pipe (left 0% to 100%, fading in and out) and waits for it to arrive. With reduced motion this step is skipped."
+    },
+    {
+      "from": 85,
+      "to": 87,
+      "text": "A 60 ms pause between stages (none when motion is off). By this point the scenario has already finished on the server: this is a replay of its trace, not a progress bar. Lines 86-87 close the loop and the function."
+    },
+    {
+      "from": 89,
+      "to": 91,
+      "text": "`showResult` renders the outcome around `top_event`, the run's highest-scoring event, replacing the results row."
+    },
+    {
+      "from": 92,
+      "to": 94,
+      "text": "**Peak event** panel: a gauge slot, the level badge with the event ID, and the recommended action."
+    },
+    {
+      "from": 95,
+      "to": 98,
+      "text": "If an incident was opened or updated, shows its ID and title, a `+N more` note when the run touched several incidents, and an `Open` button. Otherwise it explains that the run stayed below the incident threshold."
+    },
+    {
+      "from": 99,
+      "to": 99,
+      "text": "**Why it scored this** panel: a waterfall slot showing how each signal built up the peak score."
+    },
+    {
+      "from": 100,
+      "to": 101,
+      "text": "**Generated events** panel: the event count in the title, how many customers were affected (a password spray hits several), and a compact timeline of every event. This page doesn't handle the timeline's `data-open-event` attribute, so these rows don't open drawers here."
+    },
+    {
+      "from": 102,
+      "to": 102,
+      "text": "Staggered entrance for the three result panels, 90 ms apart."
+    },
+    {
+      "from": 103,
+      "to": 105,
+      "text": "Draws the peak-score gauge (slightly delayed so it starts after its panel appears) and the waterfall, this time with each signal's detail line. Line 105 closes `showResult`."
+    },
+    {
+      "from": 107,
+      "to": 107,
+      "text": "One async click listener handles both kinds of button on the page."
+    },
+    {
+      "from": 108,
+      "to": 109,
+      "text": "The result's `Open` button opens the incident drawer, and `return` ends the handler."
+    },
+    {
+      "from": 110,
+      "to": 111,
+      "text": "Rows of the generated-events timeline carry `data-open-event`, so clicking one opens that event's drawer, with its score waterfall and travel check."
+    },
+    {
+      "from": 112,
+      "to": 113,
+      "text": "Otherwise only clicks on a scenario card continue."
+    },
+    {
+      "from": 114,
+      "to": 117,
+      "text": "Disables every scenario card so runs can't overlap, highlights the chosen card (`running`) and clears the stages left over from the previous run."
+    },
+    {
+      "from": 118,
+      "to": 120,
+      "text": "Sets the pipeline label to `Running` plus the scenario title, with a shimmer effect while the request is in flight."
+    },
+    {
+      "from": 121,
+      "to": 123,
+      "text": "Reads the target picker and calls `POST /simulation/{key}`, adding `?user_id=` only when a customer was chosen; otherwise the server picks a suitable customer at random."
+    },
+    {
+      "from": 124,
+      "to": 125,
+      "text": "When the response arrives, the label names the scenario and the customer, and the shimmer stops."
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "text": "Replays the trace stage by stage, then shows the result panels."
+    },
+    {
+      "from": 128,
+      "to": 131,
+      "text": "On failure (for example a 401 when no API key is set) it stops the shimmer, shows `Run failed` and raises an error toast."
+    },
+    {
+      "from": 132,
+      "to": 136,
+      "text": "`finally` runs whether the run succeeded or not: it re-enables the cards and removes the highlight. Line 134 closes the listener."
+    },
+    {
+      "from": 138,
+      "to": 141,
+      "text": "The page's own traffic switch (the top bar has another one). A click flips `aria-checked` immediately, before the server answers, so the toggle feels instant."
+    },
+    {
+      "from": 142,
+      "to": 143,
+      "text": "Asks the server to start or stop the generator."
+    },
+    {
+      "from": 144,
+      "to": 148,
+      "text": "If that fails, the switch is put back and a toast explains why. Line 146 closes the listener."
+    },
+    {
+      "from": 149,
+      "to": 149,
+      "text": "`live:traffic` keeps the switch truthful when traffic is toggled elsewhere: the top-bar switch, another browser tab, or a demo reset, which stops the generator."
+    },
+    {
+      "from": 150,
+      "to": 151,
+      "text": "Subscribes to `live:event` and ignores every event whose `source` isn't `traffic`, so scenario runs and API calls don't inflate the generator's counter."
+    },
+    {
+      "from": 152,
+      "to": 154,
+      "text": "Increments the counter and shows the new value."
+    },
+    {
+      "from": 156,
+      "to": 159,
+      "text": "Wires the reset button with a 1.2 s hold. On confirm it calls `POST /simulation/reset`, which wipes and re-seeds the database, and confirms with a toast."
+    },
+    {
+      "from": 160,
+      "to": 163,
+      "text": "Shows an error toast if the reset fails. On success the server also broadcasts a `reset` message, and `main.js` reacts by re-rendering the current page with the fresh data."
+    },
+    {
+      "from": 165,
+      "to": 165,
+      "text": "Staggered entrance for the scenario cards."
+    },
+    {
+      "from": 166,
+      "to": 167,
+      "text": "Closes `render` and the page object."
+    }
+  ]
+}

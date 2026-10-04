@@ -1,0 +1,63 @@
+/* Design tokens. The UI is deliberately monochrome: colour only ever means RISK
+   (slate → amber → orange → red). One aqua accent marks interactivity and "live". */
+:root {
+  color-scheme: dark;
+
+  /* surfaces, darkest to lightest */
+  --bg: #0a0b0d;
+  --s1: #101114;
+  --s2: #15171b;
+  --s3: #1c1e23;
+  --s4: #24272d;
+
+  /* hairlines (decorative) and control borders (3:1 contrast) */
+  --line: rgb(255 255 255 / 0.065);
+  --line-2: rgb(255 255 255 / 0.11);
+  --line-ctl: #666a72;
+
+  /* text */
+  --t1: #ecedee;
+  --t2: #a3a6ad;
+  --t3: #7d818a;
+  --t4: #565a62;
+
+  /* accent: "ion" aqua */
+  --accent: #3ee6d1;
+  --accent-ink: #04201c;
+  --accent-soft: rgb(62 230 209 / 0.12);
+  --accent-line: rgb(62 230 209 / 0.35);
+
+  /* risk ramp (never used decoratively) */
+  --low: #8a9bb0;
+  --medium: #f4d35e;
+  --high: #f08a4b;
+  --critical: #f04e66;
+  --low-soft: rgb(138 155 176 / 0.13);
+  --medium-soft: rgb(244 211 94 / 0.13);
+  --high-soft: rgb(240 138 75 / 0.14);
+  --critical-soft: rgb(240 78 102 / 0.15);
+
+  /* type */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+
+  /* shape */
+  --radius: 12px;
+  --radius-sm: 7px;
+  --radius-xs: 5px;
+  --rail: 236px;
+  --topbar: 56px;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --fast: 110ms;
+  --base: 180ms;
+  --slow: 320ms;
+}
+
+/* Risk tokens resolved per element: add class="lvl-HIGH" etc. and use var(--lvl). */
+.lvl-LOW { --lvl: var(--low); --lvl-soft: var(--low-soft); }
+.lvl-MEDIUM { --lvl: var(--medium); --lvl-soft: var(--medium-soft); }
+.lvl-HIGH { --lvl: var(--high); --lvl-soft: var(--high-soft); }
+.lvl-CRITICAL { --lvl: var(--critical); --lvl-soft: var(--critical-soft); }

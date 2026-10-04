@@ -1,0 +1,152 @@
+{
+  "path": "web/js/pages/users.js",
+  "lines": 72,
+  "summary": "The Customers page plots every NovaBank customer as a dot on a 0-100 risk spectrum and lists them in a table sorted by risk, with an instant text filter. Everything comes from one `GET /users` call: filtering runs in the browser, and clicking a dot or a row opens the customer drawer from `views/details.js`. The page has no live subscriptions or timers, so its `render` doesn't take the cleanup context.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Header comment: a risk spectrum (each customer as a dot on the 0-100 scale) and a table that is sorted by risk and can be filtered by name, ID or city."
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "text": "The `get` API helper and DOM helpers. `esc` is imported because the tooltip content is a plain string rather than an `html` template, so values must be escaped by hand."
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "text": "Motion helpers, plus the avatar, panel and score-bar fragments."
+    },
+    {
+      "from": 6,
+      "to": 8,
+      "text": "`icon`, the shared pointer-following tooltip (`showTip` and `hideTip`) and the customer drawer."
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "text": "`row` renders one customer row. `data-user` makes the whole row open the drawer; the first cell shows the initials avatar, name and ID."
+    },
+    {
+      "from": 12,
+      "to": 14,
+      "text": "Segment, home city, current risk as a coloured score bar, and the total number of events."
+    },
+    {
+      "from": 15,
+      "to": 16,
+      "text": "Open incidents in red when there are any (a faint `0` otherwise), followed by the total incident count, so the cell reads like `2 / 5`."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "How long ago the customer was last active, then the end of the row."
+    },
+    {
+      "from": 19,
+      "to": 21,
+      "text": "Page module titled `Customers`. `render` only takes `view`, because the page has nothing to clean up: no live subscriptions and no intervals."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Fetches every customer and sorts the riskiest first, breaking ties by ID so the order stays stable between visits."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "Counts **elevated** customers: those with a current score of 60 or more, which means HIGH or CRITICAL."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Mounts the page markup."
+    },
+    {
+      "from": 26,
+      "to": 30,
+      "text": "Header. The description defines current risk the same way the backend's `users_overview` computes it: the highest score among the customer's ten most recent events, so one bad session stays visible for a while. Tags show the customer count and, in orange, how many are elevated."
+    },
+    {
+      "from": 31,
+      "to": 32,
+      "text": "Full-width **Risk spectrum** panel with a usage hint, and the inner container (`data-spectrum`) that the dots are added to."
+    },
+    {
+      "from": 33,
+      "to": 35,
+      "text": "Background zones sized 30/30/20/20% so their edges fall exactly on the engine's thresholds (30, 60 and 80), plus axis labels positioned by percentage. Line 35 closes the panel and its grid row."
+    },
+    {
+      "from": 36,
+      "to": 37,
+      "text": "**All customers** panel, with the filter input in its header."
+    },
+    {
+      "from": 38,
+      "to": 39,
+      "text": "The table: a header row plus a `data-rows` body containing every customer, already sorted by risk."
+    },
+    {
+      "from": 41,
+      "to": 43,
+      "text": "Building the spectrum. `stacks` counts how many dots each score bucket already holds, so customers with the same score pile up instead of covering each other."
+    },
+    {
+      "from": 44,
+      "to": 46,
+      "text": "For each customer the bucket is `round(score / 3)`; engine scores are always multiples of 5, so in practice each bucket holds exactly one score. `n` is the customer's zero-based position in the bucket (increment the count, then subtract one)."
+    },
+    {
+      "from": 47,
+      "to": 49,
+      "text": "Adds a dot button coloured by level. It sits at `score%` from the left, shifted 15 px right for every completed stack of five, and rises 15 px per position within its stack; the `aria-label` gives screen readers the name and score."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "Pops every dot in from zero size with a springy overshoot (`outBack`), 25 ms apart, so the distribution visibly builds up."
+    },
+    {
+      "from": 51,
+      "to": 53,
+      "text": "One delegated `pointermove` listener on the spectrum. When the pointer isn't over a dot it hides the tooltip; the `return` just exits early."
+    },
+    {
+      "from": 54,
+      "to": 57,
+      "text": "Looks up the hovered customer and shows a tooltip with ID, name, score and level, and home city. Every value goes through `esc` because `showTip` sets `innerHTML`."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "Hides the tooltip when the pointer leaves the spectrum."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Fades the table rows up, 22 ms apart, capped at 25 rows so the animation stays short."
+    },
+    {
+      "from": 62,
+      "to": 63,
+      "text": "The filter box listens for `input`, which fires on every keystroke and paste."
+    },
+    {
+      "from": 64,
+      "to": 66,
+      "text": "Lowercases the query and re-renders the table body with the customers whose name, ID or home city contain it. All customers are already in memory, so filtering needs no request and no debounce."
+    },
+    {
+      "from": 67,
+      "to": 70,
+      "text": "One delegated click listener: dots and rows both carry `data-user`, so either one opens the customer drawer."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "Closes `render` and the page object."
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "path": "web/css/tokens.css",
+  "lines": 63,
+  "summary": "The design-token sheet: one `:root` block of CSS custom properties (surface and border colours, text greys, the aqua accent, the four-step risk ramp, font stacks, radii, layout sizes and motion timings) that every other stylesheet reads with `var()`. It encodes the project's core rule that colour only ever means risk, and ends with the `.lvl-LOW` to `.lvl-CRITICAL` helper classes that hand any element its risk colour as `--lvl` and `--lvl-soft`.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Header comment stating the rule these tokens enforce: the interface is monochrome, colour is reserved for risk (slate, amber, orange, red), and a single aqua accent marks things that are interactive or live."
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "text": "`:root` matches the `html` element, so every custom property declared in this block is inherited by the whole page. `color-scheme: dark` tells the browser the page is dark, so the parts it draws itself (scrollbars, native form controls, the default canvas) use their dark variants."
+    },
+    {
+      "from": 6,
+      "to": 11,
+      "text": "Five surface colours from darkest to lightest: `--bg` is the page background, and `--s1` to `--s4` are slightly lighter near-blacks for panels, raised controls, hover fills and empty tracks. Depth comes from these small lightness steps rather than from coloured cards or heavy shadows."
+    },
+    {
+      "from": 13,
+      "to": 16,
+      "text": "Border tokens. `--line` (6.5% white) and `--line-2` (11% white) are faint, translucent hairlines for purely decorative separation such as panel edges and table rules. `--line-ctl` is a solid, much brighter grey for the edges of interactive controls (inputs, hovered buttons, checkboxes): WCAG asks for 3:1 contrast on the boundaries of controls, and `#666a72` measures about 3.6:1 on `--bg`, 3.5:1 on `--s1` and 3.1:1 even on `--s3`, while the hairlines sit around 1.2 to 1.3:1."
+    },
+    {
+      "from": 18,
+      "to": 22,
+      "text": "Four text greys from brightest to dimmest: `--t1` for primary text, `--t2` for secondary text, `--t3` for labels and metadata, and `--t4` for the faintest details (placeholders, axis labels, hints, separators). `--t3` still passes the 4.5:1 body-text contrast on the main surfaces, whereas `--t4` (about 2.7:1) is meant for de-emphasised details only."
+    },
+    {
+      "from": 24,
+      "to": 28,
+      "text": "The single accent, an aqua the comment calls \"ion\", which marks interactivity and live state (focus ring, active nav icon, primary buttons, live dots). `--accent-ink` is a very dark teal for text placed on solid aqua (about 11:1 contrast), `--accent-soft` (12% opacity) is a tinted fill and `--accent-line` (35% opacity) a tinted border."
+    },
+    {
+      "from": 30,
+      "to": 38,
+      "text": "The risk ramp, the only colours that carry meaning: `--low` slate, `--medium` amber, `--high` orange and `--critical` red. Each has a `-soft` partner at 13 to 15% opacity for tinted backgrounds behind the solid colour (badges, pills, icon tiles), and the comment's rule is that none of them is used purely as decoration."
+    },
+    {
+      "from": 40,
+      "to": 43,
+      "text": "Three font stacks: Geist for interface text, Geist Mono for data (IDs, numbers, labels) and Instrument Serif for the large page and drawer titles. Each lists system fallbacks, so the UI still renders sensibly if the Google Fonts stylesheet linked in `index.html` fails to load."
+    },
+    {
+      "from": 45,
+      "to": 50,
+      "text": "Shape and layout sizes. `--radius` (12px) rounds large containers such as panels, `--radius-sm` (7px) rounds controls and small cards, and `--radius-xs` (5px) is currently used only by the focus ring; `--rail` is the 236px width of the left navigation column and `--topbar` the 56px height of the top bar, which pages.css also uses to place sticky elements just below it."
+    },
+    {
+      "from": 52,
+      "to": 57,
+      "text": "Motion tokens, then the end of `:root`. `--ease-out` is a fast-start, soft-landing curve used by the CSS transitions and ambient pulse animations (JavaScript animations take their easing from anime.js instead). `--fast` (110ms), `--base` (180ms) and `--slow` (320ms) are the three standard transition durations."
+    },
+    {
+      "from": 59,
+      "to": 63,
+      "text": "The risk-level helper classes. Adding `class=\"lvl-HIGH\"` to an element sets two custom properties on it, `--lvl` (the solid risk colour) and `--lvl-soft` (its tint), and because custom properties inherit, that element and everything inside it can simply use `var(--lvl)`. That is how a single rule such as `.sev` or `.score-pill` renders all four levels, and the class suffixes match the API's level strings so JS can write `lvl-${level}` directly."
+    }
+  ]
+}

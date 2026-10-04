@@ -1,0 +1,167 @@
+{
+  "path": "tests/test_live_and_observability.py",
+  "lines": 52,
+  "summary": "Unit tests for the real-time and operational plumbing: the Server-Sent Events fan-out hub (`iip/live.py`) and the metrics and rate-limiter classes (`iip/observability.py`). Each test builds its **own** fresh instance instead of using the app-wide singletons (`hub`, `metrics`), so the numbers are exact and unaffected by the rest of the suite. None of them needs the database or the HTTP client. The last test checks the middleware's handling of unsafe request IDs and unknown paths.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "`asyncio` runs the async generator behind the live stream inside a real event loop."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "`json` parses the payload line of the SSE message to check its content."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "`LiveHub` is the class behind the global `hub` that pushes events to connected browsers."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "`Metrics` computes request counts, latency percentiles and throughput; `RateLimiter` is the token bucket that guards the write endpoints."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Proves that one published message reaches a subscribed stream, and that disconnecting cleans up after itself."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "The body is an inner `async` function because the hub's stream is an async generator, which needs a running event loop."
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "text": "A private hub, bound to the loop that is running this coroutine. In the app, the lifespan hook does the same binding at startup; `publish` needs the loop to hand messages over safely from worker threads."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "Creates a subscriber's stream with a 5-second heartbeat. Being an async generator, nothing runs yet: its queue is only registered on the first `anext`."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "`anext` (a built-in since Python 3.10) pulls the first item: the greeting with `retry: 3000` and a `: connected` comment, which proves the subscription is live."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Publishes an event. Since a loop is bound and a subscriber exists, the hub formats an SSE message and schedules delivery with `call_soon_threadsafe`."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "Waits for the next stream item for at most 1 second. The timeout is shorter than the 5-second heartbeat, so a keep-alive can never be mistaken for the message: either the real event arrives or the test fails fast instead of hanging."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "Closes the generator the way a disconnecting browser would; its `finally` block removes the subscriber's queue."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Returns the received message and the subscriber count measured after closing."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "`asyncio.run` creates an event loop, runs the scenario to completion and closes the loop, letting this ordinary synchronous test drive async code."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "Checks the SSE wire format: an `event: event` line naming the message type, and a `data:` line whose JSON holds the published ID. `split(\"data: \")[1]` takes the text after that marker, and `json.loads` tolerates the trailing newlines."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "After closing, the hub has zero clients, proving disconnected browsers don't leak queues that would keep collecting messages forever."
+    },
+    {
+      "from": 24,
+      "to": 25,
+      "text": "Publishing on a hub with no bound loop and no listeners must quietly do nothing. API routes publish after every ingest whether or not a dashboard is open, so this must never raise; the test passes simply by not throwing."
+    },
+    {
+      "from": 28,
+      "to": 29,
+      "text": "A limiter allowing 3 requests a minute: the bucket starts full with 3 tokens and refills at 3/60 = 0.05 tokens per second."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "The first three hits from client `a` are allowed straight away (a burst up to capacity); `hit` returns 0.0 to mean allowed."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "The fourth hit finds the bucket empty and returns a positive number, the seconds to wait (about 20) until a token refills. The `rate_limit` dependency turns that into a 429 response with a `Retry-After` header."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "A different client key gets its own full bucket, so one noisy client can't use up everyone's allowance. In the app the key is the client's IP address."
+    },
+    {
+      "from": 35,
+      "to": 36,
+      "text": "A fresh `Metrics` instance, so the numbers can be asserted exactly."
+    },
+    {
+      "from": 37,
+      "to": 38,
+      "text": "Records 100 requests with latencies of 1 to 100 ms; only the last one (100 ms) returns HTTP 500, so exactly one counts as an error."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "Records 4 ingested events in the current minute's throughput bucket."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "Takes a snapshot, the same dict the `/integration/metrics` endpoint returns."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "Total requests and server errors (status 500 and above) are counted correctly."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "Percentile maths on the sorted latencies 1, 2, ..., 100: p50 reads index `int(0.5 * 100)`, which is 50 and holds 51.0, and p99 reads index 99, which holds 100.0. Pinning exact values catches off-by-one errors in the percentile formula."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "The throughput series runs from oldest to newest minute, so its last element is the current minute, which must show the 4 ingested events."
+    },
+    {
+      "from": 46,
+      "to": 46,
+      "text": "Two hardening fixes in the request middleware, tested through the real app."
+    },
+    {
+      "from": 47,
+      "to": 48,
+      "text": "A request ID that isn't valid UTF-8 used to crash the request with a 500. Now it is answered normally, with a fresh ID instead of the unsafe one."
+    },
+    {
+      "from": 49,
+      "to": 50,
+      "text": "Three requests to paths that match no route..."
+    },
+    {
+      "from": 51,
+      "to": 52,
+      "text": "...must not appear as separate metrics: they share one `(unmatched)` entry, so probing random URLs can't grow the metrics forever."
+    }
+  ]
+}

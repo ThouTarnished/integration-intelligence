@@ -1,0 +1,102 @@
+{
+  "path": "web/js/ui/tooltip.js",
+  "lines": 32,
+  "summary": "One shared tooltip element for every chart and the world map. Charts call `showTip()` on pointer move with HTML they have already escaped, and `hideTip()` when the pointer leaves. The tooltip is created lazily, follows the pointer and flips or clamps itself so it never leaves the window.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "File header: a single tooltip element is shared by every chart and the world map. It follows the pointer and flips sides to stay on screen."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "`el` holds that one tooltip element. It starts as `null` and is only created when first needed."
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "text": "`ensure()` creates the tooltip lazily, the first time any chart wants to show one."
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "text": "Creates a `div` with class `tooltip`. CSS fixes it in place above everything else, makes it ignore the mouse (`pointer-events: none`) and keeps it invisible until it gets the `show` class."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "`role=\"tooltip\"` tells assistive technology what the element is."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Attaches it to the page body, only once."
+    },
+    {
+      "from": 10,
+      "to": 13,
+      "text": "The chart under the pointer can change without a `pointerleave`: closing the customer drawer with Escape removes its risk chart, a scroll moves a chart away from a still pointer, and a click can open a drawer on top. A key press, a click or a scroll anywhere therefore hides the tooltip. The listeners are added once, with the element, and `capture` also sees scrolls inside any scrolling panel."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Closes the `if`."
+    },
+    {
+      "from": 15,
+      "to": 16,
+      "text": "Returns the element, whether it already existed or was just created, and closes `ensure()`."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "`showTip(clientX, clientY, content)` shows the tooltip beside the pointer. The coordinates come straight from a pointer event, and `content` is HTML that the calling chart has already escaped."
+    },
+    {
+      "from": 19,
+      "to": 20,
+      "text": "Gets the shared element and replaces its content. `String()` accepts either a plain string or a `SafeHTML` object."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "Adds `show`, which CSS fades in with an opacity transition."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Measures the tooltip after filling it, because its width and height depend on the content."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "Horizontal position: normally 16px to the right of the pointer, but if that would run past the right edge of the window (`innerWidth`) it flips to the pointer's left side."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Vertical position: centred on the pointer, then clamped so it stays at least 8px from the top and bottom of the window."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Moves the tooltip with a CSS `transform`, which the browser can apply without recalculating the page layout, so it tracks the pointer smoothly."
+    },
+    {
+      "from": 26,
+      "to": 27,
+      "text": "Pins `left` and `top` to 0 so the translation is measured from the window's top-left corner (the element is `position: fixed`)."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Closes `showTip()`."
+    },
+    {
+      "from": 30,
+      "to": 32,
+      "text": "`hideTip()` removes `show` so the tooltip fades out. The optional chaining (`el?.`) makes it safe to call before a tooltip has ever been created."
+    }
+  ]
+}

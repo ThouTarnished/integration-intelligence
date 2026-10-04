@@ -1,0 +1,427 @@
+{
+  "path": "web/js/pages/overview.js",
+  "lines": 203,
+  "summary": "The landing page: a live command center for NovaBank's identity and risk events. A single call to `GET /dashboard/summary` returns everything it draws: four KPI cards, the dot-matrix threat map, a live feed, volume and score-distribution charts, recent incidents, top signals and the riskiest customers. It then stays current through the event bus (`live:event` updates the feed, map and counters; `live:incident` and `incident:changed` trigger a debounced re-fetch) plus a 30-second poll, and every row opens its detail drawer from `views/details.js`.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "File header listing the panels this page assembles, in the order they appear on screen."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Imports `get`, the API helper that prefixes `/api/v1`, parses the JSON response and throws an error on any non-2xx status."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "DOM helpers: `$` (querySelector with an optional root element), `fmt` (number and time formatters), the auto-escaping `html` template, `mount` (replaces an element's content) and `utc` (parses the server's timezone-less timestamps as UTC)."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "The live connection's current state and `liveDotClass`, for the live-feed panel's dot."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "Motion helpers from the anime.js wrapper: `animate`, `countUp` (rolling numbers), `flip` (glide list items to their new positions after a DOM change) and `stagger` (offset the start times of many elements). When motion is off (the OS reduced-motion setting or the in-app toggle), the wrapper jumps every animation straight to its end state."
+    },
+    {
+      "from": 6,
+      "to": 8,
+      "text": "Chart modules: `areaChart` for event volume, `hbars` for the top-signals bar list and `scoreHistogram` for the score distribution."
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "text": "`sparkline` draws the tiny trend lines inside two KPI cards; `worldMap` is the canvas-plus-SVG threat map and `MAP_LEGEND` is its colour key."
+    },
+    {
+      "from": 11,
+      "to": 12,
+      "text": "Reusable HTML fragments from `ui/components.js`: avatar, segmented control (`seg` builds it, `bindSeg` wires it up), empty state, event icon, MITRE ATT&CK link, panel frame, severity badge and status pill. `icon` returns an inline SVG icon."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "The three detail drawers. Every clickable row on this page ends up calling one of them."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "Maximum length of the live feed. It matches the 12 `recent_events` the summary endpoint returns, so the list starts full and live inserts keep it at that length."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "`kpi` is a small template function for one KPI card. It takes a single options object; `foot`, `cls` and `extra` default to empty strings so simple cards can leave them out."
+    },
+    {
+      "from": 18,
+      "to": 19,
+      "text": "Each card is a panel spanning 3 of the 12 grid columns, so four fit in a row. `data-kpi` names the card so live code can find its number later; the top row shows the label and an icon."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "The number is first rendered as `0`, with the real value parked in `data-count`. After mounting, `countUp` rolls it up from zero, which is the counting effect you see on load. `cls` can add a level class such as `lvl-HIGH` to colour the number."
+    },
+    {
+      "from": 21,
+      "to": 22,
+      "text": "The footer line under the number, followed by the optional `extra` slot (a sparkline or a split bar). The last line closes the card markup."
+    },
+    {
+      "from": 24,
+      "to": 25,
+      "text": "`feedItem` renders one live-feed entry. `source` is passed only for events that arrived over the live stream (for example `traffic` or `simulation`). The `lvl-…` class colours the entry by risk level, and `data-event` makes a click open the event drawer."
+    },
+    {
+      "from": 26,
+      "to": 27,
+      "text": "An icon chosen by event type (login, card, database or key), then the wrapper for the two lines of text."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "First line: readable event type, customer ID and location, plus a small badge naming the source when the event arrived live. Every value passes through `html`, so customer data can never inject markup."
+    },
+    {
+      "from": 29,
+      "to": 30,
+      "text": "Second line: event ID, local time and the number of signals (pluralised correctly), or `clean` when there are none. `Trusted device` counts as a signal too, so a routine login usually reads `1 signal`. Line 29 closes the text wrapper."
+    },
+    {
+      "from": 31,
+      "to": 32,
+      "text": "The event's 0-100 risk score as a pill on the right, then the closing tag of the list item."
+    },
+    {
+      "from": 34,
+      "to": 35,
+      "text": "`incidentRow` builds one row of the Recent incidents table. `data-incident` lets a click open the incident drawer; the first cell shows the incident title with its ID underneath."
+    },
+    {
+      "from": 36,
+      "to": 37,
+      "text": "The remaining cells: severity badge (colour, pips and text, so it never relies on colour alone), customer name, peak score, status pill and how long ago the incident was last updated."
+    },
+    {
+      "from": 39,
+      "to": 40,
+      "text": "`personRow` renders one Riskiest customers entry: initials avatar, name, ID and home city, plus a score pill coloured by the customer's risk level. `data-user` makes a click open the customer drawer."
+    },
+    {
+      "from": 42,
+      "to": 43,
+      "text": "`travelStats` summarises the map's travel arcs. `count(kind)` classifies each arc the same way the map does (**impossible**; **hostile**, meaning not judged because the IP was flagged or the sign-in failed; or **plausible**) and counts how many arcs have that kind."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "The fastest implied speed among impossible trips. The leading `0` argument makes `Math.max` return 0 instead of `-Infinity` when there are none."
+    },
+    {
+      "from": 45,
+      "to": 47,
+      "text": "Each stat is a `[label, value, cssClass]` tuple. Unverified origins and impossible routes get level classes so their numbers render in orange and red."
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "text": "The fastest implied speed appears as a formatted km/h figure in red, or as an em dash when no trip was impossible. Line 48 closes the array."
+    },
+    {
+      "from": 50,
+      "to": 51,
+      "text": "Renders the tuples as a row of small label/value pairs under the map."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "`hourLabels` builds the x-axis labels for the 24-hour chart. It anchors on the server's `generated_at` timestamp (parsed as UTC) rather than the browser clock, so the labels line up with the server's hourly buckets."
+    },
+    {
+      "from": 55,
+      "to": 57,
+      "text": "Builds 24 labels, oldest first: index `i` is `23 - i` hours ago, the same order as the backend's `events_by_hour` array. `getHours()` returns the viewer's **local** hour, so the labels read as local time, such as `14:00`."
+    },
+    {
+      "from": 58,
+      "to": 59,
+      "text": "Closes the `Array.from` callback and the function."
+    },
+    {
+      "from": 61,
+      "to": 63,
+      "text": "The page module the router expects: a `title` (shown in the breadcrumb and the browser tab) and an async `render(view, ctx)`. `view` is the main content element, and `ctx` is this visit's cleanup context (`on`, `every`, `add`)."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "One request to `GET /dashboard/summary` returns every number, series and list the page needs, so the first paint needs no follow-up calls."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Relative change in event volume compared with the previous 24 hours (0.12 means +12%). The ternary avoids a division by zero on a fresh database."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Open and investigating incident counts, used in the Active incidents card's footer and split bar."
+    },
+    {
+      "from": 67,
+      "to": 68,
+      "text": "Turns the `[{label, value}]` severity list into a lookup object such as `{CRITICAL: 4, HIGH: 9}`, then sums it. `Math.max(1, …)` keeps the split-bar width calculation from dividing by zero."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "`mount` replaces the view's content with the whole page in one step. Every interpolated value in the `html` template is escaped unless it is itself `html` output."
+    },
+    {
+      "from": 71,
+      "to": 74,
+      "text": "Page header: eyebrow, the `Command center` title and a one-line description of the platform. The ampersand is written as `&amp;` because the static text of a template is inserted as raw HTML."
+    },
+    {
+      "from": 75,
+      "to": 77,
+      "text": "Header actions: a `synced HH:MM` stamp, marked `data-synced` so `refresh` can update it (and use it to check the page is still on screen), and a primary button that jumps to the Simulation Center."
+    },
+    {
+      "from": 79,
+      "to": 82,
+      "text": "Opens the KPI row. Card 1, **Events · 24h**: the footer shows ▲ or ▼ with the percentage change from the previous 24 hours, and `extra` reserves an empty `data-spark` slot for a sparkline drawn after mounting."
+    },
+    {
+      "from": 83,
+      "to": 85,
+      "text": "Card 2, **Active incidents** (open plus investigating): the footer shows both counts as status pills, and a two-part bar shows the open share in critical red, computed inline as a width percentage. The amber investigating segment simply fills the rest (`flex:1`)."
+    },
+    {
+      "from": 86,
+      "to": 88,
+      "text": "Card 3, **High-risk events**: all stored events scored HIGH or CRITICAL, coloured by `lvl-HIGH`. The footer gives their share of all events, and a second sparkline slot will show risky events per hour."
+    },
+    {
+      "from": 89,
+      "to": 93,
+      "text": "Card 4, **Critical incidents**: active incidents with CRITICAL severity. Its bar splits **all** incidents by severity; each segment's `lvl-…` class sets the `--lvl` colour variable, so a single `background:var(--lvl)` rule colours every segment. Line 92 closes the KPI row."
+    },
+    {
+      "from": 95,
+      "to": 97,
+      "text": "Second row. **Global activity** spans 8 of the 12 columns (`ticks` adds crop-mark corners) and holds an empty `data-map` container for the world map, its legend and the travel stats; the header tag counts the active cities. Each panel's `idx` (01-07) is the small number in its header."
+    },
+    {
+      "from": 98,
+      "to": 101,
+      "text": "**Live feed** takes the remaining 4 columns and starts with the 12 most recent events. The arrow function in `.map((e) => feedItem(e))` matters: a plain `.map(feedItem)` would pass the array index as `source`. The pulsing dot in the header is pure CSS (nothing reads `data-live-dot`), and line 100 closes the row."
+    },
+    {
+      "from": 103,
+      "to": 105,
+      "text": "Third row. **Event volume** gets a segmented control named `range` (24 hours or 7 days, starting on 24h) and an empty `data-volume` container for the area chart."
+    },
+    {
+      "from": 106,
+      "to": 108,
+      "text": "The **Score distribution** panel carries a `√ scale` tag: the histogram uses a square-root axis so the rare high scores stay visible next to the many low ones. Line 107 closes the row."
+    },
+    {
+      "from": 110,
+      "to": 112,
+      "text": "Bottom row. **Recent incidents** is half the width, with a flush body so the table reaches the panel edges, and a `Board` button that links to the full incident board."
+    },
+    {
+      "from": 113,
+      "to": 115,
+      "text": "When there are incidents, a table with a header row and a `data-incidents` body, so `refresh` can swap the rows later. Otherwise an empty state points the user to the Simulation Center."
+    },
+    {
+      "from": 116,
+      "to": 116,
+      "text": "**Top signals** panel: an empty container that `hbars` fills after mounting."
+    },
+    {
+      "from": 117,
+      "to": 119,
+      "text": "**Riskiest customers** lists the top six customers with `personRow`. Line 118 closes the row, the template and the `mount` call."
+    },
+    {
+      "from": 121,
+      "to": 122,
+      "text": "With the markup in place, motion and charts start. Every `[data-count]` number rolls up from 0, each card 90 ms after the previous one; `countUp` also stores the value in `data-value`, which the live handlers later increment."
+    },
+    {
+      "from": 123,
+      "to": 123,
+      "text": "The KPI split bars grow from the left (`scaleX` 0 to 1, with CSS setting `transform-origin: left`), staggered 60 ms apart after a 500 ms pause, so they fill in after the numbers start counting."
+    },
+    {
+      "from": 124,
+      "to": 125,
+      "text": "Draws the two KPI sparklines from the 24 hourly buckets: total events in a muted text colour (`--t3`) and risky events in the high-risk orange (`--high`)."
+    },
+    {
+      "from": 127,
+      "to": 129,
+      "text": "Creates the world map from `s.geo` (cities and travel arcs). Clicking a city opens the Events page filtered to that city: `Lagos, Nigeria` becomes `?q=Lagos`, URL-encoded."
+    },
+    {
+      "from": 130,
+      "to": 130,
+      "text": "Registers the map's `destroy` function, which disconnects its ResizeObserver, so the router calls it when the user leaves the page."
+    },
+    {
+      "from": 132,
+      "to": 132,
+      "text": "Holds the teardown function of the area chart currently on screen; `areaChart` returns a function that stops the chart's resize observer."
+    },
+    {
+      "from": 133,
+      "to": 135,
+      "text": "`drawVolume(range)` draws the chart for one range. It first stops the previous chart's observer (`?.()` skips this on the very first call), then looks up the container."
+    },
+    {
+      "from": 136,
+      "to": 139,
+      "text": "For `24h`: hourly labels and two series, all events in a neutral tone and high-plus-critical events in red on top, so the risky share stands out."
+    },
+    {
+      "from": 140,
+      "to": 143,
+      "text": "For `7d`: one point per day, labelled with the weekday (`Mon`, `Tue`…), where risky means that day's HIGH plus CRITICAL count. Line 142 closes the function."
+    },
+    {
+      "from": 144,
+      "to": 145,
+      "text": "Draws the 24-hour view first, then wires the segmented control so that pressing a range redraws the chart while the pill slides under the pressed button."
+    },
+    {
+      "from": 146,
+      "to": 147,
+      "text": "Registers teardown for whichever volume chart is current and for the histogram. `scoreHistogram` also returns its observer's disconnect function, so it can be passed straight to `ctx.add`."
+    },
+    {
+      "from": 149,
+      "to": 152,
+      "text": "Fills Top signals with horizontal bars for the eight most frequent risk-raising signals: label and count, tinted HIGH for weights of 30 or more and MEDIUM for 20 or more, plus the signal's MITRE ATT&CK technique as a link chip."
+    },
+    {
+      "from": 154,
+      "to": 156,
+      "text": "One delegated click listener covers the whole page: `closest()` finds the nearest ancestor marked `data-event`, `data-incident` or `data-user`."
+    },
+    {
+      "from": 157,
+      "to": 160,
+      "text": "Opens the matching drawer, checking for an event first, then an incident, then a customer. Line 159 closes the listener."
+    },
+    {
+      "from": 162,
+      "to": 163,
+      "text": "Start of the live-update section. `feed` is the list that new events are inserted into."
+    },
+    {
+      "from": 164,
+      "to": 165,
+      "text": "References to the Events and High-risk KPI numbers, so live events can bump them."
+    },
+    {
+      "from": 166,
+      "to": 169,
+      "text": "The live-feed panel's dot mirrors the real connection: painted from `live.state` now and repainted on every `live:state` change. It used to pulse 'live' even while the app was offline."
+    },
+    {
+      "from": 170,
+      "to": 170,
+      "text": "Subscribes to `live:event`, which `core/live.js` emits for every server-sent `event` message with a `{event, source}` payload. Because it uses `ctx.on`, the subscription ends automatically when the user leaves the page."
+    },
+    {
+      "from": 171,
+      "to": 174,
+      "text": "`flip` records where each feed entry sits, runs the change (insert the new entry at the top, trim back to 12), then animates the remaining entries from their old positions to their new ones. The list glides down instead of jumping."
+    },
+    {
+      "from": 175,
+      "to": 178,
+      "text": "The new entry slides in from the left with a teal highlight that fades out over 1.4 s. `onComplete` reverts the inline styles anime.js added, so the CSS hover background works again."
+    },
+    {
+      "from": 179,
+      "to": 179,
+      "text": "Ripples the event's city on the map and, if the customer travelled, draws the new travel arc."
+    },
+    {
+      "from": 180,
+      "to": 182,
+      "text": "Rolls the Events · 24h counter up by one from its stored value, and also bumps High-risk events when the score is 60 or more (HIGH or CRITICAL). Line 177 closes the subscription."
+    },
+    {
+      "from": 184,
+      "to": 185,
+      "text": "`refresh` re-fetches the summary to update what live events don't cover: the incident counts and the incident table."
+    },
+    {
+      "from": 186,
+      "to": 187,
+      "text": "If the user navigated away while the request was in flight, `data-synced` no longer exists, so the function stops instead of writing into another page."
+    },
+    {
+      "from": 188,
+      "to": 188,
+      "text": "Updates the `synced HH:MM` stamp."
+    },
+    {
+      "from": 189,
+      "to": 190,
+      "text": "Animates the Active and Critical incident KPIs to their new values. `countUp` starts from the number already shown, so a change from 7 to 8 rolls up by one rather than restarting at zero."
+    },
+    {
+      "from": 191,
+      "to": 192,
+      "text": "Between refreshes, live events bump the Events and High-risk counters by one. Each refresh resets them to the server's exact figures, so a dropped connection can't leave them low for good."
+    },
+    {
+      "from": 193,
+      "to": 195,
+      "text": "Re-renders the Recent incidents rows if the table exists; it doesn't when the empty state is showing. Line 188 closes `refresh`."
+    },
+    {
+      "from": 196,
+      "to": 197,
+      "text": "A new or updated incident schedules a refresh 600 ms later and cancels any refresh already pending. One scenario can touch several incidents in quick succession, so this debounce turns the burst into a single request."
+    },
+    {
+      "from": 198,
+      "to": 198,
+      "text": "`incident:changed` (emitted when someone changes a status in the incident drawer) refreshes immediately."
+    },
+    {
+      "from": 199,
+      "to": 199,
+      "text": "After a reconnect, `live:resync` runs the same refresh, so whatever was missed while the connection was down comes back."
+    },
+    {
+      "from": 200,
+      "to": 200,
+      "text": "A 30-second timer refreshes anyway, as a backstop; `ctx.every` stops it when the page is left."
+    },
+    {
+      "from": 201,
+      "to": 201,
+      "text": "On teardown, cancels a debounced refresh that hasn't fired yet. The router already removes the `ctx.on` subscriptions and the `ctx.every` interval itself."
+    },
+    {
+      "from": 202,
+      "to": 203,
+      "text": "Closes `render` and the exported page object."
+    }
+  ]
+}

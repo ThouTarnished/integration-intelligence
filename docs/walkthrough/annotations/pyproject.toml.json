@@ -1,0 +1,24 @@
+{
+  "path": "pyproject.toml",
+  "lines": 20,
+  "summary": "The project's single configuration file for Python tooling: standard project metadata, pytest settings and Ruff linter rules. It holds no dependency list (dependencies live in `requirements.txt` and `requirements-dev.txt`), and the app runs straight from the source tree with `python -m iip` rather than being installed as a package. CI's `ruff check .` and `pytest` steps both read their settings from here.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "The `[project]` table holds standard package metadata (defined by PEP 621) that any Python packaging tool can read."},
+    {"from": 2, "to": 2, "text": "The project's distribution name. It differs from the import name, `iip`, which is normal: this names the project, while the package folder is what code imports."},
+    {"from": 3, "to": 3, "text": "The project version, kept in step by hand with `__version__` in `iip/__init__.py`, which the API reports in its OpenAPI docs and its health endpoint."},
+    {"from": 4, "to": 4, "text": "A one-line description of the project."},
+    {"from": 5, "to": 5, "text": "Points packaging tools at the README for the long description."},
+    {"from": 6, "to": 6, "text": "The minimum Python version. The code relies on 3.10 features such as `zip(..., strict=True)` in `scripts/build_world_dots.py` and the built-in `anext()` used by the live-stream test."},
+    {"from": 8, "to": 8, "text": "Settings for pytest, which reads this table automatically, so no separate `pytest.ini` is needed."},
+    {"from": 9, "to": 9, "text": "A bare `pytest` command only searches the `tests` folder for test files."},
+    {"from": 10, "to": 10, "text": "Adds the project root (so `import iip` works without installing the package) and `tests/` (so test modules can `from conftest import AUTH, EVENT`) to Python's import path."},
+    {"from": 11, "to": 11, "text": "Extra default flag: `-q` (quiet) shrinks pytest's output to rows of progress dots and a one-line summary."},
+    {"from": 12, "to": 12, "text": "Ignores one known warning. Recent Starlette versions prefer the `httpx2` package for `TestClient` and warn when they fall back to `httpx`, which this project installs because the AI analyst uses it; the filter keeps test output clean."},
+    {"from": 14, "to": 14, "text": "Settings for Ruff, the fast Python linter that CI runs."},
+    {"from": 15, "to": 15, "text": "Allows lines up to 120 characters (Ruff's default is 88)."},
+    {"from": 16, "to": 16, "text": "Tells Ruff the oldest Python the code must support (matching `requires-python`), so it only suggests syntax available in 3.10 and applies version-dependent rules correctly."},
+    {"from": 17, "to": 17, "text": "Skips the `web` (JavaScript and CSS) and `docs` folders. The `extend-` prefix adds to Ruff's built-in exclusions (such as `.venv`) instead of replacing them."},
+    {"from": 19, "to": 19, "text": "The table for lint-rule selection."},
+    {"from": 20, "to": 20, "text": "Enabled rule families: `E` and `W` (pycodestyle errors and warnings), `F` (Pyflakes: unused imports, undefined names), `I` (isort-style import ordering), `B` (flake8-bugbear: likely bugs), `UP` (pyupgrade: modern syntax) and `SIM` (flake8-simplify: simpler equivalents)."}
+  ]
+}

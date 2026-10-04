@@ -1,0 +1,32 @@
+{
+  "path": "web/js/charts/histogram.js",
+  "lines": 50,
+  "summary": "The Score distribution panel on the overview: 21 bars, one per possible risk score (0, 5, … 100), each coloured by its risk level, with dashed markers at the 30, 60 and 80 thresholds. Heights use a square-root scale so the rare high scores stay visible next to the pile of low ones. Its data is `score_histogram` from iip/queries.py; it redraws through `responsive` from charts/core.js and uses the shared tooltip.",
+  "notes": [
+    {"from": 1, "to": 2, "text": "Header comment. Rule weights are multiples of 5, so a score can only be 0, 5, 10 … 100 and the chart gets exactly one bar per possible score; bars are coloured by level, thresholds are marked, and a √ scale keeps the long tail visible."},
+    {"from": 3, "to": 6, "text": "Imports: escaping and number formatting from dom.js, `animate` and `stagger` from motion.js, the shared tooltip, and `responsive` from charts/core.js."},
+    {"from": 8, "to": 8, "text": "`scoreHistogram(el, buckets, options)`. Each bucket is `{ score, value, level }` from the API; the default thresholds 30, 60 and 80 are where MEDIUM, HIGH and CRITICAL begin."},
+    {"from": 9, "to": 9, "text": "Draws through `responsive`, so the chart fits its container and redraws on resize; the overview registers the returned cleanup with `ctx.add`."},
+    {"from": 10, "to": 11, "text": "Padding (extra room on top for the threshold numbers) and the inner plot width and height."},
+    {"from": 12, "to": 12, "text": "`band` is the horizontal slot each bucket gets: the plot width shared evenly between the buckets."},
+    {"from": 13, "to": 13, "text": "The scale's maximum is the **square root** of the largest count (at least 1), and bars compare square roots too. If score 0 has 900 events and score 85 has 4, a linear scale shrinks the 4 to under 0.5% of the height, while √4 / √900 is about 7%, so differences among the rare high scores stay readable (the panel carries a √ scale tag so nobody misreads it)."},
+    {"from": 14, "to": 14, "text": "`base` is the y of the baseline; bars grow upward from it."},
+    {"from": 15, "to": 15, "text": "`xOf(score)` gives the x of the left edge of a score's slot: score / 5 is the bucket index, times the slot width."},
+    {"from": 17, "to": 18, "text": "For each bucket the height is √count divided by √max, times the plot height. Empty buckets get no bar, and any non-empty bucket is at least 2 px tall so a single event still shows."},
+    {"from": 19, "to": 21, "text": "Each bar is a `rect` with class `lvl-LEVEL`, which charts.css fills with `var(--lvl)` (variables work in CSS rules, just not reliably in attributes). It is inset 18% on each side of its slot to leave gaps; `data-i` lets the tooltip find the bucket and `data-h` stores the final height for the animation."},
+    {"from": 22, "to": 23, "text": "Threshold markers: for each threshold, a vertical line (dashed by charts.css) at the left edge of that score's slot, exactly where the new level begins, rising 8 px above the plot with the number printed beside its top."},
+    {"from": 25, "to": 25, "text": "Opens the SVG at the measured width with a matching `viewBox`, plus `role=\"img\"` and an `aria-label` for screen readers."},
+    {"from": 26, "to": 26, "text": "The baseline along the bottom of the plot."},
+    {"from": 27, "to": 27, "text": "Threshold markers first, then bars, so the bars paint over the dashed lines."},
+    {"from": 28, "to": 28, "text": "X-axis labels at 0, 25, 50, 75 and 100, each centred under its score's bar (`xOf(s) + band / 2`)."},
+    {"from": 29, "to": 29, "text": "Closes the SVG template."},
+    {"from": 31, "to": 31, "text": "Keeps a reference to the new SVG."},
+    {"from": 32, "to": 34, "text": "One `pointermove` listener on the whole SVG (event delegation) instead of one per bar: `closest(\"rect.bar\")` finds the bar under the pointer, and if there is none the tooltip is hidden; `return hideTip()` hides and exits in one statement."},
+    {"from": 35, "to": 38, "text": "Looks up the bucket via the bar's `data-i` (a string, which still works as an array index) and shows its score, event count and level. The closing `});` ends the handler."},
+    {"from": 39, "to": 39, "text": "Hides the tooltip when the pointer leaves the chart."},
+    {"from": 41, "to": 42, "text": "First draw only: collects the bars into an array."},
+    {"from": 43, "to": 45, "text": "Animates every bar from zero height to its stored height. SVG rects grow downward from their `y`, so `y` moves from the baseline up to `base - h` at the same time, making the bars rise from the baseline; the functions `(r) => [...]` give each bar its own start and end values."},
+    {"from": 46, "to": 48, "text": "900 ms with the decelerating `outExpo` ease, each bar starting 22 ms after the previous one (from 150 ms) via `stagger`, so a wave runs left to right. The closing lines end the call and the `if`."},
+    {"from": 49, "to": 50, "text": "Closes the `responsive` callback and `scoreHistogram`."}
+  ]
+}

@@ -1,0 +1,257 @@
+{
+  "path": "iip/app.py",
+  "lines": 90,
+  "summary": "The **application factory** that assembles the FastAPI app: logging, OpenAPI metadata, CORS and request-context middleware, a catch-all error handler, the `/api/v1` routers, the static frontend and the dashboard page. Its `lifespan` handler creates tables, seeds an empty database, connects the SSE hub to the event loop and stops live traffic on shutdown. The module-level `app` is what `python -m iip` serves through uvicorn and what the tests import.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring: the application factory, which wires configuration, middleware, the API, the live hub and the dashboard page into one FastAPI app."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Deferred evaluation of type hints, as in the other modules."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "`asyncio`, needed to grab the server's running event loop at startup."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "Python's standard logging module."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "`asynccontextmanager` turns an async generator function into an async context manager, the shape FastAPI expects for a lifespan handler."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "`FastAPI` is the application class; `Request` types the error handler's first argument."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Middleware that answers browsers' cross-origin resource sharing (CORS) checks."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "Response classes for a file, an HTML string and a JSON body."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "`StaticFiles` serves a directory of files as-is; the `RevalidatingStaticFiles` subclass below adds a caching header for the frontend."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "`select` and `func`, for the startup query that counts users."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "The package version from `iip/__init__.py`, shown in the API docs."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "`WEB_DIR` points at the `web/` folder; `settings` holds the environment-driven configuration from `config.py`."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "The session factory, the `User` model for the emptiness check and `init_db` to create tables."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "The two real-time singletons from `live.py`: `hub` fans messages out to browsers over Server-Sent Events (SSE, a one-way stream from server to browser over a long-lived HTTP response), and `traffic` is the optional live-traffic generator."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "The middleware from `observability.py` that adds request IDs and timings and feeds the metrics."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "One router bundling every API module under `/api/v1` (built in `routes/__init__.py`)."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "The seeder, used on first start."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Configures the root logger once, at import: INFO and above, each line showing time, level padded to 7 characters (`%(levelname)-7s` left-aligns it so messages line up), logger name and message."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "The application's logger. Other modules use names like `iip.http` and `iip.live`, which makes them children of `iip` in Python's dotted logger hierarchy."
+    },
+    {
+      "from": 26,
+      "to": 28,
+      "text": "A tiny subclass of Starlette's `StaticFiles`. The JavaScript and CSS files have plain names (no content hash), and without a caching header a browser may reuse an old copy on reload, so after an update the page could run stale code. The docstring states the trade-off: revalidation costs one request per file, answered with a tiny `304 Not Modified` when nothing changed."
+    },
+    {
+      "from": 30,
+      "to": 31,
+      "text": "Overrides the hook `StaticFiles` calls to build each file's response, letting the parent do all the real work (paths, ETags, 304s)."
+    },
+    {
+      "from": 32,
+      "to": 33,
+      "text": "`Cache-Control: no-cache` doesn't mean \"don't cache\": it means \"cache, but check with the server before reusing\", so updates appear on the next reload. The response is then returned unchanged otherwise."
+    },
+    {
+      "from": 36,
+      "to": 39,
+      "text": "`TAGS` is OpenAPI tag metadata: each entry gives a group of endpoints a description in the interactive docs at `/docs`, and the list order sets the order of the groups. Names must match the `tags=[...]` each router declares, here `events`, `incidents` and `users`."
+    },
+    {
+      "from": 40,
+      "to": 43,
+      "text": "The remaining groups: `risk engine`, `simulation` and `integration`. The `dashboard` and `ai analyst` routers aren't listed, so their groups appear without a description. Line 32 closes the list."
+    },
+    {
+      "from": 46,
+      "to": 47,
+      "text": "The **lifespan** handler (FastAPI's replacement for the older startup and shutdown events): code before `yield` runs once when the server starts, code after it once at shutdown. FastAPI passes in the app; naming the parameter `_` signals it is unused."
+    },
+    {
+      "from": 48,
+      "to": 48,
+      "text": "Creates any missing tables. `create_all` skips tables that already exist, so it is safe on every start."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "Opens a short-lived database session; the `with` block guarantees it is closed."
+    },
+    {
+      "from": 50,
+      "to": 52,
+      "text": "If the `users` table is empty (`SELECT count(*) FROM users` returns 0), logs it and seeds the synthetic data. That is why a fresh checkout opens on a populated dashboard with no setup."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Hands the server's event loop to the SSE hub. Sync endpoints run in worker threads, and the hub needs this loop to pass their messages back safely (via `call_soon_threadsafe`)."
+    },
+    {
+      "from": 54,
+      "to": 54,
+      "text": "The app serves requests while the lifespan is paused here."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "On shutdown, cancels the live-traffic task if it is running. Startup never starts it; it is switched on from the Simulation Center (`POST /api/v1/simulation/traffic`)."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "The **application factory**: a function that builds and returns a fully configured app, keeping all the wiring in one place."
+    },
+    {
+      "from": 59,
+      "to": 60,
+      "text": "Creates the `FastAPI` instance with the title and version shown in the docs, the `lifespan` handler above and the tag metadata."
+    },
+    {
+      "from": 61,
+      "to": 63,
+      "text": "The description shown at the top of `/docs`; two adjacent string literals are joined into one. Line 52 closes the call."
+    },
+    {
+      "from": 64,
+      "to": 65,
+      "text": "Allows cross-origin requests only from the configured origins (by default `http://localhost:8000` and `http://127.0.0.1:8000`), only with the verbs the API uses, and with any header, so `X-API-Key` can be sent. The bundled dashboard is same-origin and doesn't need this; it matters for a frontend served from elsewhere."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Starlette wraps middleware so that the **last** one added is the outermost layer. Adding `RequestContextMiddleware` last means it sees each request first and each response last, so it can time and tag (`X-Request-ID`, `X-Response-Time`) everything inside it."
+    },
+    {
+      "from": 68,
+      "to": 69,
+      "text": "A catch-all handler for any exception nothing else handled. `HTTPException`s (404, 401, 429, ...) and validation errors (422) keep FastAPI's own handlers."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "Logs the full traceback on the server; `log.exception` logs at ERROR level with the stack trace."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "Returns a generic 500 JSON body, so internals such as stack traces or SQL never leak to the client."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "Mounts all API routes under `/api/v1`."
+    },
+    {
+      "from": 74,
+      "to": 74,
+      "text": "Serves everything in `web/` (CSS, JavaScript, the vendored anime.js, the favicon) under `/static`, through the revalidating subclass so browsers always pick up the latest frontend code."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "The dashboard page at `/`. `response_class=HTMLResponse` sends the returned string as HTML, and `include_in_schema=False` hides the route from the API docs (and from the endpoint catalog built from them)."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "Returns the page's HTML as a string."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "Reads `index.html` fresh on every request, so edits show up on reload."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Comment flagging the trade-off: injecting the key is a demo convenience, not a security model (see the README's Security section)."
+    },
+    {
+      "from": 81,
+      "to": 81,
+      "text": "Replaces the `__IIP_API_KEY__` placeholder (in a `<meta name=\"iip-api-key\">` tag) with the real key in demo mode, or an empty string otherwise. `web/js/core/api.js` reads that tag; when it is empty, the user is asked for the key once per browser session."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "Browsers request `/favicon.ico` automatically; this route answers it, also hidden from the docs."
+    },
+    {
+      "from": 84,
+      "to": 85,
+      "text": "Serves the SVG icon at that path with the correct `image/svg+xml` type instead of a 404."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "Returns the configured app."
+    },
+    {
+      "from": 90,
+      "to": 90,
+      "text": "Builds the module-level `app` at import time. This is the object uvicorn loads as `\"iip.app:app\"` (see `__main__.py`) and the object the tests import."
+    }
+  ]
+}

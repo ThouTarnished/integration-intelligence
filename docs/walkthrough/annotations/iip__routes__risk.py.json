@@ -1,0 +1,17 @@
+{
+  "path": "iip/routes/risk.py",
+  "lines": 19,
+  "summary": "The risk-engine endpoints behind the Risk Lab. `GET /risk/rules` publishes the rulebook (signals, weights, ATT&CK mappings, levels and thresholds) and `POST /risk/evaluate` scores a hand-picked set of signals without storing anything. Both call the pure functions in `iip/rules.py`, the same code the ingestion pipeline uses, so what-if results always match real scoring.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Module docstring: the rulebook and the what-if scorer behind the Risk Lab page."},
+    {"from": 2, "to": 2, "text": "Postpones evaluation of type hints (they are kept as strings); FastAPI still resolves them when it inspects each endpoint's signature."},
+    {"from": 4, "to": 4, "text": "FastAPI's router class."},
+    {"from": 6, "to": 6, "text": "The pure rule engine."},
+    {"from": 7, "to": 7, "text": "`EvaluateIn` validates the list of signal names."},
+    {"from": 9, "to": 9, "text": "Router tagged `risk engine`."},
+    {"from": 12, "to": 12, "text": "Registers `GET /api/v1/risk/rules`."},
+    {"from": 13, "to": 14, "text": "Needs no database: returns `rules.rulebook()`, everything a client needs to render the rules."},
+    {"from": 17, "to": 17, "text": "Registers `POST /api/v1/risk/evaluate`. It is a POST because it takes a body, but it changes nothing, which is why it carries no `WRITE` dependencies."},
+    {"from": 18, "to": 19, "text": "`EvaluateIn` rejects unknown signal names with a 422; `rules.what_if` scores the chosen signals exactly as the pipeline would and returns the assessment."}
+  ]
+}

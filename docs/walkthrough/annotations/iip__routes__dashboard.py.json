@@ -1,0 +1,15 @@
+{
+  "path": "iip/routes/dashboard.py",
+  "lines": 14,
+  "summary": "One endpoint that feeds the Overview screen: `GET /dashboard/summary` returns KPIs, 7-day and 24-hour trends, risk distributions, top signals, map data and recent activity in a single response. All the aggregation happens in `dashboard_summary` in `iip/queries.py`.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Module docstring: aggregates for the overview screen."},
+    {"from": 2, "to": 2, "text": "Postpones evaluation of type hints (they are kept as strings); FastAPI still resolves them when it inspects each endpoint's signature."},
+    {"from": 4, "to": 4, "text": "FastAPI's router class."},
+    {"from": 6, "to": 6, "text": "The query function that computes the whole dashboard payload."},
+    {"from": 7, "to": 7, "text": "The per-request session alias."},
+    {"from": 9, "to": 9, "text": "Router tagged `dashboard`."},
+    {"from": 12, "to": 12, "text": "Registers `GET /api/v1/dashboard/summary`; the summary text lists what the payload contains."},
+    {"from": 13, "to": 14, "text": "A thin endpoint: FastAPI injects a session through `db: DB`, and one call to `dashboard_summary` returns everything, so the overview page loads with a single request."}
+  ]
+}

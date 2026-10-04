@@ -1,0 +1,727 @@
+{
+  "path": "web/js/views/details.js",
+  "lines": 218,
+  "summary": "The views behind every detail drawer. `openEvent`, `openIncident` and `openUser` each fetch data and return a view object for drawer.js, whose `after` hook then draws the charts (the verdict gauge, the score waterfall, the risk line and location bars) and wires up cross-links. The file also holds the travel card with its speed meter measured against the 900 km/h airliner threshold, hold-free incident triage through a segmented control, the shared `timelineList` used by other pages, and `openRef` for clickable IDs.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "File header: the three detail drawers (event, incident and customer) are defined here once, so every page opens exactly the same views."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "API helpers: `get` to read data, `patch` to change an incident's status and `post` to run a scenario."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "The app-wide event bus, used to tell the rest of the UI that an incident changed or that the AI Analyst should be asked something."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "The formatters, the auto-escaping `html` template and `levelOf` (score to risk level)."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "The motion-aware `animate` and `enter` helpers."
+    },
+    {
+      "from": 6,
+      "to": 9,
+      "text": "Chart modules drawn inside the drawers: horizontal bars (locations), the semicircle gauge (the verdict), the risk-over-time line and the score waterfall."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "Shared fragments from components.js: avatar, the segmented control (`seg` plus `bindSeg`), event icons, the JSON block and the severity and status badges."
+    },
+    {
+      "from": 11,
+      "to": 13,
+      "text": "`openDrawer` (the sheet with its history stack), the icon builder and the toast notifier."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "`AIRLINER_KMH` is the impossible-travel threshold, a commercial airliner's cruise speed. It mirrors `IMPOSSIBLE_SPEED_KMH = 900` in `iip/rules.py`, so the meter shows the same line the engine judged against."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Doc comment: the timeline below is reused by the incident and customer drawers and by the Simulation page."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "`timelineList(events, { compact })` renders events as a vertical timeline; `compact` gives tighter rows."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "An empty list renders 'No events.' instead of an empty box."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "Opens an ordered list, since events are in time order, adding the `compact` class when asked. The `tl-line` element is the vertical connecting line (`aria-hidden` hides this decoration from screen readers); then each event becomes a list item."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "Each row gets its event's `lvl-${risk_level}` class, which colours its dot and score. `data-open-event` holds the event ID so a click can open it, and `tabindex=\"0\"` puts the row in the keyboard Tab order."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "The dot on the vertical line (CSS fills it and adds a halo for HIGH and CRITICAL events)."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "The event time as hours and minutes on a 24-hour clock, in the viewer's local time zone, inside a monospace `time` element."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Opens the row's main text column."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "The title line: a small event-type icon plus the readable type name (`fmt.type` turns `resource_access` into 'Resource access')."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "A dim detail after the title: 'failed' for a failed event, the amount for a transaction, the resource name for a resource access. Parts that don't apply are empty strings, so only the relevant details appear; then the title line closes."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "The sub-line: location, device ID (with '(new)' for a first-seen device) and the signals raised, or 'no signals'."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Closes the main text column."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "The event's risk score on the right, coloured by its level."
+    },
+    {
+      "from": 30,
+      "to": 31,
+      "text": "Closes each list item, the mapping and the list, then the function."
+    },
+    {
+      "from": 33,
+      "to": 34,
+      "text": "`animateTimeline(root)` plays the timeline's entrance, starting by finding the vertical line."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "If it exists, the line grows downward (`scaleY` from 0 to 1, anchored at the top by CSS) over 900ms."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "The rows rise 6px and fade in, 40ms apart. `max: 20` limits how many rows animate (the rest simply appear), so a long timeline doesn't take ages."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Closes `animateTimeline()`."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "`verdict(...)` builds the 'Engine decision' card at the top of every drawer: the score, the recommended action and the explanation. `caption` is the label shown under the gauge's number."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "The card's `lvl-` class comes from the score via `levelOf`, which tints its background gradient with that level's colour."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "An empty placeholder for the gauge, with the score and caption stored in `data-` attributes. The SVG gauge can only be drawn once this HTML is in the page, which `drawVerdict` does later."
+    },
+    {
+      "from": 42,
+      "to": 43,
+      "text": "The text side: an 'Engine decision' eyebrow, the recommended action in large type (for example 'Require step-up authentication') and the plain-English explanation from the API."
+    },
+    {
+      "from": 44,
+      "to": 45,
+      "text": "Closes the section and the function."
+    },
+    {
+      "from": 47,
+      "to": 48,
+      "text": "`travelCard(trip)` renders the impossible-travel check from the event's `context.travel`. When the customer didn't change city there is no travel data, and nothing is rendered."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "The implied speed in km/h, or 0 when the backend sent `null` (an unknown city, or no time elapsed between the two events)."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "The meter's full scale: at least twice the airliner threshold (1,800 km/h, which puts the 900 km/h marker in the middle), stretched to 110% of the speed for faster trips so the bar always fits."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "Three outcomes: 'impossible' if the engine flagged the trip, 'plausible' if it judged the trip and found it fine, 'unjudged' otherwise. The backend only judges travel for successful events from clean IPs, because VPN and proxy locations are unreliable."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "Maps each outcome to the label shown on screen; the unjudged label names both reasons a trip isn't judged (a flagged IP or a failed sign-in)."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Opens the 'Travel check' section."
+    },
+    {
+      "from": 54,
+      "to": 54,
+      "text": "The card's class is the outcome, so CSS can turn an impossible trip red."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "The route: origin city, a dashed path with a plane icon, destination city."
+    },
+    {
+      "from": 56,
+      "to": 56,
+      "text": "Opens the four-column stats grid."
+    },
+    {
+      "from": 57,
+      "to": 57,
+      "text": "Distance in km with thousands separators, or 'unknown' when a city has no known coordinates."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "Elapsed time. The API sends minutes and `fmt.duration` expects seconds, printing something like '20m 0s' or '8h 0m'."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "Implied speed (distance divided by time), or 'unknown'."
+    },
+    {
+      "from": 60,
+      "to": 61,
+      "text": "The verdict label; then the stats grid closes."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "The speed meter is drawn only when a speed is known."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "The track's fill width is the speed as a percentage of the scale, capped at 100% as a safety net."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "A thin marker sits at 900 / scale along the track, labelled 'airliner · 900 km/h', and a fill that passes it means a trip faster than a plane could fly. The engine also ignores trips under 500 km as geo-IP noise, so a short hop can pass the marker and still be judged plausible; the track and meter close here."
+    },
+    {
+      "from": 65,
+      "to": 66,
+      "text": "Closes the card, the section and the function."
+    },
+    {
+      "from": 68,
+      "to": 68,
+      "text": "`bindLinks(body)` makes every cross-link in a drawer work (event, incident and customer references) through one delegated click listener."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "Listens on the whole drawer sheet rather than just the body, because links also appear in the header: for example the incident chip among an event's badges."
+    },
+    {
+      "from": 70,
+      "to": 71,
+      "text": "The drawer mounts its sheet once per opening and only swaps the header and body content between views, so the same sheet lives for as long as the drawer is open. The `data-linked` flag attaches the listener only once; without it every view visited would add another listener, and one click would push the next view several times onto the Back history."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "One listener serves every link in the drawer, however often its content changes (event delegation). Back and close buttons are handled separately by `drawer.js`."
+    },
+    {
+      "from": 73,
+      "to": 75,
+      "text": "Finds the nearest element marked as a link to an event, an incident or a customer."
+    },
+    {
+      "from": 76,
+      "to": 78,
+      "text": "Opens the matching drawer. The drawer is already open, so `openDrawer` pushes the new view onto its history and a Back button appears."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Closes the listener and the function."
+    },
+    {
+      "from": 82,
+      "to": 83,
+      "text": "`drawVerdict(body)` finds the gauge placeholder created by `verdict()`."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "Draws the semicircle gauge there, reading the score and caption from the `data-` attributes and starting after 150ms. One animated value drives the arc, the riding dot, the number and the colour, so the gauge visibly changes level as it climbs to the score."
+    },
+    {
+      "from": 85,
+      "to": 85,
+      "text": "Closes `drawVerdict()`."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "Section marker comment: the event drawer starts here."
+    },
+    {
+      "from": 88,
+      "to": 89,
+      "text": "`openEvent(id)` opens an event drawer. The async function handed to `openDrawer` is the render function the drawer keeps in its history and re-runs on Back."
+    },
+    {
+      "from": 90,
+      "to": 90,
+      "text": "Fetches the event, including its score contributions, travel context and explanation."
+    },
+    {
+      "from": 91,
+      "to": 91,
+      "text": "Builds the rows of the 'Event' definition list as `[label, value]` pairs."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "Customer: a link-styled button whose `data-open-user` lets `bindLinks` open the customer drawer."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "Location, and the device ID with a 'first time seen' note when the device is new."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "The IP address in monospace, followed by its reputation (clean, suspicious or malicious)."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "Outcome: success or failure, plus the number of failed attempts when there were any."
+    },
+    {
+      "from": 96,
+      "to": 97,
+      "text": "Conditional rows: `condition && [...]` yields a falsy value instead of a pair when the field doesn't apply (no amount, no resource)."
+    },
+    {
+      "from": 98,
+      "to": 99,
+      "text": "The received time; then `.filter(Boolean)` drops the rows that came out falsy."
+    },
+    {
+      "from": 100,
+      "to": 100,
+      "text": "Returns the view object the drawer expects."
+    },
+    {
+      "from": 101,
+      "to": 101,
+      "text": "Header: an eyebrow such as 'Login event' and the event ID as the title."
+    },
+    {
+      "from": 102,
+      "to": 102,
+      "text": "Badges: the severity badge plus, when the event belongs to an incident, a chip that opens that incident."
+    },
+    {
+      "from": 103,
+      "to": 103,
+      "text": "The body template opens with the verdict card: score, recommended action and explanation."
+    },
+    {
+      "from": 104,
+      "to": 104,
+      "text": "'Why this score': a placeholder for the score waterfall, drawn later in `after`."
+    },
+    {
+      "from": 105,
+      "to": 105,
+      "text": "The travel card, or nothing when the event has no travel context (`?.` also guards a missing `context`)."
+    },
+    {
+      "from": 106,
+      "to": 106,
+      "text": "The 'Event' section renders the detail pairs as a definition list (`dt` for the label, `dd` for the value)."
+    },
+    {
+      "from": 107,
+      "to": 107,
+      "text": "'Raw record': a collapsed `details` element that reveals the full API response as syntax-coloured JSON, handy for showing the integration's real payload. The body template ends here."
+    },
+    {
+      "from": 108,
+      "to": 109,
+      "text": "`after(body)` runs once the HTML is in the drawer. It first draws the verdict gauge."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "Draws the score waterfall: one bar per signal showing how its weight moves the running total up (or down, for Trusted device's -15), then the final score clamped to 0-100. It is the visual answer to 'why did this event score X?'."
+    },
+    {
+      "from": 111,
+      "to": 112,
+      "text": "If a speed meter exists, its fill grows from the left (`scaleX` 0 to 1) over 1.2 seconds after a 400ms delay."
+    },
+    {
+      "from": 113,
+      "to": 113,
+      "text": "Wires up the customer link and the incident chip."
+    },
+    {
+      "from": 114,
+      "to": 117,
+      "text": "Closes `after`, the view object, the render function and `openEvent()`."
+    },
+    {
+      "from": 119,
+      "to": 119,
+      "text": "Section marker comment: the incident drawer."
+    },
+    {
+      "from": 120,
+      "to": 122,
+      "text": "`openIncident(id)` fetches the incident with its correlated timeline, affected customer and ATT&CK mappings."
+    },
+    {
+      "from": 123,
+      "to": 124,
+      "text": "Returns the view object. The eyebrow shows the incident title and how many events were correlated into it; the incident ID is the title."
+    },
+    {
+      "from": 125,
+      "to": 125,
+      "text": "Badges: severity and status."
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "text": "The body template opens with a triage bar."
+    },
+    {
+      "from": 128,
+      "to": 128,
+      "text": "Hold-free triage: a segmented control with the three statuses, the current one pressed. A single click changes the status with no confirmation step, because a status change is easy to undo (unlike resetting the demo data, which needs press-and-hold)."
+    },
+    {
+      "from": 129,
+      "to": 130,
+      "text": "An 'Ask analyst' button tagged with the incident ID; then the triage bar closes."
+    },
+    {
+      "from": 131,
+      "to": 131,
+      "text": "The verdict card for the incident, captioned 'peak score' because an incident's score is its highest event score."
+    },
+    {
+      "from": 132,
+      "to": 132,
+      "text": "The signals section. Static text in an `html` template is not escaped (only interpolated values are), so the heading's ampersands are written as `&amp;` entities."
+    },
+    {
+      "from": 133,
+      "to": 133,
+      "text": "Every distinct signal in the incident, as chips."
+    },
+    {
+      "from": 134,
+      "to": 135,
+      "text": "If signals map to MITRE ATT&CK techniques, each technique is a link showing its ID and name, opening attack.mitre.org in a new tab."
+    },
+    {
+      "from": 136,
+      "to": 136,
+      "text": "Closes the signals section."
+    },
+    {
+      "from": 137,
+      "to": 138,
+      "text": "When the customer is known: an 'Affected customer' section with a full-width button (large avatar) that opens the customer drawer."
+    },
+    {
+      "from": 139,
+      "to": 140,
+      "text": "Inside the button: the name, then ID, segment and home city in small monospace text, and a chevron hinting that it opens something."
+    },
+    {
+      "from": 141,
+      "to": 141,
+      "text": "The correlated timeline: every event in the incident, oldest first. The body template ends here."
+    },
+    {
+      "from": 142,
+      "to": 145,
+      "text": "`after(body)` draws the gauge, animates the timeline and wires the cross-links."
+    },
+    {
+      "from": 146,
+      "to": 146,
+      "text": "Binds the status segmented control; every change runs this async handler with the new status."
+    },
+    {
+      "from": 147,
+      "to": 148,
+      "text": "Sends `PATCH /incidents/{id}` with the new status. The server checks the API key and accepts only OPEN, INVESTIGATING or RESOLVED."
+    },
+    {
+      "from": 149,
+      "to": 150,
+      "text": "After a successful save, the status badge in the drawer's header is swapped for one showing the new status. It used to keep the old status until the drawer was reopened."
+    },
+    {
+      "from": 151,
+      "to": 151,
+      "text": "Confirms with a toast such as 'INC-0003 → investigating', coloured by the incident's severity."
+    },
+    {
+      "from": 152,
+      "to": 152,
+      "text": "Emits `incident:changed` on the bus so other views react: main.js refreshes the open-incident counter, and the Incidents or Overview page updates itself if it is the one on screen."
+    },
+    {
+      "from": 153,
+      "to": 156,
+      "text": "If the request fails (a missing API key, for example), a red toast shows the error and the handler returns `false`, so `bindSeg` puts the control back on the saved status. Clicking the same option again simply retries the save."
+    },
+    {
+      "from": 157,
+      "to": 157,
+      "text": "Closes the handler and the `bindSeg` call."
+    },
+    {
+      "from": 158,
+      "to": 158,
+      "text": "The 'Ask analyst' button emits `analyst:ask` with a ready-made question; main.js queues it, closes the drawer and opens the AI Analyst page."
+    },
+    {
+      "from": 159,
+      "to": 162,
+      "text": "Closes `after`, the view object, the render function and `openIncident()`."
+    },
+    {
+      "from": 164,
+      "to": 164,
+      "text": "Section marker comment: the customer drawer."
+    },
+    {
+      "from": 165,
+      "to": 167,
+      "text": "`openUser(id)` fetches the customer profile and the scenario catalog in parallel; the catalog fills the simulate menu at the bottom."
+    },
+    {
+      "from": 168,
+      "to": 169,
+      "text": "Returns the view object. The eyebrow shows segment and home city (for example 'Premier customer · home Dubai, UAE'), and the customer's name is the title."
+    },
+    {
+      "from": 170,
+      "to": 170,
+      "text": "Badges: severity of the current risk and the customer ID."
+    },
+    {
+      "from": 171,
+      "to": 171,
+      "text": "The body template opens with the verdict card, captioned 'current risk'; the backend takes the highest-risk event among the customer's 10 most recent."
+    },
+    {
+      "from": 172,
+      "to": 172,
+      "text": "'Risk over the last N events', with a placeholder for the risk-line chart."
+    },
+    {
+      "from": 173,
+      "to": 173,
+      "text": "Opens a two-column layout for devices and locations."
+    },
+    {
+      "from": 174,
+      "to": 174,
+      "text": "The Devices section: one row per known device."
+    },
+    {
+      "from": 175,
+      "to": 175,
+      "text": "Each row shows a device icon and the device ID in monospace; rows for trusted devices get the `trusted` class."
+    },
+    {
+      "from": 176,
+      "to": 176,
+      "text": "A 'trusted' or 'unknown' tag (the trusted one in the accent colour) and how many events came from the device; then the list and section close."
+    },
+    {
+      "from": 177,
+      "to": 177,
+      "text": "The Locations section, with a placeholder for the bar chart."
+    },
+    {
+      "from": 178,
+      "to": 178,
+      "text": "Closes the two-column layout."
+    },
+    {
+      "from": 179,
+      "to": 179,
+      "text": "The Incidents section: a compact list when the customer has any."
+    },
+    {
+      "from": 180,
+      "to": 181,
+      "text": "Each incident is a row button (it opens the incident drawer) showing the ID, title, severity and status. With no incidents, a dim 'No incidents for this customer.' appears instead."
+    },
+    {
+      "from": 182,
+      "to": 182,
+      "text": "Recent activity as a compact timeline, newest first. The API sends oldest first, so a copy is reversed (`slice()` first, because `reverse()` changes an array in place)."
+    },
+    {
+      "from": 183,
+      "to": 183,
+      "text": "Opens the 'Simulate against this customer' section."
+    },
+    {
+      "from": 184,
+      "to": 184,
+      "text": "A dropdown of every scenario (value = scenario key, label = title)."
+    },
+    {
+      "from": 185,
+      "to": 185,
+      "text": "The Run button; then the section and the body template close."
+    },
+    {
+      "from": 186,
+      "to": 187,
+      "text": "`after(body)` starts by drawing the verdict gauge."
+    },
+    {
+      "from": 188,
+      "to": 188,
+      "text": "Draws the risk-line chart (this customer's score across recent events, over the risk-level bands) and keeps its teardown, which `after` returns at the end."
+    },
+    {
+      "from": 189,
+      "to": 190,
+      "text": "Draws one horizontal bar per location, sized by event count, with a 'home' tag on the home city."
+    },
+    {
+      "from": 191,
+      "to": 191,
+      "text": "Away-from-home locations get level HIGH, so their bars are drawn in the HIGH colour, while the home bar stays neutral grey, in keeping with the rule that colour only ever signals risk."
+    },
+    {
+      "from": 192,
+      "to": 192,
+      "text": "Closes the item mapping and the `hbars` call."
+    },
+    {
+      "from": 193,
+      "to": 194,
+      "text": "Animates the timeline and wires the cross-links."
+    },
+    {
+      "from": 195,
+      "to": 195,
+      "text": "The Run button's click handler, async because it calls the API."
+    },
+    {
+      "from": 196,
+      "to": 196,
+      "text": "Keeps the button (`currentTarget`, the element the listener is on) and reads the chosen scenario key. `currentTarget` has to be read before any `await`, because the browser resets it once the event has finished dispatching."
+    },
+    {
+      "from": 197,
+      "to": 197,
+      "text": "Disables the button while the request runs, preventing double submissions."
+    },
+    {
+      "from": 198,
+      "to": 199,
+      "text": "Runs the scenario against this specific customer; `encodeURIComponent` makes the ID safe to put in the query string."
+    },
+    {
+      "from": 200,
+      "to": 200,
+      "text": "Confirms with a toast naming the scenario and the customer plus the peak score and level, coloured by that level."
+    },
+    {
+      "from": 201,
+      "to": 201,
+      "text": "Opens the customer drawer again to show the new events and risk. Because the drawer is open, this pushes a fresh view onto the history (Back returns to the earlier one)."
+    },
+    {
+      "from": 202,
+      "to": 204,
+      "text": "On failure: an error toast, and the button is re-enabled so the user can try again."
+    },
+    {
+      "from": 205,
+      "to": 206,
+      "text": "Closes the `catch` and the click listener."
+    },
+    {
+      "from": 207,
+      "to": 207,
+      "text": "Returns the risk chart's teardown. The drawer runs it when this view is replaced or closed, which stops the chart's resize observer; before, every customer drawer left one watching a detached element."
+    },
+    {
+      "from": 208,
+      "to": 211,
+      "text": "Closes `after`, the view object, the render function and `openUser()`."
+    },
+    {
+      "from": 213,
+      "to": 213,
+      "text": "Doc comment: any rendered reference such as INC-0001, EVT-00001 or USR-1001 opens its drawer when clicked."
+    },
+    {
+      "from": 214,
+      "to": 217,
+      "text": "`openRef(ref)` picks the drawer from the ID's prefix: INC- for incidents, EVT- for events, USR- for customers. main.js calls it from a document-wide click handler for `ref` buttons (created by `markdown()` and by the analyst's source list)."
+    },
+    {
+      "from": 218,
+      "to": 218,
+      "text": "Closes `openRef()`."
+    }
+  ]
+}

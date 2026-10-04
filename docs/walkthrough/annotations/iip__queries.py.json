@@ -1,0 +1,667 @@
+{
+  "path": "iip/queries.py",
+  "lines": 233,
+  "summary": "The **read side** of the backend: serializers that give events and incidents one JSON shape (shared by the REST API, the SSE stream in `live.py` and the AI analyst), plus the aggregate queries behind the dashboard, the user list and profile, the incident views and the world map. The modules in `routes/` are thin wrappers around these functions. List queries are deliberately batched (a few `GROUP BY` queries and one window function) so the number of queries doesn't grow with the number of rows.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring, first line: this is the **read side** of the backend. Where `pipeline.py` writes, this module turns rows into JSON-ready dicts and runs the aggregate queries behind the dashboard, users and incidents screens."
+    },
+    {
+      "from": 3,
+      "to": 5,
+      "text": "The performance rule for list endpoints: avoid the **N+1 query problem** (one query for the list, then extra queries for each of its N rows). Each list is built from a handful of grouped queries instead, so response time stays flat as data grows."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Deferred evaluation of type hints, as in the other modules."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "`Counter` is a dict for tallies: missing keys read as 0, so `counter[key] += 1` works without initialising the key first."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Date and time types for the dashboard's windows: `date` reads the per-day rows returned by SQL, `datetime.combine(..., time.min)` builds a midnight, and `timedelta` measures rolling windows."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "SQLAlchemy builders `select` and `func`, plus the `Select` type used to annotate a parameter that receives a prebuilt statement."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "`Session` type, for hints."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "`geo` for city coordinates, and `rules` for levels, actions, weights and MITRE mappings."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "The single source of \"now\", for the dashboard's time windows."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "Incident titles are derived from signals at read time by `correlation.incident_title`."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "The five ORM models this module reads."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "Fixed display order of the risk levels, so charts always list LOW to CRITICAL, even when a level has no events."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Section marker: helpers for public identifiers."
+    },
+    {
+      "from": 23,
+      "to": 24,
+      "text": "Formats a primary key as a public event id, zero-padded to at least five digits: `42` becomes `\"EVT-00042\"`. Clients see readable, prefixed ids instead of bare integers."
+    },
+    {
+      "from": 27,
+      "to": 28,
+      "text": "The same for incidents (`\"INC-0007\"`, four digits), but returns `None` when there is no key, because an event's `incident_id` is often empty."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "`parse_ref()` does the reverse: the routes use it to turn an id from the URL back into a primary key."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Docstring with an example."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "Normalizes the input (trimmed and upper-cased, so `evt-42` works too) and splits it at the first dash. `str.partition` always returns three parts: before, separator, after."
+    },
+    {
+      "from": 34,
+      "to": 34,
+      "text": "Returns the number only if the prefix is the expected one and the rest is plain ASCII digits, at most 18 of them. `isdigit()` alone also accepts characters such as \"²\", which `int()` rejects, and a huge number overflows SQLite's integers; both used to cause a 500 instead of a 404. Anything else (`\"garbage\"`, or an `INC-` id passed as an event id) gives `None`, which the routes turn into a 404."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Section marker: serializers, functions that turn ORM objects into plain, JSON-ready dicts."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "`event_dict()` defines the one JSON shape of an event, shared by the REST API, the live SSE stream and the AI analyst, so every consumer sees the same fields."
+    },
+    {
+      "from": 39,
+      "to": 41,
+      "text": "Opens the dict with the public `event_id`, the user, the event type, the `timestamp` as an ISO 8601 string (JSON has no date type), the IP address and the location."
+    },
+    {
+      "from": 42,
+      "to": 44,
+      "text": "The device and whether it was new, failed attempts, IP reputation, the optional transaction amount and resource, and the outcome status."
+    },
+    {
+      "from": 45,
+      "to": 48,
+      "text": "The scoring results: score, level, signals, per-signal `contributions` and the enrichment `context` (e.g. the trip). The `action` column is exposed as `recommended_action`, and `incident_id` is formatted with `incident_ref()` (or `null`). Line 48 closes the dict."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "`incident_dict()` serializes one incident. The user's name and event count are **parameters** instead of being queried inside, so code serializing many incidents can fetch those values in bulk (see `incidents_page`)."
+    },
+    {
+      "from": 52,
+      "to": 54,
+      "text": "Public id, the title derived from the signals, severity (also exposed as `risk_level`, the key events use for their level), score and status."
+    },
+    {
+      "from": 55,
+      "to": 58,
+      "text": "Owner id and name, the rolled-up signals, the recommended action, the number of grouped events, and the first and last activity times as ISO strings. Line 58 closes the dict."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "`incidents_page()` serializes a list of incidents. It receives a ready-made `Select`, so each caller decides filtering, order and limit (the incident queue, a user's profile, the dashboard, the live stream)."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "Docstring: everything is serialized with two batched lookups."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "Runs the caller's statement; `.all()` loads the matching incidents into a list."
+    },
+    {
+      "from": 64,
+      "to": 65,
+      "text": "An empty page returns immediately, which also avoids sending queries with an empty `IN ()` list."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Primary keys of the incidents on this page."
+    },
+    {
+      "from": 67,
+      "to": 68,
+      "text": "Batched lookup 1: event counts for all of these incidents in one `GROUP BY incident_id` query restricted with `IN (...)`. Each result row is an `(incident_id, count)` pair, so `dict()` turns the rows straight into a lookup table."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "Batched lookup 2: the names of the users involved, in one query; the set comprehension removes duplicate user ids."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "Builds every dict from memory with safe defaults (`\"?\"`, `0`). Three queries in total whatever the page size, instead of 1 + 2 per incident."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "`incident_detail()` builds the full drill-down for one incident, shown in the incident drawer."
+    },
+    {
+      "from": 74,
+      "to": 74,
+      "text": "The incident's events in chronological order: its timeline."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "The owning user, fetched by primary key."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "Starts from the standard incident dict. For a single incident there is nothing to batch, so the name and count come straight from `user` and `events`."
+    },
+    {
+      "from": 77,
+      "to": 78,
+      "text": "Adds a small user profile, or `None` if the user row is missing (one conditional expression spread over two lines)."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "The timeline, in the same event shape used everywhere else."
+    },
+    {
+      "from": 80,
+      "to": 80,
+      "text": "The deduplicated MITRE ATT&CK techniques behind the incident's signals. The walrus operator `:=` assigns inside the comprehension's condition, skipping signals without a mapping; keying a dict by technique id drops duplicates (several signals map to T1078 \"Valid Accounts\"), and `.values()` keeps first-seen order."
+    },
+    {
+      "from": 81,
+      "to": 82,
+      "text": "A one-sentence plain-English summary: how many distinct signals across how many correlated events, which ones (or \"none\"), and the highest event score."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "Returns the assembled detail."
+    },
+    {
+      "from": 86,
+      "to": 86,
+      "text": "Section marker: user queries."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "`user_risk()` answers \"how risky is this customer right now?\"."
+    },
+    {
+      "from": 88,
+      "to": 88,
+      "text": "The definition used: the highest-risk event among the user's 10 most recent. Looking only at recent activity lets old incidents fade from a customer's current risk."
+    },
+    {
+      "from": 89,
+      "to": 90,
+      "text": "The user's 10 newest events, a query the composite `(user_id, timestamp)` index in `database.py` is built for."
+    },
+    {
+      "from": 91,
+      "to": 93,
+      "text": "A user with no events gets a neutral answer: score 0, LOW, the LOW action (\"Allow\") and no event reference."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "Picks the riskiest event. The tuple key `(risk_score, timestamp)` compares scores first and breaks ties in favour of the more recent event."
+    },
+    {
+      "from": 95,
+      "to": 97,
+      "text": "Returns the chosen event's score, level, signals, action and public id."
+    },
+    {
+      "from": 98,
+      "to": 100,
+      "text": "The explanation names the event the verdict comes from, then appends that event's own explanation (adjacent f-strings are joined into one string). Line 100 closes the dict."
+    },
+    {
+      "from": 103,
+      "to": 103,
+      "text": "`users_overview()` powers the users list; the dashboard (top users) and the AI analyst reuse it."
+    },
+    {
+      "from": 104,
+      "to": 104,
+      "text": "Docstring: five queries in total, however many users there are."
+    },
+    {
+      "from": 105,
+      "to": 106,
+      "text": "Query 1, built as a subquery: for every event, its user, score, level and timestamp, plus the ranking column defined next."
+    },
+    {
+      "from": 107,
+      "to": 108,
+      "text": "A SQL **window function**: `row_number() over (partition by user_id order by timestamp desc, id desc)` numbers each user's events 1, 2, 3... newest first, restarting for every user, without collapsing rows the way `GROUP BY` would. `id desc` breaks timestamp ties so the numbering is deterministic."
+    },
+    {
+      "from": 109,
+      "to": 109,
+      "text": "`.subquery()` wraps the statement as a derived table. That is required because SQL computes window functions after `WHERE`, so only an outer query can filter on `rank`."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "Will hold each user's best row."
+    },
+    {
+      "from": 111,
+      "to": 111,
+      "text": "Keeps only each user's 10 most recent events (`ranked.c` is the subquery's column collection) and iterates over the rows."
+    },
+    {
+      "from": 112,
+      "to": 114,
+      "text": "Keeps, per user, the row with the highest `(risk_score, timestamp)`: exactly the rule `user_risk()` applies, so the list and the profile always agree."
+    },
+    {
+      "from": 115,
+      "to": 116,
+      "text": "Query 2: event count and latest timestamp per user in one `GROUP BY`, unpacked into `{user_id: (count, last)}` by a dict comprehension."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "Query 3: total incidents per user."
+    },
+    {
+      "from": 118,
+      "to": 119,
+      "text": "Query 4: open (not `RESOLVED`) incidents per user."
+    },
+    {
+      "from": 120,
+      "to": 120,
+      "text": "Output list."
+    },
+    {
+      "from": 121,
+      "to": 121,
+      "text": "Query 5: every user in id order. Everything else is now a dictionary lookup, with no per-user queries."
+    },
+    {
+      "from": 122,
+      "to": 123,
+      "text": "The user's best recent event and activity totals; users with no events fall back to `(0, None)`."
+    },
+    {
+      "from": 124,
+      "to": 126,
+      "text": "Appends the user's row: profile fields and current risk (0 and LOW when there are no events)."
+    },
+    {
+      "from": 127,
+      "to": 129,
+      "text": "Activity and incident counts with 0 defaults, and the last activity as an ISO string or `None`. Line 129 closes the dict and the `append` call."
+    },
+    {
+      "from": 130,
+      "to": 130,
+      "text": "Returns the list."
+    },
+    {
+      "from": 133,
+      "to": 133,
+      "text": "`user_detail()` builds the customer profile drawer."
+    },
+    {
+      "from": 134,
+      "to": 135,
+      "text": "One query for the 40 most recent events, sliced below for the risk history and the timeline instead of querying twice."
+    },
+    {
+      "from": 136,
+      "to": 137,
+      "text": "Where this user's activity comes from: event count per location, most frequent first."
+    },
+    {
+      "from": 138,
+      "to": 139,
+      "text": "How many events came from each device, as a `{device_id: count}` lookup."
+    },
+    {
+      "from": 140,
+      "to": 140,
+      "text": "The devices registered to this user, in id order."
+    },
+    {
+      "from": 141,
+      "to": 143,
+      "text": "Profile fields plus the current verdict, reusing `user_risk()`: one extra small query, but the risk rule stays defined in one place."
+    },
+    {
+      "from": 144,
+      "to": 144,
+      "text": "Each device with its trusted flag and event count (0 if never used)."
+    },
+    {
+      "from": 145,
+      "to": 145,
+      "text": "Each location with its event count and a flag marking the home city."
+    },
+    {
+      "from": 146,
+      "to": 147,
+      "text": "Up to 30 most recent scores, reversed into oldest-to-newest order for the risk-over-time line chart."
+    },
+    {
+      "from": 148,
+      "to": 148,
+      "text": "The 15 latest events in chronological order, in the standard event shape, for the drawer's timeline. (A duplicate `recent_events` list of the same events was removed: nothing read it.)"
+    },
+    {
+      "from": 149,
+      "to": 151,
+      "text": "The user's incidents, most recently active first, through the batched `incidents_page()`. Line 152 closes the dict."
+    },
+    {
+      "from": 154,
+      "to": 154,
+      "text": "Section marker: map data."
+    },
+    {
+      "from": 155,
+      "to": 155,
+      "text": "`geo_overview()` feeds the dotted world map; `arc_limit` caps how many travel arcs are returned."
+    },
+    {
+      "from": 156,
+      "to": 156,
+      "text": "Docstring: city markers for places with activity, and arcs for recent city-to-city trips."
+    },
+    {
+      "from": 157,
+      "to": 157,
+      "text": "Counts how many customers live in each city, for the marker tooltip. Each row is a one-column tuple, unpacked with `(home,)`."
+    },
+    {
+      "from": 158,
+      "to": 158,
+      "text": "City markers list."
+    },
+    {
+      "from": 159,
+      "to": 160,
+      "text": "One `GROUP BY location` query: event count and peak risk score per city."
+    },
+    {
+      "from": 161,
+      "to": 161,
+      "text": "The walrus `:=` stores the coordinates and tests them in one step. Free-text locations without known coordinates are skipped, since they can't be placed on the map."
+    },
+    {
+      "from": 162,
+      "to": 163,
+      "text": "A marker: name, latitude and longitude, event count, peak score and its level (for colour), and how many customers live there (`Counter` returns 0 for none)."
+    },
+    {
+      "from": 164,
+      "to": 164,
+      "text": "Arcs list."
+    },
+    {
+      "from": 165,
+      "to": 166,
+      "text": "The 800 newest events, selecting only the four needed columns rather than whole ORM objects."
+    },
+    {
+      "from": 167,
+      "to": 167,
+      "text": "Walks them newest first."
+    },
+    {
+      "from": 168,
+      "to": 168,
+      "text": "The trip, if any, that `rules.detect` stored under `context[\"travel\"]`; `context or {}` guards against a `None` context. Because trips live inside a JSON column, they are filtered here in Python over a bounded window of rows rather than in SQL."
+    },
+    {
+      "from": 169,
+      "to": 170,
+      "text": "Skips events without a trip, or whose endpoints have no coordinates. The walrus operators fetch both endpoints' coordinates inside the condition, and `or` short-circuits at the first failure."
+    },
+    {
+      "from": 171,
+      "to": 172,
+      "text": "Each arc records the event id, time and level, whether the trip was physically impossible, and whether it was judged at all (`assessed` is false for failed or flagged-IP events, whose location isn't trusted). `.get()` defaults tolerate trip dicts missing a key."
+    },
+    {
+      "from": 173,
+      "to": 176,
+      "text": "The trip's speed, distance and duration, then both endpoints with their coordinates so the map can draw the curve."
+    },
+    {
+      "from": 177,
+      "to": 178,
+      "text": "Stops once enough arcs are collected; since rows are newest first, the map shows the most recent trips."
+    },
+    {
+      "from": 179,
+      "to": 179,
+      "text": "Returns both lists."
+    },
+    {
+      "from": 182,
+      "to": 182,
+      "text": "Section marker: dashboard."
+    },
+    {
+      "from": 183,
+      "to": 183,
+      "text": "`dashboard_summary()` builds the whole Overview screen in one call (`GET /api/v1/dashboard/summary`)."
+    },
+    {
+      "from": 184,
+      "to": 184,
+      "text": "One `now` for every window, so all figures in the response agree with each other."
+    },
+    {
+      "from": 185,
+      "to": 185,
+      "text": "The last seven calendar dates, oldest first: `range(6, -1, -1)` counts 6, 5, ... 0 days back."
+    },
+    {
+      "from": 186,
+      "to": 186,
+      "text": "One `Counter` per day, to tally events by level."
+    },
+    {
+      "from": 187,
+      "to": 190,
+      "text": "Events per day and level are counted **in SQL**: `func.date()` truncates each timestamp to its calendar date, and grouping by date and level returns at most 28 rows however many events exist. This used to load every event of the week into Python just to count it, a cost that grew with every hour of live traffic."
+    },
+    {
+      "from": 191,
+      "to": 192,
+      "text": "SQLite returns the date as text and other databases as a `date`; going through `str()` covers both. Rows outside the seven days are skipped."
+    },
+    {
+      "from": 193,
+      "to": 193,
+      "text": "24 hourly buckets, each counting all events and risky ones."
+    },
+    {
+      "from": 194,
+      "to": 195,
+      "text": "Only the last 24 hours are loaded for the hourly chart, a seventh of the old load."
+    },
+    {
+      "from": 196,
+      "to": 196,
+      "text": "Whole hours elapsed since the event (`//` is floor division). These are rolling 60-minute windows counted back from `now`, not clock hours."
+    },
+    {
+      "from": 197,
+      "to": 199,
+      "text": "Index 23 is the most recent hour, so the chart reads older (left) to newer (right). The guard skips the few minutes a client clock may run ahead. Adding the boolean `level in (...)` counts HIGH and CRITICAL events as 1."
+    },
+    {
+      "from": 201,
+      "to": 201,
+      "text": "Events per risk level."
+    },
+    {
+      "from": 202,
+      "to": 202,
+      "text": "Incidents per status."
+    },
+    {
+      "from": 203,
+      "to": 204,
+      "text": "Incidents per severity, most common first, for the severity chart."
+    },
+    {
+      "from": 205,
+      "to": 205,
+      "text": "A reusable **statement**, not yet executed, counting incidents that are not resolved. `select_from` names the table explicitly, since `func.count()` on its own refers to none."
+    },
+    {
+      "from": 206,
+      "to": 206,
+      "text": "Statement counting events in the last 24 hours."
+    },
+    {
+      "from": 207,
+      "to": 208,
+      "text": "Statement counting events in the 24 hours before that, so the UI can show a day-over-day trend."
+    },
+    {
+      "from": 209,
+      "to": 210,
+      "text": "The eight most frequent signals, from the narrow `RiskSignal` table; `weight > 0` excludes the risk-lowering \"Trusted device\"."
+    },
+    {
+      "from": 211,
+      "to": 211,
+      "text": "Events per exact risk score, for the histogram."
+    },
+    {
+      "from": 212,
+      "to": 212,
+      "text": "Assembles the response."
+    },
+    {
+      "from": 213,
+      "to": 213,
+      "text": "When this snapshot was computed (shown as \"synced\" in the UI)."
+    },
+    {
+      "from": 214,
+      "to": 214,
+      "text": "Total events, summed from the per-level counts instead of running another query."
+    },
+    {
+      "from": 215,
+      "to": 217,
+      "text": "Executes the prebuilt count statements: events in the last and previous 24 hours, and active incidents."
+    },
+    {
+      "from": 218,
+      "to": 218,
+      "text": "`active.where(...)` returns a **new** statement with one more condition (SQLAlchemy statements are immutable), reusing the active-incident query to count critical ones."
+    },
+    {
+      "from": 219,
+      "to": 219,
+      "text": "HIGH plus CRITICAL events."
+    },
+    {
+      "from": 220,
+      "to": 220,
+      "text": "Incident counts for all three statuses, with 0 defaults so the UI always receives every key."
+    },
+    {
+      "from": 221,
+      "to": 222,
+      "text": "One entry per day: ISO date, weekday abbreviation (`%a` gives e.g. \"Mon\"), total, and each level's count merged in with `**` dict unpacking."
+    },
+    {
+      "from": 223,
+      "to": 223,
+      "text": "The 24 hourly buckets computed above."
+    },
+    {
+      "from": 224,
+      "to": 225,
+      "text": "21 histogram bars at scores 0, 5, ... 100, each tagged with its level. Exact-score lookups miss nothing: every rule weight is a multiple of 5 and scores are clamped to 0-100, so every possible score is a multiple of 5."
+    },
+    {
+      "from": 226,
+      "to": 226,
+      "text": "Incidents by severity as `{label, value}` pairs, the shape the charts consume. (Two unused aggregates, events by type and the level distribution, were removed: nothing read them, and events by type cost an extra query on every refresh.)"
+    },
+    {
+      "from": 227,
+      "to": 228,
+      "text": "The top signals, enriched with their rule weight and MITRE technique."
+    },
+    {
+      "from": 229,
+      "to": 229,
+      "text": "The six most recently active incidents, via the batched helper."
+    },
+    {
+      "from": 230,
+      "to": 230,
+      "text": "The twelve newest events, for the activity feed."
+    },
+    {
+      "from": 231,
+      "to": 231,
+      "text": "Reuses `users_overview()` and keeps the six riskiest users. Sorting by negated score gives descending score with ascending user id as tie-breaker."
+    },
+    {
+      "from": 232,
+      "to": 233,
+      "text": "The map data from `geo_overview()`. The last line closes the dict."
+    }
+  ]
+}

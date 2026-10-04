@@ -1,0 +1,10 @@
+{
+  "path": "iip/__init__.py",
+  "lines": 8,
+  "summary": "The package's front door: `__init__.py` marks the `iip/` folder as a regular Python package and runs once, the first time anything inside `iip` is imported. It holds the project's one-paragraph description and the single version string that `app.py` (API docs) and `routes/system.py` (health endpoint) report.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Opening line of the package docstring, naming the project. A docstring is a string literal placed first in a module; Python keeps it in `__doc__`, and because this file stands for the package itself, it describes `iip` as a whole."},
+    {"from": 3, "to": 6, "text": "The elevator pitch: the stages an event flows through, in order, plus the reminder that all data is synthetic. Each arrow maps to code you will meet later: ingestion in `routes/events.py`, normalization in `pipeline.py`, geo enrichment in `geo.py`, scoring in `rules.py`, correlation in `correlation.py`, the live stream in `live.py` (feeding the `web/` dashboard) and the analyst in `analyst.py`."},
+    {"from": 8, "to": 8, "text": "`__version__` is the conventional attribute name for a package's version. `app.py` passes it to FastAPI (it appears on the `/docs` page) and the health endpoint in `routes/system.py` reports it; `pyproject.toml` repeats \"2.0.0\" by hand, so the two must be bumped together."}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "path": "iip/routes/__init__.py",
+  "lines": 8,
+  "summary": "Assembles the HTTP API. Each domain (events, users, incidents, dashboard, risk engine, simulation, AI analyst, integration) lives in its own module with its own `APIRouter`, and this file mounts them all under the versioned `/api/v1` prefix as `api_router`, which `iip/app.py` adds to the FastAPI app.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Module docstring: the HTTP API is split into one module per domain, all mounted under `/api/v1`."},
+    {"from": 2, "to": 2, "text": "`APIRouter` groups related endpoints so they can be defined in separate files and mounted together."},
+    {"from": 4, "to": 4, "text": "Imports the eight route modules of this package; each one defines a `router`."},
+    {"from": 6, "to": 6, "text": "The parent router. Every path gets the `/api/v1` prefix, so a future `v2` could live alongside it without breaking existing clients."},
+    {"from": 7, "to": 8, "text": "Mounts each module's router into the parent. This order is the order in which the endpoints appear in the generated OpenAPI docs and in the Integration page's endpoint catalog."}
+  ]
+}

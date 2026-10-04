@@ -1,0 +1,13 @@
+{
+  "path": "requirements.txt",
+  "lines": 6,
+  "summary": "The runtime dependencies, installed with `pip install -r requirements.txt` and also by the `Dockerfile`. Each line sets a minimum version (`>=`) rather than an exact pin, which keeps installs flexible at the cost of less reproducible builds.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "FastAPI: the web framework providing routing, dependency injection (`Depends`), request validation and the automatic `/docs` page."},
+    {"from": 2, "to": 2, "text": "Uvicorn: the ASGI server that actually serves the app; `iip/__main__.py` starts it with `uvicorn.run`."},
+    {"from": 3, "to": 3, "text": "SQLAlchemy 2.0 or later, required for the typed `Mapped[...]` and `mapped_column` models and the `select()` query style used throughout `iip/`."},
+    {"from": 4, "to": 4, "text": "Pydantic v2, which validates request bodies in `iip/schemas.py`. The floor guarantees the v2 API the code uses (`field_validator`, `ConfigDict`)."},
+    {"from": 5, "to": 5, "text": "httpx: the HTTP client the AI analyst uses to call the OpenAI-compatible API. Starlette's `TestClient` can also run on it."},
+    {"from": 6, "to": 6, "text": "python-dotenv: loads an optional `.env` file into environment variables at startup in `iip/config.py`."}
+  ]
+}

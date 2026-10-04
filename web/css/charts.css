@@ -1,0 +1,79 @@
+/* ---------- shared ---------- */
+svg text.axis { font: 400 10px var(--font-mono); fill: var(--t4); }
+.chart { width: 100%; min-height: 60px; }
+
+/* ---------- histogram ---------- */
+.hist rect.bar { fill: var(--lvl); opacity: 0.88; transition: opacity var(--fast); }
+.hist rect.bar:hover { opacity: 1; }
+.hist .baseline { stroke: var(--line-2); }
+.hist .threshold line { stroke: var(--t4); stroke-dasharray: 2 3; }
+.hist .threshold text { font: 500 9.5px var(--font-mono); fill: var(--t3); }
+
+/* ---------- horizontal bars ---------- */
+.hbars { display: grid; gap: 11px; }
+.hbar { display: grid; grid-template-columns: minmax(0, 1fr) 34px; grid-template-areas: "label value" "track track"; gap: 5px 10px; align-items: center; }
+.hbar-label { grid-area: label; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12.5px; color: var(--t2); }
+.hbar-label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-track { grid-area: track; height: 4px; border-radius: 4px; background: var(--s3); overflow: hidden; }
+.hbar-track i { display: block; height: 100%; border-radius: 4px; background: var(--t3); transform-origin: left; }
+.hbar.lvl-HIGH .hbar-track i, .hbar.lvl-MEDIUM .hbar-track i { background: var(--lvl); }
+.hbar-value { grid-area: value; text-align: right; font: 500 12px var(--font-mono); color: var(--t1); }
+
+/* ---------- gauge ---------- */
+.gauge { position: relative; width: 100%; max-width: 260px; margin: 0 auto; }
+.gauge svg { width: 100%; height: auto; overflow: visible; }
+.gauge .track { fill: none; stroke: var(--s3); stroke-width: 14; stroke-linecap: round; }
+.gauge .zone { fill: none; stroke: var(--lvl); stroke-width: 14; opacity: 0.13; }
+.gauge .value { fill: none; stroke: var(--lvl); stroke-width: 14; stroke-linecap: round; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--lvl) 45%, transparent)); }
+.gauge .knob { fill: var(--s1); stroke: var(--lvl); stroke-width: 3; }
+.gauge .tick { stroke: var(--t4); stroke-width: 1.2; }
+.gauge .tick-label { font: 400 9.5px var(--font-mono); fill: var(--t4); }
+.gauge-readout { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; }
+.gauge-num { font: 500 46px/1 var(--font-sans); letter-spacing: -0.04em; }
+.gauge-cap { font: 500 10px var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--t3); margin-top: 4px; }
+
+/* ---------- waterfall ---------- */
+.waterfall { display: grid; gap: 4px; }
+.wf-rows { display: grid; gap: 4px; }
+.wf-row { display: grid; grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1.4fr) 92px; gap: 14px; align-items: center; min-height: 38px; }
+.wf-label { min-width: 0; display: grid; }
+.wf-label b { font-weight: 500; font-size: 12.5px; }
+.wf-label small { color: var(--t3); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wf-track { position: relative; height: 18px; border-radius: 4px; background: repeating-linear-gradient(90deg, var(--s2) 0 1px, transparent 1px 10%); box-shadow: inset 0 0 0 1px var(--line); }
+.wf-bar { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; background: var(--lvl); transform-origin: left; }
+.wf-bar.neg { transform-origin: right; background: repeating-linear-gradient(135deg, var(--low) 0 3px, transparent 3px 6px); box-shadow: inset 0 0 0 1px var(--low); }
+.wf-weight { display: flex; align-items: center; justify-content: flex-end; gap: 6px; font: 600 12px var(--font-mono); color: var(--t1); }
+.wf-weight.neg { color: var(--low); }
+.wf-total { margin-top: 6px; padding-top: 10px; border-top: 1px dashed var(--line-2); }
+.wf-total .wf-weight { color: var(--lvl); font-size: 20px; }
+
+/* ---------- world map ---------- */
+.worldmap { position: relative; width: 100%; }
+.worldmap canvas, .worldmap .map-overlay { position: absolute; inset: 0; }
+.map-overlay { overflow: visible; }
+.map-overlay .arc { fill: none; stroke-width: 1.3; stroke-linecap: round; }
+.map-overlay .arc.plausible { stroke: var(--low); opacity: 0.55; }
+.map-overlay .arc.hostile { stroke: var(--high); stroke-dasharray: 3 4; opacity: 0.7; }
+.map-overlay .arc.impossible { stroke: var(--critical); stroke-width: 1.8; filter: drop-shadow(0 0 4px rgb(240 78 102 / 0.6)); }
+.map-overlay .arc:hover { stroke-width: 2.6; opacity: 1; }
+.map-overlay .comet { fill: #fff; filter: drop-shadow(0 0 6px var(--critical)); }
+.map-overlay .city { cursor: pointer; transform-box: fill-box; transform-origin: center; }
+.map-overlay .city .dot { fill: var(--lvl); stroke: var(--bg); stroke-width: 1.5; }
+.map-overlay .city.lvl-LOW .dot { fill: var(--t2); }
+.map-overlay .city .hit { fill: transparent; }
+.map-overlay .city text { font: 500 10px var(--font-mono); fill: var(--t2); paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.map-overlay .city:hover .dot { stroke: var(--t1); }
+.map-overlay .pulse { fill: none; stroke: var(--lvl); stroke-width: 1.2; transform-box: fill-box; transform-origin: center; animation: mappulse 2.4s var(--ease-out) infinite; }
+.map-overlay .ping { fill: none; stroke: var(--lvl); stroke-width: 1.5; }
+@keyframes mappulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(4.2); opacity: 0; } }
+.map-foot { margin-top: 14px; }
+.map-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; margin-top: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; background: var(--line); }
+.map-stats div { padding: 10px 12px; background: var(--s1); }
+.map-stats small { display: block; font: 500 10px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--t4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-stats b { font: 500 17px var(--font-mono); }
+.map-stats b.lvl-HIGH, .map-stats b.lvl-CRITICAL { color: var(--lvl); }
+.map-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--t3); }
+.map-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.lg-line { width: 18px; height: 0; border-top: 1.6px solid; }
+.lg-line.plausible { border-color: var(--low); } .lg-line.hostile { border-color: var(--high); border-top-style: dashed; } .lg-line.impossible { border-color: var(--critical); }
+.lg-dot { width: 7px; height: 7px; border-radius: 50%; }

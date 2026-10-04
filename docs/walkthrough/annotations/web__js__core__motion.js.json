@@ -1,0 +1,362 @@
+{
+  "path": "web/js/core/motion.js",
+  "lines": 164,
+  "summary": "The only module that talks to anime.js (the vendored v4 build that `index.html` exposes as `window.anime`). It wraps `animate`, timelines, staggers and springs behind the **motion gate** `motionEnabled()`, so motion is skipped when anime.js is missing, the user prefers reduced motion or switched it off, or the tab is hidden, and every helper still leaves content in its final, visible state. On top of that it provides the effects used across pages and charts: entrance staggers, count-ups, SVG line drawing, clip reveals, FLIP and keyed-FLIP reordering, typed text, the segmented-control pill and the cursor spotlight.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 3,
+      "text": "Header comment with the module's two rules: content is never hidden by CSS waiting for JavaScript, so the UI still works if anime.js is missing; and when motion is off (OS setting or in-app toggle), every animation jumps straight to its end state."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Imports `fmt` for the default number format used by `countUp()`."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Reads the anime.js global **once**, when the module loads. The deferred UMD script in `index.html` has already run by then; if it failed to load, `A` is `undefined`."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "A live `MediaQueryList` for the OS-level 'reduce motion' preference. Its `.matches` is re-evaluated on every read, so changing the setting takes effect without a reload."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "The `localStorage` key for the in-app motion toggle."
+    },
+    {
+      "from": 10,
+      "to": 12,
+      "text": "Restores a saved 'motion off' choice at startup by setting `data-motion` to `off` on the root element, which also makes `base.css` disable CSS transitions and keyframe animations. Storage access can throw (privacy modes, blocked site data), so it sits in a `try/catch` and the default simply stays."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Whether anime.js is available; every helper checks this before touching `A`."
+    },
+    {
+      "from": 15,
+      "to": 16,
+      "text": "Comment explaining the hidden-tab rule: anime.js pauses its engine while the document is hidden, so content animated in a background tab would stay frozen at its invisible start state."
+    },
+    {
+      "from": 17,
+      "to": 18,
+      "text": "`motionEnabled()` is the **motion gate** every animation goes through. Motion runs only if anime.js loaded, the OS does not request reduced motion, the in-app toggle is not off and the tab is visible. It is a function, so the answer is re-evaluated on every call."
+    },
+    {
+      "from": 20,
+      "to": 23,
+      "text": "`setMotion()` flips the in-app toggle (the palette's 'Reduce motion' / 'Enable motion' command): it updates the root attribute, which takes effect immediately, and remembers the choice in `localStorage`, ignoring storage errors."
+    },
+    {
+      "from": 25,
+      "to": 27,
+      "text": "`toArray()` normalises anything an animation might target: nothing becomes `[]`, a CSS selector string becomes its matches, a single element is wrapped in an array, and a `NodeList`, `HTMLCollection` or array is copied into a plain array."
+    },
+    {
+      "from": 29,
+      "to": 30,
+      "text": "`set()` applies values instantly through anime's `utils.set`, which understands the same shorthands as `animate` (such as `x`, `y` and `scaleX`); without anime.js it does nothing and returns `null`. Callers use it to pre-hide elements a timeline is about to reveal, or to snap something into place."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "`motionPath()` returns anime's motion-path values (`translateX`, `translateY` and `rotate` functions that follow an SVG path) for spreading into `animate()` parameters; the world map's comets use it. Without anime.js it returns `{}`, so spreading it is harmless."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "`stagger()` proxies anime's stagger helper, which gives each target a progressively larger value, typically a delay; without anime.js it returns 0."
+    },
+    {
+      "from": 34,
+      "to": 34,
+      "text": "`spring()` builds an anime v4 spring easing from `bounce` (how much it overshoots; 0 means none) and `duration` (its perceived length in ms); the defaults give a calm, slightly springy feel. Without anime.js it returns the string `linear`."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "`chartEase()` is a private, strong ease-in-out curve, `cubicBezier(0.85, 0, 0.15, 1)`: slow start, fast middle, gentle stop. It is used for the chart reveals."
+    },
+    {
+      "from": 37,
+      "to": 39,
+      "text": "`animate()` is `anime.animate` made motion-aware, and it always returns something awaitable. Without anime.js it returns an already-resolved Promise, so `await animate(...)` still works."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "With motion off it still runs the animation, but with no duration, delay or looping, so every target jumps straight to its end values. The ease is forced to `linear` because a spring ease would otherwise impose its own settling duration and override `duration: 0`."
+    },
+    {
+      "from": 41,
+      "to": 42,
+      "text": "Otherwise it is a normal anime animation. Anime animations are thenable (they have a `then` method), which is why callers can `await` them."
+    },
+    {
+      "from": 44,
+      "to": 47,
+      "text": "`timeline()` creates an anime timeline, or returns `null` without anime.js (callers must handle that). With motion off it merges `duration: 0` and `delay: 0` into the timeline's `defaults`; children that set their own duration still override those, which is why the waterfall chart checks `motionEnabled()` before building one."
+    },
+    {
+      "from": 49,
+      "to": 50,
+      "text": "`enter()` is the shared **entrance animation**: elements fade in, rise and come into focus one after another. Defaults: a 14px rise, 45 ms between items, a 6px blur, 640 ms each, and at most 14 animated items."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "Normalises the targets and keeps only the first `max`, so a long list never makes the user wait for its fiftieth row."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "With nothing to animate, or motion off, it resolves immediately; the elements are already fully visible because CSS never hides them."
+    },
+    {
+      "from": 53,
+      "to": 57,
+      "text": "The animation: opacity 0 to 1 and `y` from the offset to 0 with `outExpo`, while `stagger(step, { start: delay })` starts each element `step` ms after the previous one. On completion it removes exactly the inline styles it set (`opacity`, `transform`, `filter`), so CSS is back in control (hover transforms work, no lingering `filter`). anime's `cleanInlineStyles` isn't used here: it restores the inline values captured when the animation was created, and if another animation had already set its starting values on the same element in the same tick, that 'cleanup' would freeze the element invisible."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "Adds a blur-to-sharp `filter` only when `blur` is non-zero."
+    },
+    {
+      "from": 59,
+      "to": 60,
+      "text": "Runs it and returns the animation so callers can await it."
+    },
+    {
+      "from": 62,
+      "to": 63,
+      "text": "`countUp()` animates a number into an element, either from zero or from the value it showed before. Options: duration, delay and a `format` function (whole numbers with separators by default)."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Does nothing if the element does not exist."
+    },
+    {
+      "from": 65,
+      "to": 66,
+      "text": "Reads the previous value from `data-value` and stores the new one there, so the next update (a live counter, say) continues from this number."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "Puts the final formatted number in `aria-label`, so screen readers announce the real value rather than an in-between frame."
+    },
+    {
+      "from": 68,
+      "to": 71,
+      "text": "With motion off, or when the number has not changed, it writes the final text directly and stops."
+    },
+    {
+      "from": 72,
+      "to": 73,
+      "text": "anime.js can tween any numeric property of a plain object, so `state.v` serves as the animated number; the element shows the starting value right away."
+    },
+    {
+      "from": 74,
+      "to": 75,
+      "text": "Tweens `state.v` to the target and writes the formatted value into the element on every frame (`onUpdate`)."
+    },
+    {
+      "from": 77,
+      "to": 78,
+      "text": "`drawIn()` makes SVG strokes look as if they are being drawn. Defaults: 1200 ms, a 60 ms step between paths and an `inOutQuad` ease."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Normalises the targets and resolves immediately when there is nothing to draw or motion is off, leaving the strokes fully drawn."
+    },
+    {
+      "from": 81,
+      "to": 82,
+      "text": "`svg.createDrawable` wraps each path so it gains a `draw` property. Animating `draw` from `0 0` (the visible segment starts and ends at 0, so nothing shows) to `0 1` (from the start to the very end) reveals the line progressively, staggered per path."
+    },
+    {
+      "from": 84,
+      "to": 85,
+      "text": "`clipReveal()` reveals a chart from left to right by growing the width of the `rect` used as its SVG clip path ('Bklit-style' in the comment names the visual reference for the effect)."
+    },
+    {
+      "from": 86,
+      "to": 86,
+      "text": "No rect: nothing to do."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "With motion off it simply makes sure the clip rect has its full width, so the whole chart is visible."
+    },
+    {
+      "from": 88,
+      "to": 89,
+      "text": "Otherwise animates the width from 0 to the full chart width with the strong in-out `chartEase`."
+    },
+    {
+      "from": 91,
+      "to": 92,
+      "text": "`flip()` implements the **FLIP** technique (First, Last, Invert, Play) for children that move when the DOM changes. `mutate` is a callback that makes the change, such as inserting a new item at the top of the Overview's live feed."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "**First**: records each child's on-screen rectangle, keyed by the DOM node itself."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "Runs the mutation; the browser now lays the children out in their final positions."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "With motion off, that is all: the DOM is already in its final state."
+    },
+    {
+      "from": 96,
+      "to": 98,
+      "text": "**Last**: for each child, looks up its old rectangle; brand-new nodes have none and are skipped."
+    },
+    {
+      "from": 99,
+      "to": 100,
+      "text": "Measures the new position and computes how far the child jumped."
+    },
+    {
+      "from": 101,
+      "to": 103,
+      "text": "**Invert and Play**: a child that moved is translated back to its old spot (`x: [dx, 0]`) and springs into its new one, so the layout change looks like a glide. Then the loop and the function close."
+    },
+    {
+      "from": 105,
+      "to": 107,
+      "text": "`flipKeyed()` is FLIP for lists that are **re-rendered** from scratch, where the old DOM nodes are thrown away. Elements are matched by a `data-` attribute (`data-id` by default) instead of by node identity, so a card can glide from its old position even though it is a new element; the Incidents board uses it when cards change column."
+    },
+    {
+      "from": 108,
+      "to": 108,
+      "text": "**First**: records each matching element's rectangle under its key, e.g. `INC-0001`."
+    },
+    {
+      "from": 109,
+      "to": 110,
+      "text": "Re-renders through `mutate`, then stops if motion is off."
+    },
+    {
+      "from": 111,
+      "to": 112,
+      "text": "For every element of the new render, looks up the old rectangle by its key."
+    },
+    {
+      "from": 113,
+      "to": 116,
+      "text": "No previous position means a brand-new item: it fades and scales in (from 0.96 to 1) instead of gliding, and the loop moves on."
+    },
+    {
+      "from": 117,
+      "to": 121,
+      "text": "Otherwise computes the offset and springs the element from its old position into its new one, exactly as `flip()` does. Then the loop and the function close."
+    },
+    {
+      "from": 123,
+      "to": 124,
+      "text": "`typeText()` types text into an element like a terminal; `speed` is the pause between steps in ms. The Simulation page uses it for each stage's details."
+    },
+    {
+      "from": 125,
+      "to": 125,
+      "text": "Motion off: shows the whole text immediately."
+    },
+    {
+      "from": 126,
+      "to": 126,
+      "text": "Starts from an empty element."
+    },
+    {
+      "from": 127,
+      "to": 131,
+      "text": "Reveals two characters per step and waits `speed` ms between steps using a `setTimeout` Promise. It does not use anime.js at all, so the motion check at the top is what keeps it in line with the motion rules."
+    },
+    {
+      "from": 133,
+      "to": 134,
+      "text": "`movePill()` slides the highlight pill of a segmented control (a row of toggle buttons) under the pressed button; `instant` skips the animation, e.g. for the first placement."
+    },
+    {
+      "from": 135,
+      "to": 137,
+      "text": "Finds the pill and the button with `aria-pressed` set to `true`, and stops if either is missing."
+    },
+    {
+      "from": 138,
+      "to": 138,
+      "text": "The target: the active button's left offset and width inside the control."
+    },
+    {
+      "from": 139,
+      "to": 143,
+      "text": "When instant or with motion off, it sets the values directly: through `utils.set` if anime.js is loaded, otherwise by writing the inline `width` and `transform` styles by hand. Without that fallback the pill would sit in the wrong place whenever anime.js is missing."
+    },
+    {
+      "from": 144,
+      "to": 145,
+      "text": "Otherwise springs the pill's position and width to the pressed button."
+    },
+    {
+      "from": 147,
+      "to": 148,
+      "text": "`installSpotlight()` powers the **cursor spotlight**: a soft highlight on panel borders that follows the pointer across every panel of the hovered grid. `main()` installs it once."
+    },
+    {
+      "from": 149,
+      "to": 149,
+      "text": "`frame` is the id of a pending animation frame (0 when none) and `last` holds the most recent pointer event."
+    },
+    {
+      "from": 150,
+      "to": 152,
+      "text": "A single `pointermove` listener for the whole document. Each event only stores itself in `last`; if a frame is already scheduled nothing more happens, which limits the work to once per screen refresh however fast the pointer moves."
+    },
+    {
+      "from": 153,
+      "to": 154,
+      "text": "Schedules the update for the next frame with `requestAnimationFrame` and clears the flag when it runs."
+    },
+    {
+      "from": 155,
+      "to": 156,
+      "text": "Finds the spotlight container under the pointer: a dashboard grid or the Simulation page's scenario list, the only places whose CSS draws the glow (`.panel::before` and `.scenario`). The drawer body and the Risk Lab's signal list were dropped: nothing there reads the coordinates, so the work every frame was wasted."
+    },
+    {
+      "from": 157,
+      "to": 157,
+      "text": "Loops over that container's panel-like children: direct panels, panels one level down, and scenario cards."
+    },
+    {
+      "from": 158,
+      "to": 160,
+      "text": "Converts the pointer position into coordinates relative to each panel and writes them into the CSS custom properties `--mx` and `--my`. The panel CSS draws the border with a radial gradient centred on those variables, so the effect is pure CSS driven by two numbers; anime.js is not involved."
+    },
+    {
+      "from": 161,
+      "to": 162,
+      "text": "Close the loop and the frame callback."
+    },
+    {
+      "from": 163,
+      "to": 164,
+      "text": "`passive: true` promises the browser that this listener never calls `preventDefault`, so scrolling stays smooth. The spotlight is not gated by `motionEnabled()`: it only follows the pointer and does not animate anything on its own."
+    }
+  ]
+}

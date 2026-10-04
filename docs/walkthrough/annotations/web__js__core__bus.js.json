@@ -1,0 +1,14 @@
+{
+  "path": "web/js/core/bus.js",
+  "lines": 13,
+  "summary": "A tiny app-wide **publish/subscribe** channel built on the browser's own `EventTarget`. Modules announce things with `bus.emit(type, payload)` and listen with `bus.on(type, handler)`, which returns an unsubscribe function. It decouples the SSE client (`live.js`), the API layer (`api.js`), the shell (`main.js`) and the pages, which never need references to each other.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Header comment: an app-wide pub/sub channel. Pages listen for live events here instead of on the `EventSource` itself, so there is exactly one SSE connection however many listeners exist."},
+    {"from": 2, "to": 2, "text": "A private `EventTarget`, the browser's built-in event dispatcher (the same machinery DOM elements use), so no library is needed. It is not part of the DOM, so these events never mix with real DOM events."},
+    {"from": 4, "to": 4, "text": "The exported `bus` object, imported by any module that needs to notify or listen to others without importing them."},
+    {"from": 5, "to": 6, "text": "`on(type, handler)` wraps the handler so subscribers receive just the payload (`e.detail`) rather than the event object."},
+    {"from": 7, "to": 7, "text": "Registers the wrapper for that event type."},
+    {"from": 8, "to": 9, "text": "Returns an **unsubscribe** function that removes exactly this wrapper. `ctx.on()` in `main.js` stores it, which is how a page's listeners are removed when you navigate away."},
+    {"from": 10, "to": 13, "text": "`emit(type, detail)` dispatches a `CustomEvent` that carries the payload in `detail`. Dispatch is synchronous: every handler has run by the time `emit` returns. The last line closes the `bus` object."}
+  ]
+}

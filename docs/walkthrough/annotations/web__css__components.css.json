@@ -1,0 +1,582 @@
+{
+  "path": "web/css/components.css",
+  "lines": 224,
+  "summary": "The reusable UI kit: panels with a cursor-tracking spotlight border, buttons (including hold-to-confirm), key caps, inputs, segmented controls and switches, the risk indicators (`.sev`, `.status`, `.score`), chips, tags, live dots, avatars, tables, definition lists, empty and loading states, the border beam, the overlay components (drawer, command palette, toasts, tooltip) and the JSON code block. Colour enters only through the risk tokens (`--lvl`) or the aqua accent for interactive and live states.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 11,
+      "text": "Section comment, then the panel, the card every dashboard block sits in. It has a transparent 1px border and two background layers: a solid `--s1` fill clipped to the `padding-box` (so it stops inside the border), and beneath it a radial gradient painted to the `border-box`, which therefore shows only through the transparent border ring. The gradient is centred on `--mx`/`--my`, which `installSpotlight()` in motion.js sets to the pointer position for every panel in the hovered grid, so the border brightens to 20% white near the cursor and fades to the normal hairline colour further away; the `-500px` fallbacks keep the bright spot off the panel until the pointer has moved."
+    },
+    {
+      "from": 12,
+      "to": 15,
+      "text": "A soft inner glow that follows the cursor: an absolutely positioned overlay with the panel's rounded corners and a very faint (2.5% white) 380px radial gradient centred on the same `--mx`/`--my`. `pointer-events: none` means it never blocks clicks on the panel's content."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "The panel header: a wrapping flex row (index number, title, tools) with no bottom padding because the body supplies the spacing; `min-height: 40px` keeps headers aligned whether or not they contain tools."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Panel titles are deliberately small (13px, medium weight, white) so the data rather than the heading carries the visual weight."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "The \"01\", \"02\" index numbers before panel titles, in tiny faint mono: an editorial touch, like numbered figures in a report."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "The tools slot (tags, segmented controls, buttons) is pushed to the right end of the header with `margin-left: auto`."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "The panel body: a padded area that grows with `flex: 1` to fill the panel's height, so panels sharing a grid row end at the same line. `position: relative` gives absolutely positioned content inside it a reference box."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "A `flush` body has almost no padding, for tables and lists whose rows should run edge to edge."
+    },
+    {
+      "from": 22,
+      "to": 30,
+      "text": "Crop-mark corners for hero panels (the map, the Risk Lab engine output, the simulation pipeline and peak event, the integration Connection panel). Four extra background layers, each a solid `--t4` `linear-gradient` sized 8×1px or 1×8px with `no-repeat`, draw an L-shaped mark 8px in from the top-left corner and a mirrored one 8px in from the bottom-right (`calc(100% - 8px)`). Because this replaces the whole `background`, the last two lines repeat the panel's fill and spotlight-border layers so they aren't lost."
+    },
+    {
+      "from": 32,
+      "to": 40,
+      "text": "Section comment, then the base button: a 34px inline-flex box that centres its icon and label with an 8px gap, with a hairline border, `--s2` fill and white medium-weight text that never wraps. It transitions background, border and opacity, plus a quick `transform` for the press effect."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "Hover: one step lighter background and the stronger control border `--line-ctl`."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "Press feedback: the button shrinks to 97% while held down and eases back thanks to the transform transition."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "Disabled buttons fade to 45% opacity, show a not-allowed cursor and cancel the press shrink."
+    },
+    {
+      "from": 44,
+      "to": 45,
+      "text": "`.primary` is the call to action (\"Simulate an attack\", \"Send\", \"Ask\"): solid aqua with dark `--accent-ink` text and no visible border, brightening to a lighter aqua (`#63eedd`) on hover."
+    },
+    {
+      "from": 46,
+      "to": 47,
+      "text": "`.ghost` is a low-emphasis button with no background or border and grey text (Back, Close, \"Board\", \"Copy as cURL\"); on hover it gains an `--s2` fill and white text."
+    },
+    {
+      "from": 48,
+      "to": 48,
+      "text": "`.sm` is the compact 28px variant used in panel headers, drawers and the Risk Lab presets, with smaller padding, font and gap."
+    },
+    {
+      "from": 49,
+      "to": 50,
+      "text": "`.icon` makes a square, icon-only button (34×34, no padding); combined with `.sm` it becomes 28×28, as used for the drawer's Back and Close buttons."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "`.danger` buttons look normal until hovered, then their border and text turn critical red, warning at the moment of intent (used by \"Reset demo data\")."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "Section comment, then the hold-to-confirm button: `position: relative` anchors the fill overlay and `overflow: hidden` clips it to the button's rounded shape."
+    },
+    {
+      "from": 55,
+      "to": 58,
+      "text": "The hold fill: an overlay covering the button, tinted with `--critical-soft` and collapsed to zero width with `scaleX(0)` from the left edge. Its default 140ms transition makes the fill snap back quickly when the button is released early."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "While the button is held, simulation.js sets a `data-holding` attribute and the fill sweeps to full width over 1200ms with linear timing, the same 1200ms its timer waits before firing the reset, so the fill is an exact progress bar."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Lifts the button's direct children (its icon and label spans) above the fill overlay so they stay readable while it sweeps across."
+    },
+    {
+      "from": 62,
+      "to": 67,
+      "text": "Key caps for shortcuts (\"Ctrl K\", \"G O\", \"esc\"): a small 18px inline-flex box in dim mono with a hairline border whose thicker 2px bottom edge gives a subtle 3D key look."
+    },
+    {
+      "from": 69,
+      "to": 75,
+      "text": "Section comment, then the shared style for text inputs, selects and textareas: 34px tall with an `--s1` fill and, unlike decorative surfaces, the stronger `--line-ctl` border so the field's edge is easy to find. Border and shadow changes are transitioned for the focus effect."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "Placeholder text uses the faintest grey, clearly distinct from typed text."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "Focus state: the global outline is replaced by an aqua-tinted border plus a 3px soft aqua ring drawn with `box-shadow`, which follows the rounded corners."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "Textarea overrides: automatic height with vertical padding, resizable only vertically, and 12px mono text because it holds the JSON request body in the API console."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "A wrapper that overlays an icon (and optionally a key hint) on an input: `position: relative` provides the reference box for those absolutely positioned parts."
+    },
+    {
+      "from": 80,
+      "to": 80,
+      "text": "The icon sits 11px in from the left over the input; `pointer-events: none` lets clicks on it fall through to the input."
+    },
+    {
+      "from": 81,
+      "to": 81,
+      "text": "The wrapped input gets 34px of left padding to clear the icon and fills the wrapper's width; `min-width: 0` lets it shrink in tight flex rows."
+    },
+    {
+      "from": 82,
+      "to": 82,
+      "text": "The optional key hint (the \"/\" shortcut on the Events page) is pinned 8px from the input's right edge."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "Selects lose their native arrow (`appearance: none`) and get a drawn one: two `linear-gradient` layers at 45° and 135°, each filling half of a 5px square, sit side by side near the right edge and together form a small downward-pointing triangle. `padding-right: 30px` keeps the text clear of it."
+    },
+    {
+      "from": 85,
+      "to": 86,
+      "text": "Section comment, then the segmented control (such as \"24 hours / 7 days\"): an inline-flex group with 3px padding, a hairline border and `--s1` fill; `position: relative` anchors the sliding pill."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "Each option button: 26px tall, dim grey, small medium-weight text, with `position: relative; z-index: 1` so it sits above the pill that slides underneath."
+    },
+    {
+      "from": 88,
+      "to": 89,
+      "text": "Options brighten to white on hover and when selected. The selected state is read from `aria-pressed=\"true\"`, the accessibility attribute the JS toggles, so what screen readers announce and what you see can't disagree."
+    },
+    {
+      "from": 90,
+      "to": 90,
+      "text": "The sliding pill behind the selected option: absolutely positioned with zero width in CSS because `movePill()` in motion.js measures the pressed button and springs the pill's `x` and `width` to match. An `--s4` fill, inset 1px ring and tiny drop shadow make it look raised."
+    },
+    {
+      "from": 92,
+      "to": 93,
+      "text": "Section comment, then the on/off switch track (a `button` with `role=\"switch\"`): a 34×20px pill in `--s4` with a 1px inset ring, transitioning its background colour."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "The knob: a 14px grey circle placed 3px from the track's top-left corner, transitioning its position with `--ease-out` and its colour."
+    },
+    {
+      "from": 95,
+      "to": 96,
+      "text": "When `aria-checked=\"true\"` the track turns soft aqua with an aqua ring, and the knob slides 14px to the right (3 + 14 + 14 + 3 = 34px) and turns solid aqua. Styling off the ARIA state keeps the visual and accessible states in sync."
+    },
+    {
+      "from": 98,
+      "to": 104,
+      "text": "Section comment, then the severity badge built by `sev()` in components.js, which puts the `lvl-` class on the badge itself: a 22px inline-flex pill whose background is `var(--lvl-soft)` and text `var(--lvl)`, in small bold letter-spaced mono. The same rule therefore renders all four levels."
+    },
+    {
+      "from": 105,
+      "to": 105,
+      "text": "The signal-bar container: the pips sit side by side, aligned to the bottom (`align-items: flex-end`) like the bars of a phone's signal meter."
+    },
+    {
+      "from": 106,
+      "to": 106,
+      "text": "Each pip is a 3px-wide bar filled with `currentColor` (the level colour inherited from `.sev`), dimmed to 25% opacity by default, meaning unlit."
+    },
+    {
+      "from": 107,
+      "to": 108,
+      "text": "The four pips get rising heights of 5, 7, 9 and 11px through `:nth-child(1)` to `:nth-child(4)`, forming a staircase."
+    },
+    {
+      "from": 109,
+      "to": 109,
+      "text": "Lit pips are fully opaque. `sev()` lights one pip for LOW up to four for CRITICAL, so severity is encoded three ways (colour, number of lit bars and the text label) and never depends on colour alone."
+    },
+    {
+      "from": 111,
+      "to": 111,
+      "text": "Incident status label: an inline-flex row of small medium-weight mono, letter-spaced and in `--t2` unless a status class recolours it."
+    },
+    {
+      "from": 112,
+      "to": 112,
+      "text": "The status dot drawn before the label: a 7px circle in `currentColor` with a 3px halo made by a `box-shadow` spread whose colour is `color-mix(in srgb, currentColor 18%, transparent)`, an 18%-strength version of the same colour."
+    },
+    {
+      "from": 113,
+      "to": 115,
+      "text": "Status colours keyed by the raw API value (`status()` writes `class=\"status OPEN\"` and so on): OPEN is critical red, INVESTIGATING amber and RESOLVED slate, mapping the work state onto the risk ramp."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "The score display from `score()`: an inline-flex row of a bold mono number in the level colour `var(--lvl)` and a mini bar."
+    },
+    {
+      "from": 118,
+      "to": 118,
+      "text": "The mini bar's 44×4px `--s4` track, with `overflow: hidden` clipping the fill to its rounded ends."
+    },
+    {
+      "from": 119,
+      "to": 119,
+      "text": "The fill, in the level colour; its width is set inline by `score()` to the score as a percentage."
+    },
+    {
+      "from": 121,
+      "to": 126,
+      "text": "A neutral chip (signal names, IDs and links in the drawer header): a 22px inline-flex pill with a hairline border, `--s2` fill and small grey text that doesn't wrap."
+    },
+    {
+      "from": 127,
+      "to": 127,
+      "text": "`.chips` is the wrapping flex container that lays chips out with 6px gaps."
+    },
+    {
+      "from": 128,
+      "to": 128,
+      "text": "A MITRE ATT&CK technique link (such as \"T1078\"): a 20px mono chip on `--s3` with a hairline border, transitioning its colour and border."
+    },
+    {
+      "from": 129,
+      "to": 129,
+      "text": "On hover a MITRE chip turns aqua with an aqua border, signalling a link (it opens the technique's page in a new tab)."
+    },
+    {
+      "from": 130,
+      "to": 130,
+      "text": "A small uppercase mono label with a hairline border and no fill, used for counts and categories like \"12 cities\", \"√ scale\" or \"home\"."
+    },
+    {
+      "from": 131,
+      "to": 131,
+      "text": "`.tag.accent` tints a tag aqua (text, border and soft fill), as on the \"trusted\" device tag and the analyst's AI-mode tag."
+    },
+    {
+      "from": 133,
+      "to": 133,
+      "text": "The live indicator dot: an 8px aqua circle (`flex: none` so it never squashes) with `position: relative` to anchor its ring."
+    },
+    {
+      "from": 134,
+      "to": 134,
+      "text": "The ping ring: a 1px aqua circle extending 4px beyond the dot on every side (`inset: -4px`), animated forever by `ping` every 1.8s, the classic \"live\" signal."
+    },
+    {
+      "from": 135,
+      "to": 135,
+      "text": "`.live-dot.off` (offline) turns the dot faint grey, and `.live-dot.off::after` removes the ping entirely."
+    },
+    {
+      "from": 136,
+      "to": 136,
+      "text": "`.live-dot.warn` (connecting or reconnecting) makes the dot amber, and `.live-dot.warn::after` makes its ping amber too; main.js picks the class from the live connection state."
+    },
+    {
+      "from": 137,
+      "to": 137,
+      "text": "The `ping` keyframes: the ring grows from 60% to 190% of its size while fading from 90% opacity to invisible, so it ripples outward and disappears."
+    },
+    {
+      "from": 139,
+      "to": 139,
+      "text": "Initials avatar: a 28px rounded square (8px radius, not a circle) that centres its two letters with `inline-grid` and `place-items: center`, on `--s3` with a hairline border and small mono text."
+    },
+    {
+      "from": 140,
+      "to": 140,
+      "text": "`.avatar.lg` is the 44px version with a larger radius and 14px initials, used on the affected-customer card in the incident drawer."
+    },
+    {
+      "from": 142,
+      "to": 143,
+      "text": "Section comment, then `.table-wrap`, a horizontal scroll container so a wide table scrolls inside its panel instead of stretching the page."
+    },
+    {
+      "from": 144,
+      "to": 144,
+      "text": "Tables fill their container, and `border-collapse: collapse` merges neighbouring cell borders into single hairlines."
+    },
+    {
+      "from": 145,
+      "to": 145,
+      "text": "Header cells: small uppercase letter-spaced mono in `--t3` with a hairline underneath, on an opaque `--s1` background, kept on one line with `white-space: nowrap`."
+    },
+    {
+      "from": 146,
+      "to": 146,
+      "text": "Body cells: matching 10px 12px padding, a hairline between rows, no wrapping (the wrapper scrolls instead) and vertical centring."
+    },
+    {
+      "from": 147,
+      "to": 147,
+      "text": "Rows are clickable (each opens a detail drawer), so they get a pointer cursor and a background transition."
+    },
+    {
+      "from": 148,
+      "to": 148,
+      "text": "Hovered rows get a very faint 2.5% white highlight."
+    },
+    {
+      "from": 149,
+      "to": 149,
+      "text": "Removes the bottom border from the last row, where the panel edge already closes the table."
+    },
+    {
+      "from": 150,
+      "to": 150,
+      "text": "ID cells (event IDs on the Events page) use medium-weight mono in `--t2`."
+    },
+    {
+      "from": 151,
+      "to": 152,
+      "text": "`.who` lines up an avatar or icon with text in a flex row, and the `small` element inside drops to its own line (`display: block`) as a dim mono ID under the name."
+    },
+    {
+      "from": 154,
+      "to": 155,
+      "text": "Section comment, then the definition list used for event details in the drawer: a two-column grid with a fixed 132px label column and a flexible value column."
+    },
+    {
+      "from": 156,
+      "to": 157,
+      "text": "Terms (`dt`) are dim labels; values (`dd`) lose the browser's default left indent and are white, and `min-width: 0` plus `overflow-wrap: anywhere` let long IPs or device IDs break onto a new line instead of overflowing."
+    },
+    {
+      "from": 159,
+      "to": 160,
+      "text": "Section comment, then the empty state (such as \"No events match these filters.\"): a centred grid of icon and text with generous padding in dim grey."
+    },
+    {
+      "from": 161,
+      "to": 161,
+      "text": "The empty-state icon uses the faintest grey, so it reads as a quiet illustration."
+    },
+    {
+      "from": 162,
+      "to": 162,
+      "text": "The skeleton placeholder shown while data loads: an `--s2` bar with rounded corners, `overflow: hidden` to clip the moving highlight and `position: relative` to anchor it."
+    },
+    {
+      "from": 163,
+      "to": 163,
+      "text": "The sweeping highlight: a full-size overlay holding a soft diagonal band of 5% white, starting one full width to the left (`translateX(-100%)`) and animated by `sweep` every 1.6s."
+    },
+    {
+      "from": 164,
+      "to": 164,
+      "text": "The `sweep` keyframes only define the end point (`translateX(100%)`); the start is the element's own `-100%` transform, so the band glides from off the left edge to off the right edge."
+    },
+    {
+      "from": 165,
+      "to": 165,
+      "text": "A text shimmer for in-progress labels (\"Running…\", \"Sending…\", the analyst's thinking text): the text is a half-transparent grey, and a 120px bright band is painted as the background but clipped to the letter shapes by `background-clip: text`, so the band shows only inside the glyphs as it moves."
+    },
+    {
+      "from": 166,
+      "to": 166,
+      "text": "The `shimmer` keyframes move that band's `background-position` from just off the left (`-120px`) to just past the right edge (`calc(100% + 120px)`), looping every 2.2s."
+    },
+    {
+      "from": 167,
+      "to": 167,
+      "text": "The error message box: critical-red text on a faint 6% red background with a soft red border, used when a page, drawer or answer fails to load."
+    },
+    {
+      "from": 169,
+      "to": 171,
+      "text": "Section comment, then `.beam-ring`, a ring laid exactly over a card's 1px border (`inset: -1px`, inherited radius, 1px padding). Its two-layer mask, one solid layer clipped to the `content-box` and one covering the whole box, is combined with `mask-composite: exclude` (WebKit's older equivalent is `xor`), which keeps only the area covered by exactly one layer: the 1px padding ring. Anything painted inside therefore shows only on the border."
+    },
+    {
+      "from": 172,
+      "to": 173,
+      "text": "The light itself: a 90px square whose gradient runs from solid critical red on its right side to transparent on its left. `offset-path: rect(0 auto auto 0 round 12px)` (where `auto` means the far edge) sends it along a rounded rectangle tracing the ring, `offset-anchor: 100% 50%` puts its bright edge on that path, and because `offset-rotate` defaults to `auto` it turns with the path so the bright end always leads. incidents.js adds this ring only to the first CRITICAL card in the Open column, so a single card glows."
+    },
+    {
+      "from": 174,
+      "to": 174,
+      "text": "The `beam` keyframes animate `offset-distance` to 100%, one full lap of the path; with the 5s linear timing the light moves at a constant speed."
+    },
+    {
+      "from": 176,
+      "to": 177,
+      "text": "Section comment, then the drawer root (`#drawer`): fixed over the viewport at `z-index: 60` (above the top bar, below the palette), and a flex row with `justify-content: flex-end` so the sheet sits on the right."
+    },
+    {
+      "from": 178,
+      "to": 178,
+      "text": "The dimming layer behind the sheet: covers the screen with 62% near-black and slightly blurs the page; it carries `data-close`, so clicking it closes the drawer."
+    },
+    {
+      "from": 179,
+      "to": 184,
+      "text": "The sheet: up to 640px wide (full width on phones), full height, a flex column of header and body on `--s1`, with a left hairline and a large, soft shadow cast to the left. `position: relative` keeps it stacked above the absolutely positioned backdrop."
+    },
+    {
+      "from": 185,
+      "to": 185,
+      "text": "The drawer header (Back button, eyebrow and title, Close button), aligned to the top with a hairline below."
+    },
+    {
+      "from": 186,
+      "to": 186,
+      "text": "Drawer titles use 28px Instrument Serif, echoing the page titles."
+    },
+    {
+      "from": 187,
+      "to": 187,
+      "text": "Pushes the Close button to the far right of the header."
+    },
+    {
+      "from": 188,
+      "to": 188,
+      "text": "The scrolling body: `flex: 1` fills the space under the header and `overflow-y: auto` scrolls just this part, so the header stays in view; its sections form a grid with 18px gaps, packed to the top by `align-content: start`."
+    },
+    {
+      "from": 189,
+      "to": 189,
+      "text": "Section headings inside the drawer (\"Why this score\", \"Event\"…): small uppercase letter-spaced mono in `--t3`, laid out as a flex row so a rule line can follow the text."
+    },
+    {
+      "from": 190,
+      "to": 190,
+      "text": "The rule line after each heading: an empty pseudo-element with `flex: 1` and 1px height in the hairline colour, stretching across the rest of the row."
+    },
+    {
+      "from": 192,
+      "to": 193,
+      "text": "Section comment, then the command palette root (`#palette`): fixed full-screen at `z-index: 80`, centring its box horizontally but placing it near the top (12vh down), where command palettes conventionally appear."
+    },
+    {
+      "from": 194,
+      "to": 194,
+      "text": "The palette's backdrop: a 55% darkening with a light 2px blur; clicking it closes the palette through `data-close`."
+    },
+    {
+      "from": 195,
+      "to": 195,
+      "text": "The palette box: up to 620px wide and 64% of the viewport tall, a flex column with a hairline border, 14px radius, a near-opaque background in the `--s2` colour with an 18px backdrop blur, and a deep shadow. `transform-origin: 50% 0` makes the JS scale-in animation grow from the top edge, and `overflow: hidden` clips the list to the rounded corners."
+    },
+    {
+      "from": 196,
+      "to": 197,
+      "text": "The search row: a flex row of icon, input and \"esc\" key cap with a hairline below, its icon in `--t3`."
+    },
+    {
+      "from": 198,
+      "to": 198,
+      "text": "The palette's input fills the row at 52px tall with no border, background or outline, so it reads as part of the box rather than a separate field."
+    },
+    {
+      "from": 199,
+      "to": 199,
+      "text": "The results list scrolls on its own (`overflow-y: auto`) inside the box's maximum height."
+    },
+    {
+      "from": 200,
+      "to": 200,
+      "text": "Padding for the group headings (\"Go to\", \"Actions\", \"Incidents\"…), which also use `.eyebrow`."
+    },
+    {
+      "from": 201,
+      "to": 201,
+      "text": "Each result: a full-width 38px flex row of icon, label and hint with rounded corners, left-aligned text (buttons centre their text by default) and grey text."
+    },
+    {
+      "from": 202,
+      "to": 203,
+      "text": "Result icons are `--t3` and never shrink; the hint (shortcut, category or ID) is pushed to the right in small faint mono."
+    },
+    {
+      "from": 204,
+      "to": 205,
+      "text": "The keyboard-selected result, marked with `aria-selected=\"true\"` by palette.js as you press the arrow keys: an `--s3` background, white text and an aqua icon."
+    },
+    {
+      "from": 206,
+      "to": 206,
+      "text": "The footer of keyboard hints (\"↑↓ navigate\", \"↵ select\", \"esc close\") in small faint mono with a hairline above."
+    },
+    {
+      "from": 208,
+      "to": 209,
+      "text": "Section comment, then the toast stack (`#toasts`): fixed 18px from the bottom-right corner at `z-index: 90`, a grid with 8px gaps, at most 360px wide (or the viewport width minus the margins on phones)."
+    },
+    {
+      "from": 210,
+      "to": 210,
+      "text": "A single toast: a flex card with a hairline border, 10px radius, near-opaque blurred background and drop shadow. It has a pointer cursor because clicking dismisses it (and may open the related incident), and `overflow: hidden` clips the coloured edge to the rounded corners."
+    },
+    {
+      "from": 211,
+      "to": 211,
+      "text": "The 3px coloured strip on the toast's left edge. `var(--lvl, var(--accent))` uses the risk colour when toast.js added a `lvl-` class and falls back to aqua for neutral messages."
+    },
+    {
+      "from": 212,
+      "to": 213,
+      "text": "The toast's title is medium-weight 13px; its body is 12px secondary grey with a 2px gap above."
+    },
+    {
+      "from": 215,
+      "to": 216,
+      "text": "Section comment, then the shared chart and map tooltip, created once by tooltip.js: fixed at `z-index: 95`, near-opaque and blurred, invisible by default with an opacity transition. `pointer-events: none` is essential: the tooltip follows the cursor, and if it could catch the pointer it would steal the very hover events that position it."
+    },
+    {
+      "from": 217,
+      "to": 217,
+      "text": "tooltip.js adds `show` to fade the tooltip in and removes it to fade it out."
+    },
+    {
+      "from": 218,
+      "to": 218,
+      "text": "The tooltip heading (time bucket, city, customer ID…): small uppercase letter-spaced mono in `--t3`."
+    },
+    {
+      "from": 219,
+      "to": 220,
+      "text": "Each data row puts its label on the left and its value on the right (`justify-content: space-between`), with the value in a `b` element set in medium-weight mono."
+    },
+    {
+      "from": 222,
+      "to": 223,
+      "text": "Section comment, then the JSON block produced by `jsonBlock()` (the raw record in the event drawer and API console responses): a `pre` element with a hairline border on a near-black background slightly darker than the panels, 11.5px mono text, `white-space: pre` to keep the indentation, and scrolling once it passes 420px."
+    },
+    {
+      "from": 224,
+      "to": 224,
+      "text": "Syntax colours for the spans `jsonBlock()` wraps around tokens: `.k` keys in light grey, `.s` strings in aqua, `.n` numbers in amber, `.b` booleans and null in orange, and `.p` punctuation (the colon after each key) in faint grey. Apart from the key grey they reuse palette tokens, so amber and orange appear here as plain syntax colours rather than risk levels."
+    }
+  ]
+}

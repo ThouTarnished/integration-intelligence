@@ -1,0 +1,542 @@
+{
+  "path": "web/js/main.js",
+  "lines": 206,
+  "summary": "The frontend's entry point and shell controller, loaded by `index.html` as an ES module. It contains the **hash router**, which swaps page modules into `#view` and gives each page a cleanup context, plus everything that outlives a single page: the sliding nav indicator, UTC clock, live-connection badge, traffic switch, open-incident count, keyboard shortcuts and live toasts. It is the glue between the core modules (`api`, `bus`, `live`, `motion`, `dom`) and the UI modules (boot overlay, drawer, palette, toasts, detail views).",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Header comment listing what this module owns: the router, navigation, keyboard shortcuts, the live connection and app-wide toasts."
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "text": "Imports the API helpers (`get`, `post`), used here for the traffic switch and the incident count, and the app-wide event `bus` that lets modules talk without importing each other."
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "text": "DOM helpers (`$`/`$$` query shortcuts, the escaping `html` template and `mount`) and the live-stream client: `connectLive()` opens the SSE connection and `live` holds its current state. `liveDotClass` picks the connection dot's classes."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Motion helpers from `motion.js`, the only module that talks to anime.js. `animate` and `enter` already honour the motion gate, so this file never has to check it."
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "text": "`askLater` queues a question for the AI Analyst page. `PAGES` is the route table and `SHORTCUTS` the g-then-letter key map, both defined in `pages/index.js`."
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "text": "The first-visit boot overlay, and the drawer controls: install its listeners, close it, and ask whether it is open."
+    },
+    {
+      "from": 11,
+      "to": 12,
+      "text": "Command palette controls, including `askForKey`, which reuses the palette as a prompt for the API key, plus the `toast` notification helper."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "`hideTip`, so the router can clear a chart tooltip when the page changes."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Functions that open the detail drawer for an incident, a customer, or any reference ID such as `INC-0001`."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "Section marker: the router."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Router state: `current` is the active page's cleanup context, `navToken` counts navigations so stale ones can be detected, and `currentName` is the active page key (empty until the first route)."
+    },
+    {
+      "from": 19,
+      "to": 20,
+      "text": "`createContext()` builds the per-page **cleanup context** that every page's `render()` receives as `ctx`. `cleanups` collects the teardown functions to run when the user leaves the page."
+    },
+    {
+      "from": 21,
+      "to": 22,
+      "text": "`disposed` flips once the user has left. `run` calls one teardown inside `try/catch`, so a failing cleanup cannot stop the others."
+    },
+    {
+      "from": 23,
+      "to": 24,
+      "text": "`keep` stores a teardown, or runs it immediately if the page has already been left. Pages `await` their first fetch before registering listeners and timers, and navigating away during that wait used to register them into a context that had already been cleaned: the Integration page's 4-second metrics poll then ran forever."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Returns the context object."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "`ctx.on(type, fn)` subscribes to the bus and keeps the unsubscribe function that `bus.on` returns, so a page's live listeners stop automatically when you navigate away."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "`ctx.every(ms, fn)` starts a `setInterval`, only while the page is current, and registers the matching `clearInterval`, so page timers cannot keep running (and calling the API) after the page is gone."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "`ctx.add(fn)` registers any other teardown, such as destroying a chart or cancelling a timeout. The `typeof` check lets callers pass a helper's return value directly, even when it is not a function."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "`dispose()` is called by the router: it marks the context as left and runs every teardown once. `splice(0)` empties the array while returning its contents."
+    },
+    {
+      "from": 30,
+      "to": 31,
+      "text": "Close the context object and the function."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "`moveIndicator()` slides the nav highlight behind the given link; `instant` places it without animation."
+    },
+    {
+      "from": 34,
+      "to": 35,
+      "text": "Finds the `.nav-indicator` element and bails out if either it or the link is missing."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Why the target below has a position *and* a size: on wide screens the rail is a vertical list, but under 860 px the CSS rebuilds it as a horizontal bottom bar, so the highlight has to follow the link on both axes."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Target state: the link's box inside the nav. `x` and `y` are anime's shorthands for `translateX` / `translateY` (set to `offsetLeft` / `offsetTop`), `width` and `height` match the link exactly, and `opacity: 1` makes sure the highlight is visible. In the vertical rail `x` is 0 and the width is the whole rail; in the bottom bar the highlight shrinks to the one active icon."
+    },
+    {
+      "from": 38,
+      "to": 40,
+      "text": "Instant mode uses `set()` to jump straight there; otherwise `animate()` moves it with a slightly bouncy spring (`spring(0.2, 420)`: bounce 0.2, about 420 ms)."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "`route()` is the **hash router**, run at startup and on every `hashchange`. It is `async` because it waits for the exit animation and for the page's data."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "Parses the URL hash: strips the leading `#` or `#/`, then splits off an optional query string, so `#/events?q=London` gives the path `events` and the query `q=London`."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "Unknown or empty paths fall back to the Overview page."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "Takes a **navigation token**, a number unique to this navigation. If the user navigates again before this run finishes, `navToken` moves on, and the checks after each `await` below see `token !== navToken` and stop."
+    },
+    {
+      "from": 46,
+      "to": 46,
+      "text": "Disposes the previous page's context, which runs its bus unsubscribes, timers and chart teardowns. `current?.` skips this on the very first navigation."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "Hides the shared chart tooltip. One shown while hovering the world map used to stay on screen after switching pages, because the map is removed without ever receiving a `pointerleave`."
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "text": "Creates a fresh context for the new page and makes it current."
+    },
+    {
+      "from": 51,
+      "to": 52,
+      "text": "Finds the nav link whose `data-page` matches and toggles the `active` class so only that link is highlighted."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "Moves the sliding indicator, instantly on the first route (while `currentName` is still empty) so it does not fly in from the top on page load, then records the new page name."
+    },
+    {
+      "from": 55,
+      "to": 56,
+      "text": "Updates the breadcrumb in the top bar and the browser tab title from the page module's `title`."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "Grabs the current page outlet `#view` (called `old`, because it is about to be replaced) and the inner bar of the top progress indicator."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "Starts the progress bar: it grows to 70% with `outExpo` (fast start, slow finish), which reads as 'loading'. `opacity: [1, 1]` undoes the fade-out left over from the previous navigation."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "If a page is currently shown, fades it out and lifts it 8px over 150 ms, and **waits** for that to finish. On the first load the outlet is empty, so this is skipped."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "First stale-navigation check: if another navigation started during the fade-out, this run stops here and leaves replacing the outlet and rendering to the newer one."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "Explains the next three lines: the outlet element is replaced on every navigation instead of just being emptied."
+    },
+    {
+      "from": 63,
+      "to": 64,
+      "text": "`cloneNode(false)` makes a new `main` element with the same id, class and tabindex but no children and, crucially, none of the old element's event listeners; removing `style` drops the inline opacity and offset left by the fade-out."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Swaps the new outlet into the page. Pages attach delegated click and drag listeners to the outlet they are given, so discarding the old element guarantees none of them survive: a revisited page can never handle a click twice (for example posting a scenario twice). A render still in flight for the previous page now writes into the detached element, harmlessly."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Scrolls back to the top so the new page starts at its header."
+    },
+    {
+      "from": 67,
+      "to": 71,
+      "text": "Renders the page: each module's `render(view, ctx, params)` receives the outlet, the cleanup context and the query string as `URLSearchParams`, and usually awaits API data. If it throws, an error box is shown instead; `html` escapes `error.message`, so not even an error text can inject markup."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "Completes the progress bar to full width and fades it out."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "Second stale-navigation check: if a newer navigation started while `render()` was running, the entrance animation is skipped, because these elements belong to a page that is already being replaced."
+    },
+    {
+      "from": 74,
+      "to": 75,
+      "text": "Plays the staggered entrance (`enter()` from `motion.js`) on the page's top-level blocks: the header, the filter bar and the direct children of `.grid` and `.board`, each rising 16px, 55 ms apart, capped at 14 items. `:scope >` limits each selector to direct children of the outlet."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "Section marker: actions the command palette can trigger."
+    },
+    {
+      "from": 78,
+      "to": 79,
+      "text": "The `actions` object is handed to `openPalette()`, so the palette can open drawers and toggle traffic without importing this module (which would be a circular import). `openIncident` and `openUser` are passed through unchanged."
+    },
+    {
+      "from": 80,
+      "to": 82,
+      "text": "`toggleTraffic()` backs the palette's 'Toggle live traffic' command. It first asks the server for the generator's current state rather than trusting the UI."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "Then posts the opposite state. This is a write, so `api.js` adds the `X-API-Key` header; the server also broadcasts the new status over SSE, which keeps the rail switch in sync."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "Confirms with a toast whose title and body depend on the new state."
+    },
+    {
+      "from": 85,
+      "to": 87,
+      "text": "Any failure (network, missing key, server error) becomes a `CRITICAL`-styled toast with the error message. The last two lines close the method and the `actions` object."
+    },
+    {
+      "from": 89,
+      "to": 89,
+      "text": "Section marker: the persistent chrome around the pages (clock, live state, traffic switch, counts)."
+    },
+    {
+      "from": 90,
+      "to": 91,
+      "text": "`startClock()` drives the UTC clock in the top bar; it looks up `#clock` once."
+    },
+    {
+      "from": 92,
+      "to": 95,
+      "text": "`tick` formats the current time. `toISOString()` is always in UTC (e.g. `2026-10-02T14:03:22.123Z`) and `slice(11, 19)` keeps just `HH:MM:SS`; the `html` template adds a dimmed 'UTC' suffix, and `String()` turns its safe-HTML object into the string `innerHTML` expects."
+    },
+    {
+      "from": 96,
+      "to": 98,
+      "text": "Draws the time immediately so the clock is never blank, then refreshes it every second. This interval lives for the whole session, so it is not registered on a page context."
+    },
+    {
+      "from": 100,
+      "to": 101,
+      "text": "`renderLiveState()` paints the rail's connection card for one of the three states published by `live.js`."
+    },
+    {
+      "from": 102,
+      "to": 102,
+      "text": "Picks the dot's classes through `liveDotClass`, shared with the overview: no modifier for `live` (an accent pulse), `warn` for `connecting` (yellow) and `off` for `offline` (grey)."
+    },
+    {
+      "from": 103,
+      "to": 104,
+      "text": "Maps the state to its label. `live.js` only announces `connecting` after an open stream drops, which is why it reads 'Reconnecting'; the very first 'Connecting' comes from `index.html`."
+    },
+    {
+      "from": 106,
+      "to": 108,
+      "text": "`refreshCounts()` fetches the open incidents to drive the badge on the Incidents link; 500 is the most the server returns in one request."
+    },
+    {
+      "from": 109,
+      "to": 111,
+      "text": "Writes the count into `#open-count` and hides the badge entirely when there are none."
+    },
+    {
+      "from": 112,
+      "to": 114,
+      "text": "Returns the list so `main()` can seed the live-toast de-duplication with it. Any error yields an empty list instead: a failed badge update should never break startup."
+    },
+    {
+      "from": 116,
+      "to": 118,
+      "text": "`wireTraffic()` connects the rail's traffic switch, starting from the server's current state. ARIA attribute values are strings, hence `String(initial)`."
+    },
+    {
+      "from": 119,
+      "to": 121,
+      "text": "On click it computes the opposite state and updates the switch **optimistically**, before the server answers, so the UI feels instant."
+    },
+    {
+      "from": 122,
+      "to": 124,
+      "text": "Sends the change; if the request fails, the switch is flipped back and a toast explains why."
+    },
+    {
+      "from": 125,
+      "to": 126,
+      "text": "Listens for `live:traffic` messages from the SSE stream, so the switch follows changes made elsewhere: the palette command, the Simulation page or another browser tab."
+    },
+    {
+      "from": 128,
+      "to": 128,
+      "text": "Section marker: keyboard shortcuts."
+    },
+    {
+      "from": 129,
+      "to": 131,
+      "text": "`installKeyboard()` adds one global `keydown` listener. `pendingG` remembers when 'g' was last pressed (0 means not pending), for the two-key shortcuts."
+    },
+    {
+      "from": 132,
+      "to": 132,
+      "text": "**Ctrl+K**, or **⌘+K** on a Mac (`metaKey`), toggles the command palette; `preventDefault` stops the browser's own Ctrl+K, which focuses its search bar. It is checked first, so it works even while typing in a field."
+    },
+    {
+      "from": 133,
+      "to": 133,
+      "text": "**Escape** closes the topmost overlay: the palette if it is open, otherwise the drawer."
+    },
+    {
+      "from": 134,
+      "to": 135,
+      "text": "Timeline rows are focusable list items (`tabindex=\"0\"`), so a keyboard user could reach them but not open them. Enter or Space now runs the same click handler as the mouse; `preventDefault` stops Space from scrolling the page. This check comes before the drawer guard below, because most timelines live inside the drawer."
+    },
+    {
+      "from": 136,
+      "to": 136,
+      "text": "Ignores every remaining shortcut while the user is typing in a form field, or while the palette or the drawer is open: typing 'g' or '/' into a search box never navigates, and shortcuts never act on the page hidden behind a drawer. The optional call `closest?.()` copes with events whose target isn't an element."
+    },
+    {
+      "from": 137,
+      "to": 137,
+      "text": "**/** focuses the current page's search box, but only if that page registered `ctx.focusSearch` (the Events page does). Since each navigation creates a new context, the hook disappears automatically when you leave that page."
+    },
+    {
+      "from": 138,
+      "to": 138,
+      "text": "**g** starts a two-key shortcut by recording the time."
+    },
+    {
+      "from": 139,
+      "to": 139,
+      "text": "If the next key arrives within 900 ms and maps to a page in `SHORTCUTS`, it navigates by setting `location.hash`; that fires `hashchange`, which runs `route()`. Resetting `pendingG` stops a third key from triggering again."
+    },
+    {
+      "from": 140,
+      "to": 141,
+      "text": "Close the listener and the function."
+    },
+    {
+      "from": 143,
+      "to": 143,
+      "text": "Section marker: live notifications."
+    },
+    {
+      "from": 144,
+      "to": 145,
+      "text": "`knownIncidents()` lists the IDs of every incident that already exists, whatever its status. Seeding the toasts with all of them, not only the open ones, means a status change on an investigating incident is never announced as a new incident. A failed request yields an empty list instead of an error."
+    },
+    {
+      "from": 147,
+      "to": 148,
+      "text": "`installLiveToasts()` keeps a `Set` of known incident IDs, the time of the last toast, and a timer for the debounced badge recount."
+    },
+    {
+      "from": 149,
+      "to": 152,
+      "text": "Runs on every `live:incident` message. The server re-sends an incident whenever it changes (new events, status updates), so the badge is recounted from the API 400 ms after the last message. That keeps it exact; the old `+1` counted status changes as new incidents."
+    },
+    {
+      "from": 153,
+      "to": 154,
+      "text": "IDs already known are ignored; a new one is recorded."
+    },
+    {
+      "from": 155,
+      "to": 155,
+      "text": "Decides whether to also show a toast: never on the Simulation page (it displays its own results), never within 2.5 s of the previous toast (to avoid floods), and only for `HIGH` or `CRITICAL` severity."
+    },
+    {
+      "from": 156,
+      "to": 159,
+      "text": "Records the time and shows a toast such as 'New critical incident · INC-0042' with the incident title and customer name. `level` colours its left edge by severity, and clicking it opens the incident drawer."
+    },
+    {
+      "from": 160,
+      "to": 165,
+      "text": "When the demo data is reset (the server publishes a `reset` message): a toast, a fresh set of known IDs (incident IDs start again from 1 after a reset, so the old set would hide genuinely new incidents), a badge refresh, and `route()` to reload the current page."
+    },
+    {
+      "from": 166,
+      "to": 167,
+      "text": "`incident:changed` is emitted by the incident drawer after a status change; recounting keeps the badge accurate when incidents are resolved."
+    },
+    {
+      "from": 169,
+      "to": 169,
+      "text": "Section marker: boot, i.e. app startup."
+    },
+    {
+      "from": 170,
+      "to": 170,
+      "text": "`main()` starts the app. The order matters: global listeners first, then the initial data, then the boot overlay and the first page."
+    },
+    {
+      "from": 171,
+      "to": 174,
+      "text": "Installs the long-lived listeners once for the whole session: drawer clicks, palette input and keys, the cursor spotlight on panels, and the global keyboard shortcuts."
+    },
+    {
+      "from": 175,
+      "to": 176,
+      "text": "Starts the UTC clock and opens the Server-Sent Events connection to `/api/v1/stream`."
+    },
+    {
+      "from": 177,
+      "to": 177,
+      "text": "Repaints the rail's connection card whenever `live.js` reports a state change."
+    },
+    {
+      "from": 178,
+      "to": 178,
+      "text": "After a reconnect, recounts the Incidents badge, because live messages may have been missed while the connection was down."
+    },
+    {
+      "from": 179,
+      "to": 179,
+      "text": "When `api.js` gets a 401 on a write (missing or wrong API key, typically because demo mode is off), opens the palette as a key prompt. After the key is saved, a toast asks the user to retry, because the failed request is not replayed automatically."
+    },
+    {
+      "from": 180,
+      "to": 181,
+      "text": "The incident drawer's 'Ask analyst' button emits `analyst:ask` with a question such as 'Summarize INC-0042'. The drawer closes first."
+    },
+    {
+      "from": 182,
+      "to": 183,
+      "text": "If the Analyst page is already open, the question goes straight to its `ctx.ask` hook, so the conversation so far is kept. (The old code re-ran the router, which re-rendered the page and wiped it.)"
+    },
+    {
+      "from": 184,
+      "to": 185,
+      "text": "Otherwise the question is queued with `askLater` and the app navigates to the Analyst page, which asks it once rendered. If that page is still loading and has no hook yet, it picks the queued question up when it finishes."
+    },
+    {
+      "from": 186,
+      "to": 186,
+      "text": "The top bar's search button opens the palette with the same `actions` as the keyboard shortcut."
+    },
+    {
+      "from": 187,
+      "to": 187,
+      "text": "On Apple devices (detected via `navigator.platform`), changes the hint from 'Ctrl K' to '⌘ K'."
+    },
+    {
+      "from": 188,
+      "to": 191,
+      "text": "**Event delegation** for reference IDs: one click listener on the whole document catches clicks on any `button.ref` (IDs like `INC-0001` that the markdown renderer and the analyst page turn into buttons) and opens the matching drawer via `openRef`. Buttons rendered later are covered automatically, and checking `defaultPrevented` lets a more specific handler claim the click first."
+    },
+    {
+      "from": 192,
+      "to": 192,
+      "text": "Runs the router whenever the hash changes: nav clicks, shortcuts, palette commands, and the browser's back and forward buttons."
+    },
+    {
+      "from": 193,
+      "to": 194,
+      "text": "A `ResizeObserver` on the nav re-places the highlight instantly whenever the nav changes size without a navigation. Resizing the window across the 860 px breakpoint swaps the vertical rail for the bottom bar (moving every link), and late-loading web fonts can shift the links too. Without it, a page loaded in a narrow window kept its highlight parked over the \"Monitor\" label after the window was widened. The observer also fires once on start, before any link is active, which `moveIndicator()` simply ignores."
+    },
+    {
+      "from": 196,
+      "to": 197,
+      "text": "Fetches the traffic status, every known incident and the badge count **in parallel** with `Promise.all`. A failed traffic request falls back to 'off', and neither `knownIncidents` nor `refreshCounts` ever rejects, so startup cannot fail here."
+    },
+    {
+      "from": 198,
+      "to": 199,
+      "text": "Wires the traffic switch with the real state and arms the live toasts, seeded with every incident that already exists, whatever its status."
+    },
+    {
+      "from": 200,
+      "to": 201,
+      "text": "Plays the boot overlay (only on the first visit of a browser session, and only with motion on) and waits for it to finish before rendering the first page, so the page's entrance animation is not hidden behind it."
+    },
+    {
+      "from": 202,
+      "to": 202,
+      "text": "Repaints the connection card from the current `live.state`. It is idempotent and simply guarantees the rail matches reality once the first page is up."
+    },
+    {
+      "from": 203,
+      "to": 204,
+      "text": "Re-syncs the open-incident badge every 30 seconds as a backstop, for example after messages were missed while the connection was down. Then `main()` ends."
+    },
+    {
+      "from": 206,
+      "to": 206,
+      "text": "Starts the app. No `DOMContentLoaded` wait is needed, because module scripts only run once the HTML has been parsed."
+    }
+  ]
+}

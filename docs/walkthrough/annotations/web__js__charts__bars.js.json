@@ -1,0 +1,67 @@
+{
+  "path": "web/js/charts/bars.js",
+  "lines": 15,
+  "summary": "A horizontal bar list rendered as plain HTML rather than SVG, used for Top signals on the overview and for a customer's locations in the user drawer (views/details.js). It builds its markup with the escaping `html` template from dom.js, sizes each bar as a percentage of the largest value, and animates the bars in through motion.js; layout and risk colours live in charts.css.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Header comment. Plain HTML (not SVG) means labels are real text that screen readers announce, and CSS grid fits any width with no JavaScript redraw; charts.css truncates very long labels with an ellipsis."
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "text": "Imports `fmt` (formatting) and `html` (the escaping tagged template) from dom.js, and `animate`/`stagger` from motion.js."
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "text": "Each item has a `label`, a numeric `value`, optional `meta` markup (the overview passes a MITRE ATT&CK badge, the customer drawer a home tag) and an optional risk `level`. `format` controls how values print and defaults to `fmt.num`."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "The largest value (at least 1, so an all-zero list can't divide by zero); every bar is measured against it."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Renders the list into the element. `html` escapes every interpolated value unless it is already `html`/`raw` output, so a label can't inject markup, and `String(...)` turns the resulting safe-HTML object into the string `innerHTML` expects; the inner `items.map` produces one fragment per item."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Each row gets a `lvl-LEVEL` class only when the item has a level; charts.css paints the bar in the risk colour for MEDIUM, HIGH and CRITICAL and leaves other rows neutral grey."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "The label (escaped automatically) plus any `meta` markup; `|| \"\"` renders nothing when there is none."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "The track and its bar: the inner `i` element's width is the value as a percentage of the largest value, so the top item fills the whole track."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "The formatted value; the `num` class switches on tabular (equal-width) digits so numbers line up."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "Closes the row and the list; the final `)` ends the `String(...)` call."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Grows each bar from `scaleX: 0` to 1 (charts.css sets `transform-origin: left`, so they grow from the left) over 900 ms, 55 ms apart from 120 ms. Animating a transform instead of `width` avoids re-running layout on every frame."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "Closes `hbars`. Unlike the SVG charts it needs no `responsive` wrapper, because percentage widths adapt to any container size on their own."
+    }
+  ]
+}

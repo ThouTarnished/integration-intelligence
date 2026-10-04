@@ -1,0 +1,257 @@
+{
+  "path": "web/js/pages/incidents.js",
+  "lines": 136,
+  "summary": "The incident triage board: three columns (Open, Investigating, Resolved) holding the incidents created by the correlation engine. It loads `GET /incidents?limit=300`, and dragging a card to another column sends `PATCH /incidents/{id}`; the move appears immediately and is rolled back if the request fails. The board stays live through `live:incident` and the drawer's `incident:changed` event, uses keyed FLIP so re-rendered cards glide to their new places, and gives the animated border beam to the single most urgent card only.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Header comment: incidents can be triaged by dragging a card or from the drawer, and only one card, the most urgent, gets the animated border beam, so the board directs attention instead of competing for it."
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "text": "API helpers `get` and `patch`, plus the app-wide `bus`, used to listen for `incident:changed` directly."
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "text": "DOM helpers and motion: `enter` for card entrances, `animate` for the live highlight, and `flipKeyed`, which animates a re-rendered list by matching old and new elements on a data attribute."
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "text": "The segmented control (`seg` builds it, `bindSeg` wires it up), the severity badge `sev` and `icon`."
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "text": "`toast` for move confirmations and errors; `openIncident` opens the incident drawer."
+    },
+    {
+      "from": 12,
+      "to": 16,
+      "text": "Column definitions as `[status, label, hint]`. The status keys are the exact values the API stores and accepts: `OPEN`, `INVESTIGATING` and `RESOLVED`."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Only the 12 most recently updated resolved incidents are shown by default, so closed-out history doesn't make the board very long."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "A numeric rank per severity, used to sort CRITICAL cards above HIGH, and so on."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "`card` renders one incident as an `article` element. `draggable` enables native drag-and-drop, `data-id` is the key for FLIP and dragging, `data-severity` lets the beam find a critical card, and `tabindex=0` makes cards keyboard-focusable; the `lvl-…` class draws the coloured left edge."
+    },
+    {
+      "from": 21,
+      "to": 22,
+      "text": "Top row: severity badge, incident ID and a grip icon hinting that the card can be dragged. Then the incident title."
+    },
+    {
+      "from": 23,
+      "to": 24,
+      "text": "Meta line: customer, peak score, number of correlated events and, pushed to the right, how long ago the incident was updated. Line 24 closes the card."
+    },
+    {
+      "from": 26,
+      "to": 28,
+      "text": "Page module titled `Incidents`; `render` receives the view element and the cleanup context."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "Loads up to 300 incidents, most recently updated first. This array is the board's single source of truth: every redraw is computed from it. It is a `let` because a brand-new incident replaces it with a longer array."
+    },
+    {
+      "from": 30,
+      "to": 31,
+      "text": "UI state: the active severity filter (empty means all) and whether the user has expanded the Resolved column."
+    },
+    {
+      "from": 33,
+      "to": 36,
+      "text": "Page header with the title and an explanation of correlation: risky events for the same customer within 30 minutes are merged into one incident, which is the backend's `CORRELATION_WINDOW`."
+    },
+    {
+      "from": 37,
+      "to": 38,
+      "text": "A severity filter (All, Critical, High, Medium) in the header actions. Line 38 closes the header."
+    },
+    {
+      "from": 39,
+      "to": 43,
+      "text": "The board: one `section` per column, each with a header (status pill, hint and an empty count badge) and an empty `data-body` that `draw` fills. Line 43 closes the board and the template."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "`draw` re-renders every column from the `incidents` array. Cards are never patched in place: the markup is recomputed from the data, so what you see always matches the state. `animateCards` asks for the entrance animation."
+    },
+    {
+      "from": 46,
+      "to": 48,
+      "text": "For each column, finds its element and keeps the incidents that have that status and match the severity filter."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "Active columns sort most severe first, then by higher score, then by most recent update; ISO timestamps sort correctly as strings, which is why `localeCompare` works. Resolved keeps the API's order, newest first."
+    },
+    {
+      "from": 50,
+      "to": 52,
+      "text": "Remembers the full count, truncates Resolved to 12 unless it was expanded, and writes the full count into the column badge."
+    },
+    {
+      "from": 53,
+      "to": 56,
+      "text": "Mounts the cards. A truncated Resolved column ends with a `Show N more` button, and an empty column shows a calm `Nothing here` placeholder. Line 56 closes the loop."
+    },
+    {
+      "from": 57,
+      "to": 58,
+      "text": "The border beam: picks the first CRITICAL card in the Open column (after sorting, the most urgent incident) and appends a decorative `.beam-ring` that CSS animates as a red light travelling around the edge. Because `draw` rebuilds every card, the beam always lands on whichever card is most urgent right now."
+    },
+    {
+      "from": 59,
+      "to": 60,
+      "text": "Plays the staggered card entrance only when asked (first load and filter changes). Moves animate with FLIP instead, so cards don't fade in again whenever one moves."
+    },
+    {
+      "from": 61,
+      "to": 63,
+      "text": "The first draw plays the entrance animation. The severity filter then updates `filter` and redraws, again with the entrance."
+    },
+    {
+      "from": 65,
+      "to": 67,
+      "text": "`move(id, toStatus)` changes one incident's status. It does nothing if the incident is unknown or the card was dropped back on its own column."
+    },
+    {
+      "from": 68,
+      "to": 69,
+      "text": "Remembers the old status for rollback, then updates local state **optimistically** inside `flipKeyed`. Plain `flip` tracks DOM nodes, which `draw()` throws away, so `flipKeyed` matches cards by `data-id` instead and each card glides from its old spot to its new one."
+    },
+    {
+      "from": 70,
+      "to": 72,
+      "text": "Saves the change with `PATCH /incidents/{id}` and confirms with a toast coloured by severity, for example `INC-0042 → investigating`."
+    },
+    {
+      "from": 73,
+      "to": 75,
+      "text": "If the request fails (offline, or a 401 because no API key is set), restores the previous status and redraws, so the card snaps back to where it came from."
+    },
+    {
+      "from": 76,
+      "to": 78,
+      "text": "Shows an error toast with the API's message, then closes the `catch` block and `move`."
+    },
+    {
+      "from": 80,
+      "to": 81,
+      "text": "Native HTML5 drag-and-drop. `dragged` holds the ID of the card being dragged, or `null`."
+    },
+    {
+      "from": 82,
+      "to": 84,
+      "text": "`dragstart` is delegated on the view and ignores anything that isn't an incident card."
+    },
+    {
+      "from": 85,
+      "to": 86,
+      "text": "Remembers which incident is moving and adds the `dragging` class, which CSS uses to fade the original card to 40%."
+    },
+    {
+      "from": 87,
+      "to": 89,
+      "text": "Declares a move operation (so the cursor shows move, not copy) and puts the ID on the drag data. Firefox won't start a drag without a `setData` call; the drop handler itself reads `dragged`."
+    },
+    {
+      "from": 90,
+      "to": 94,
+      "text": "`dragend` fires whether or not the drop succeeded. It removes the fade, forgets the dragged card and clears any column highlight. Forgetting matters: after a cancelled drag, dropping a file or some text on a column used to move the stale card."
+    },
+    {
+      "from": 95,
+      "to": 97,
+      "text": "`dragover` fires continuously during a drag. It ignores positions outside a column and drags that didn't start on a card, such as files or selected text."
+    },
+    {
+      "from": 98,
+      "to": 100,
+      "text": "Calling `preventDefault()` here is what tells the browser this column accepts a drop. The hovered column gets the `drop` class (an accent border) and every other column loses it."
+    },
+    {
+      "from": 101,
+      "to": 104,
+      "text": "`drop` on a column: `preventDefault()` stops the browser's default handling of dropped data (such as opening dropped text as a link), then the highlight is removed."
+    },
+    {
+      "from": 105,
+      "to": 108,
+      "text": "Calls `move` with the column's status key and clears `dragged`."
+    },
+    {
+      "from": 110,
+      "to": 111,
+      "text": "Delegated clicks: `Show N more` expands the Resolved column and redraws without animation."
+    },
+    {
+      "from": 112,
+      "to": 114,
+      "text": "A click anywhere else on a card opens its incident drawer."
+    },
+    {
+      "from": 115,
+      "to": 118,
+      "text": "Keyboard support: pressing Enter on a focused card opens its drawer too. `closest?.` guards against event targets that have no `closest` method."
+    },
+    {
+      "from": 120,
+      "to": 121,
+      "text": "Live updates. `live:incident` arrives whenever the correlation engine opens or updates an incident, and after any status change, because the PATCH endpoint re-broadcasts the incident (your own drags included)."
+    },
+    {
+      "from": 122,
+      "to": 122,
+      "text": "Checks whether the board already holds this incident."
+    },
+    {
+      "from": 123,
+      "to": 125,
+      "text": "Inside `flipKeyed`: merges the new fields into the existing incident, or puts a brand-new incident at the front of the array."
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "text": "Redraws the board. `flipKeyed` then glides existing cards to their new positions and fades and scales new ones in."
+    },
+    {
+      "from": 128,
+      "to": 130,
+      "text": "Highlights the updated card with a teal ring that fades out over 1.6 s, then removes the inline style, so the user can see which card just changed. Line 129 closes the subscription."
+    },
+    {
+      "from": 131,
+      "to": 131,
+      "text": "`incident:changed` is emitted by the incident drawer when its status control is used. `bus.on` returns an unsubscribe function and `ctx.add` registers it, which is exactly what `ctx.on` does in one call."
+    },
+    {
+      "from": 132,
+      "to": 134,
+      "text": "If the local copy has a different status, applies the new one with the same FLIP animation, so a change made in the drawer moves the card behind it."
+    },
+    {
+      "from": 135,
+      "to": 136,
+      "text": "Closes `render` and the page object."
+    }
+  ]
+}

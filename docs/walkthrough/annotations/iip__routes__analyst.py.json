@@ -1,0 +1,17 @@
+{
+  "path": "iip/routes/analyst.py",
+  "lines": 15,
+  "summary": "The HTTP entry point for the AI Analyst. `POST /ai/ask` validates the question with `AskIn` (`iip/schemas.py`), rate-limits the caller and delegates to `ask` in `iip/analyst.py`, which returns the engine's decision, the cited sources and an explanation.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Module docstring: natural-language questions about incidents and users."},
+    {"from": 2, "to": 2, "text": "Postpones evaluation of type hints (they are kept as strings); FastAPI still resolves them when it inspects each endpoint's signature."},
+    {"from": 4, "to": 4, "text": "`APIRouter`, plus `Depends` to attach the rate limiter."},
+    {"from": 6, "to": 6, "text": "The analyst service module, `iip/analyst.py` from the parent package (not this file)."},
+    {"from": 7, "to": 7, "text": "`AskIn` requires a question of 3 to 500 characters."},
+    {"from": 8, "to": 8, "text": "The session alias and the rate-limit dependency."},
+    {"from": 10, "to": 10, "text": "Router tagged `ai analyst`."},
+    {"from": 13, "to": 13, "text": "Registers `POST /api/v1/ai/ask` with rate limiting but no API key: asking changes no data, but each question can trigger a paid OpenAI call when a key is configured, so it is throttled."},
+    {"from": 14, "to": 14, "text": "A plain `def`, so it runs in the thread pool: a slow OpenAI call (its timeout is 20 seconds) ties up one worker thread, never the event loop."},
+    {"from": 15, "to": 15, "text": "Delegates to the analyst module and returns its answer dict."}
+  ]
+}

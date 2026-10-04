@@ -1,0 +1,11 @@
+{
+  "path": "requirements-dev.txt",
+  "lines": 4,
+  "summary": "Extra tools for development and CI, installed with `pip install -r requirements-dev.txt`. It pulls in the runtime requirements first, so one command sets up everything needed to lint, test and build the walkthrough. The Docker image deliberately installs only `requirements.txt`.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "`-r` includes another requirements file, so the runtime dependencies are installed too without repeating the list."},
+    {"from": 2, "to": 2, "text": "pytest, the test runner configured in `pyproject.toml`."},
+    {"from": 3, "to": 3, "text": "Ruff, the linter that CI runs with `ruff check .`."},
+    {"from": 4, "to": 4, "text": "Pygments, the syntax highlighter used only by `scripts/build_walkthrough.py`, as the trailing comment notes (pip allows `#` comments after a requirement)."}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "path": ".dockerignore",
+  "lines": 10,
+  "summary": "Lists paths Docker leaves out of the build context, the set of files sent to the Docker engine when building. This speeds up builds, keeps secrets and local data out of the image, and stops stray caches such as `__pycache__` being copied in by the `Dockerfile`'s `COPY iip ./iip`.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "The local virtual environment: large, and built for the host operating system rather than the container's Linux."},
+    {"from": 2, "to": 2, "text": "The real `.env` may contain secrets, so it must never be baked into an image. Configuration is passed when the container runs instead (for example with `docker run -e IIP_API_KEY=...`)."},
+    {"from": 3, "to": 3, "text": "The local database folder. The container creates and seeds its own on first start."},
+    {"from": 4, "to": 6, "text": "Tests, documentation and helper scripts aren't needed to run the app."},
+    {"from": 7, "to": 7, "text": "Python bytecode caches at any depth (the `**/` prefix matches any folder). Without this line, `COPY iip ./iip` would also copy `iip/__pycache__` into the image."},
+    {"from": 8, "to": 9, "text": "The pytest and Ruff caches."},
+    {"from": 10, "to": 10, "text": "The GitHub Actions workflow folder, which only matters to CI."}
+  ]
+}

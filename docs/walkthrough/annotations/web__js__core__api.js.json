@@ -1,0 +1,122 @@
+{
+  "path": "web/js/core/api.js",
+  "lines": 51,
+  "summary": "The single gateway between the browser and the REST API under `/api/v1`. `request()` performs a `fetch` and reports status, latency and the server's request id (the Integration page's API console shows these), while `api()` and its `get`/`post`/`patch` shortcuts return the parsed JSON or throw a readable `ApiError`. Write requests carry `X-API-Key`, taken from a meta tag the server fills in demo mode or from a key the user enters when a 401 triggers the `auth:required` bus event.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 3,
+      "text": "Header comment: a thin wrapper around `fetch` for `/api/v1`. Write requests carry the `X-API-Key` header; in demo mode the server injects the key into a meta tag, otherwise the user is asked for it once per browser session."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Imports the bus, so a missing key can be announced (`auth:required`) without this module knowing anything about the UI."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Every path passed to these helpers is relative to the versioned API prefix, e.g. `get('/incidents')` requests `/api/v1/incidents`."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "Reads the key the server may have injected into the `iip-api-key` meta tag in `index.html`; `?.` and the `||` fallback cope with a missing tag or empty content."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Chooses the key: the injected one unless it is still the untouched `__IIP_API_KEY__` placeholder (which happens when `index.html` is opened as a plain static file instead of through `/`), else a key the user saved earlier in this session, else none."
+    },
+    {
+      "from": 10,
+      "to": 13,
+      "text": "`setKey()` is called by the palette's key prompt: it trims the pasted key, keeps it in memory for the next requests and stores it in `sessionStorage`, which the browser clears when the tab is closed."
+    },
+    {
+      "from": 15,
+      "to": 17,
+      "text": "`ApiError` is an `Error` that also carries the HTTP `status`, so a caller could tell, say, a 404 from a 401. Callers normally just show `error.message` in a toast."
+    },
+    {
+      "from": 19,
+      "to": 20,
+      "text": "`request()` is the low-level call: besides the data it reports the status, latency and request id, which the Integration page's live API console displays. Its options are destructured with defaults: `GET`, no body, and an optional `AbortSignal` to cancel the request."
+    },
+    {
+      "from": 21,
+      "to": 23,
+      "text": "Builds the headers: `Content-Type: application/json` only when there is a body, and `X-API-Key` only on non-GET requests when a key is known. Reads are public, while the backend requires the key on every write (its `WRITE` dependency)."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Records a high-resolution start time to measure the round trip."
+    },
+    {
+      "from": 25,
+      "to": 27,
+      "text": "Sends the request to `BASE + path`. The body is left out when absent, passed through unchanged if the caller already serialised it to a string, and otherwise turned into JSON with `JSON.stringify` (the usual case: callers pass plain objects)."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Parses the JSON response; `.catch` turns an empty or non-JSON body (an HTML error page, for example) into `{}` instead of throwing."
+    },
+    {
+      "from": 29,
+      "to": 31,
+      "text": "Returns a result object instead of throwing: `ok` and `status`, the parsed `data`, and `ms`, the round-trip time measured in the browser."
+    },
+    {
+      "from": 32,
+      "to": 35,
+      "text": "Plus two headers added by the backend's request middleware: `X-Request-ID` identifies this call in the server logs, and `X-Response-Time` is the time the server spent on it. Then the object and the function close."
+    },
+    {
+      "from": 37,
+      "to": 38,
+      "text": "`api()` is the module's internal workhorse behind `get`, `post` and `patch` (it isn't exported): it calls `request()` and turns the result into either data or an exception."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "A 401 on a write means the key is missing or wrong, so it emits `auth:required` on the bus and `main.js` opens the key prompt. The call itself still fails just below."
+    },
+    {
+      "from": 40,
+      "to": 41,
+      "text": "For any non-2xx response, it reads FastAPI's `detail` field from the error body."
+    },
+    {
+      "from": 42,
+      "to": 43,
+      "text": "Builds a readable message: `detail` is a string for errors raised with `HTTPException` and a list of objects with a `msg` for 422 validation errors (joined with semicolons); anything else falls back to a generic `HTTP 502`-style text."
+    },
+    {
+      "from": 44,
+      "to": 45,
+      "text": "Throws an `ApiError` carrying that message and the status, so callers can `try/catch` and show it."
+    },
+    {
+      "from": 46,
+      "to": 47,
+      "text": "On success, returns only the parsed JSON body."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "`get(path)` is a plain read; the optional `options` can, for example, pass an abort `signal`."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "`post(path, body)` sends JSON, defaulting to an empty object so the request always carries a valid JSON body."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "`patch(path, body)` sends partial updates, such as moving an incident to another triage status."
+    }
+  ]
+}

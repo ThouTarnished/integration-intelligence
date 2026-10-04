@@ -1,0 +1,277 @@
+{
+  "path": "web/js/pages/integration.js",
+  "lines": 146,
+  "summary": "The Integration health page shows what an integration team monitors for the NovaBank connection: connection status, latency percentiles, error rate, request volume and ingest throughput. It loads `GET /integration/health` (status, versions and the self-describing endpoint catalog) and polls `GET /integration/metrics` every 4 seconds; because that endpoint returns only a current snapshot, the page keeps its own history to draw the trend lines. It also includes an API console that sends real requests through the low-level `request` helper and can copy any call as a cURL command.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Header comment listing the page's four parts: connection status, service-level indicators (SLIs), a live API console and the endpoint catalog."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "Besides `get`, imports `request`, the low-level call that never throws on HTTP errors and also returns the status, latency and request ID. That is exactly what the console needs."
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "text": "DOM helpers and motion; `countUp` animates each metric from its previous value to the new one."
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "text": "`microBars` (a tiny bar chart) and `sparkline` for the metric tiles; `jsonBlock` pretty-prints and colours JSON responses; `panel` frames each section."
+    },
+    {
+      "from": 8,
+      "to": 9,
+      "text": "`icon` and `toast`."
+    },
+    {
+      "from": 11,
+      "to": 14,
+      "text": "A ready-made `POST /events` body: a failed login from Lagos with four failed attempts from a suspicious IP. It is designed to trip several rules, so sending it returns a clearly elevated score."
+    },
+    {
+      "from": 16,
+      "to": 18,
+      "text": "`metric(key, label, unit)` renders one small SLI tile spanning 2 of the 12 columns: a label, a number that starts at `0`, an optional unit and an empty slot for its sparkline. `data-metric` lets `setMetrics` find each tile."
+    },
+    {
+      "from": 20,
+      "to": 22,
+      "text": "Page module titled `Integration`. It uses `ctx` for two intervals and one live subscription."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "Loads connection health and the first metrics snapshot in parallel."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Client-side history for the trend lines. The metrics API reports only current values, so the page records each 4-second poll itself; the sparklines therefore start when the page opens and fill in over time."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Uptime seeded from the server, then advanced locally once a second, so the clock ticks without a request every second."
+    },
+    {
+      "from": 26,
+      "to": 27,
+      "text": "The endpoint catalog minus the SSE `/stream` route (a stream can't be shown in a request/response console), grouped by OpenAPI tag. `||=` creates each tag's array the first time the tag appears, and the comma operator returns `acc` from the reducer."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "Mounts the page markup."
+    },
+    {
+      "from": 30,
+      "to": 34,
+      "text": "Header with a link to the auto-generated OpenAPI docs at `/docs`. It opens in a new tab, and `rel=noopener` stops that tab from reaching back into this page through `window.opener`."
+    },
+    {
+      "from": 35,
+      "to": 38,
+      "text": "Full-width **Connection** panel: a glowing status orb, the client and integration names, then `Connected` or `Degraded` with the API health beside it."
+    },
+    {
+      "from": 39,
+      "to": 43,
+      "text": "Fact row: uptime (`data-uptime`, ticks every second), API version, total events received (`data-received`, bumped by live events) and how long ago the last event arrived."
+    },
+    {
+      "from": 44,
+      "to": 47,
+      "text": "Which explanation engine the AI analyst uses (`openai` with its model, or `deterministic`), the rate limit, and how many dashboards are connected to the live stream (`data-clients`). Line 47 closes the panel."
+    },
+    {
+      "from": 48,
+      "to": 51,
+      "text": "The SLI row: six tiles for request count, the p50, p95 and p99 latency percentiles in ms, the error rate in %, and events ingested over the last 30 minutes."
+    },
+    {
+      "from": 52,
+      "to": 53,
+      "text": "Third row. The **API console** panel (7 columns) has a `Copy as cURL` button in its header."
+    },
+    {
+      "from": 54,
+      "to": 57,
+      "text": "The console's request bar: an HTTP method picker (POST selected by default), a path input relative to `/api/v1` (starting at `/events`) and a Send button."
+    },
+    {
+      "from": 58,
+      "to": 61,
+      "text": "The JSON body textarea, prefilled with `SAMPLE` and with spellcheck off, a meta line explaining that write calls carry the API key, and an empty response area. Line 61 closes the console."
+    },
+    {
+      "from": 62,
+      "to": 63,
+      "text": "**Endpoint catalog** panel (5 columns) with a route count, rendered as one heading per tag."
+    },
+    {
+      "from": 64,
+      "to": 66,
+      "text": "Each endpoint is a row whose `data-endpoint` holds the method and path separated by a space. It shows a coloured method badge, the path without `/api/v1`, its OpenAPI summary and a lock icon when the API key is required. Line 66 closes the row of panels."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "Full-width **Busiest routes** panel, filled in by `setMetrics`."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "`setMetrics(m, first)` applies one metrics snapshot to the page; `first` is true only for the initial call."
+    },
+    {
+      "from": 70,
+      "to": 71,
+      "text": "Picks the six tile values: total requests, the three latency percentiles, the error rate converted to a percentage, and ingest as the sum of the last 30 one-minute buckets."
+    },
+    {
+      "from": 72,
+      "to": 73,
+      "text": "Loops over the tiles. Latency and error rate show one decimal place; counts show whole numbers."
+    },
+    {
+      "from": 74,
+      "to": 77,
+      "text": "Animates each tile from its current value to the new one, taking 1.1 s on the first load and 0.6 s on later polls, with a formatter that keeps the decimal places steady while the number moves."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "The ingest tile gets bars instead of a line: one bar per minute for the last 30 minutes, taken straight from the server's `throughput_per_minute`."
+    },
+    {
+      "from": 79,
+      "to": 81,
+      "text": "Appends each value to its client-side history and drops the oldest sample beyond 40 (about 2.7 minutes at one poll every 4 s), so memory use stays bounded."
+    },
+    {
+      "from": 82,
+      "to": 86,
+      "text": "From the second sample on, redraws the tile's sparkline: red for errors, neutral for requests, accent for latency. `animateIn: false` because the line is redrawn every 4 seconds, and replaying the draw-in animation each time would flicker."
+    },
+    {
+      "from": 87,
+      "to": 89,
+      "text": "Re-renders the **Busiest routes** table: route, call count, average latency and the number of 4xx/5xx responses (faded when zero). The server normalises IDs in routes, so `/users/USR-1001` is counted as `/users/{USR}`."
+    },
+    {
+      "from": 90,
+      "to": 91,
+      "text": "Updates the connected-dashboards count, then closes `setMetrics`."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "Applies the first metrics snapshot with the longer count-up animation. The tiles themselves fade in with the router's page entrance, which staggers every grid child."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "A local one-second tick for the uptime display. `ctx.every` stops it automatically when the user leaves the page."
+    },
+    {
+      "from": 95,
+      "to": 97,
+      "text": "Polls the metrics every 4 seconds. Each poll is itself an API call, so while this page is open the request count rises by at least one per poll: the page measures itself."
+    },
+    {
+      "from": 99,
+      "to": 100,
+      "text": "The console section starts with references to the method, path and body controls."
+    },
+    {
+      "from": 101,
+      "to": 103,
+      "text": "Delegated click: only clicks on a catalog row continue."
+    },
+    {
+      "from": 104,
+      "to": 105,
+      "text": "Splits the row's `data-endpoint` into method and path, and selects that method."
+    },
+    {
+      "from": 106,
+      "to": 107,
+      "text": "Strips the `/api/v1` prefix and swaps path parameters for real demo IDs (`EVT-00001`, `INC-0001`, `USR-1001`, `brute_force`), so the request is ready to send."
+    },
+    {
+      "from": 108,
+      "to": 111,
+      "text": "Prefills a sensible body: none for GET, the sample event for `/events`, a status change for incidents, a question for `/ask`, a signal list for `/evaluate`, and `{}` for anything else."
+    },
+    {
+      "from": 112,
+      "to": 113,
+      "text": "Briefly fades the body box (opacity 0.4 to 1) so the user notices it changed. Line 114 closes the listener."
+    },
+    {
+      "from": 115,
+      "to": 116,
+      "text": "The Send button handler. `meta` is the status line and `out` the response area."
+    },
+    {
+      "from": 117,
+      "to": 120,
+      "text": "For non-GET requests with a body, the JSON is parsed first; invalid JSON stops the send with a toast instead of sending a broken request."
+    },
+    {
+      "from": 121,
+      "to": 121,
+      "text": "Shows a shimmering line such as `Sending POST /events…` while waiting."
+    },
+    {
+      "from": 122,
+      "to": 123,
+      "text": "Sends the call with `request`, which adds the `X-API-Key` header for write methods and resolves even for 4xx/5xx responses, so errors are displayed rather than thrown."
+    },
+    {
+      "from": 124,
+      "to": 125,
+      "text": "The meta line: the status code styled as success or failure, round-trip time measured in the browser, the server's own processing time (`X-Response-Time`) and the `X-Request-ID`, which also appears in the server log, so a call can be traced end to end."
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "text": "Renders the response body as syntax-coloured JSON and fades it in."
+    },
+    {
+      "from": 128,
+      "to": 131,
+      "text": "`request` throws only when no response arrives at all (for example when the server is down); that case shows `ERR` with the message. Line 132 closes the handler."
+    },
+    {
+      "from": 133,
+      "to": 134,
+      "text": "`Copy as cURL` builds an equivalent shell command. Write methods get an API-key header that references the `$IIP_API_KEY` environment variable, so the real key is never copied to the clipboard."
+    },
+    {
+      "from": 135,
+      "to": 136,
+      "text": "Adds the JSON body (whitespace collapsed to keep it on one line, wrapped in single quotes) and assembles the full command using this server's origin."
+    },
+    {
+      "from": 137,
+      "to": 139,
+      "text": "Copies the command with the async Clipboard API and shows a preview toast cut at 90 characters, or reports that clipboard access was blocked. Line 140 closes the handler."
+    },
+    {
+      "from": 141,
+      "to": 144,
+      "text": "Each `live:event` adds one to the **Events received** figure: commas are stripped from the formatted text before parsing, and `if (el)` is a defensive guard."
+    },
+    {
+      "from": 145,
+      "to": 146,
+      "text": "Closes `render` and the page object."
+    }
+  ]
+}

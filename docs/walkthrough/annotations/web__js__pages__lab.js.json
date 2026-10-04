@@ -1,0 +1,222 @@
+{
+  "path": "web/js/pages/lab.js",
+  "lines": 102,
+  "summary": "The Risk Lab makes the scoring rulebook hands-on: toggle signals, or pick a preset story, and the real engine scores the combination. Signals, weights, levels and thresholds all come from `GET /risk/rules`, and every change is sent to `POST /risk/evaluate`, a dry run that stores nothing and uses the same scoring code as the ingestion pipeline. The result is shown as a gauge, a level badge, a waterfall of contributions and a written formula.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Header comment: the page calls the real engine through `POST /risk/evaluate`, but nothing is stored, so it is a safe sandbox for exploring the rulebook."
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "text": "API helpers and DOM helpers, including `$$` (querySelectorAll returning an array) and `debounce`."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "Motion helpers for card presses, staggered effects and the entrance."
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "text": "The semicircle `gauge` and the score `waterfall`, the same charts used in the drawers and the Simulation Center."
+    },
+    {
+      "from": 8,
+      "to": 9,
+      "text": "MITRE ATT&CK link, panel frame, severity badge and `icon`."
+    },
+    {
+      "from": 11,
+      "to": 14,
+      "text": "Preset stories as `[name, signals]` pairs, from harmless to hostile; the names must match the backend's signal names exactly, because the request schema `EvaluateIn` rejects unknown ones. The first three score LOW, LOW and MEDIUM, and **Clean login** sums to −15, which is clamped up to 0."
+    },
+    {
+      "from": 15,
+      "to": 18,
+      "text": "The attack presets all land in CRITICAL. **Account takeover** sums to 125 (40 + 30 + 15 + 10 + 30), so it also demonstrates the clamp down to 100."
+    },
+    {
+      "from": 20,
+      "to": 22,
+      "text": "Page module titled `Risk Lab`. Like Customers, it has no live data or timers, so `render` doesn't take `ctx`."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "Fetches the rulebook: every signal (name, weight, description and ATT&CK mapping), the levels with their actions, and the detection thresholds. The page is built entirely from it, so changing a weight in `rules.py` changes the Lab without any frontend edit."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "The selected signals, kept in a `Set` (no duplicates, fast lookups). It starts with New device + Unusual location (15 + 20 = 35, MEDIUM), so the first view already shows an interesting result."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "A short alias for the thresholds object used throughout the markup."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "Mounts the page markup."
+    },
+    {
+      "from": 28,
+      "to": 31,
+      "text": "Header explaining the model: a score is a plain sum of weighted signals, clamped to 0-100."
+    },
+    {
+      "from": 32,
+      "to": 35,
+      "text": "The left column (7 of the 12 grid columns) starts with one button per preset and a ghost `Clear` button, whose empty `data-preset` matches no preset."
+    },
+    {
+      "from": 36,
+      "to": 38,
+      "text": "One toggle card per rulebook signal. `aria-pressed` tells assistive technology whether the card is on (CSS styles pressed cards too), and the top row shows a check mark and the signal name."
+    },
+    {
+      "from": 39,
+      "to": 42,
+      "text": "The weight with an explicit `+` for positive values (negative numbers already carry a minus sign, plus a `neg` class for styling), the description and, when mapped, a MITRE ATT&CK link. Line 42 closes the left column."
+    },
+    {
+      "from": 43,
+      "to": 44,
+      "text": "Right column (5 grid columns): the **Engine output** panel, starting with the empty `data-gauge` slot where the gauge is drawn."
+    },
+    {
+      "from": 45,
+      "to": 48,
+      "text": "Three more empty slots that `evaluate` fills: the level badge (centred), the waterfall and the written formula. Line 48 closes the first grid row."
+    },
+    {
+      "from": 49,
+      "to": 50,
+      "text": "**Levels & actions** panel: a ruler listing each level, its minimum score and the action the engine recommends, all read from the rulebook."
+    },
+    {
+      "from": 51,
+      "to": 53,
+      "text": "**Detection thresholds** panel, also driven by the API: how many failed attempts trigger a signal, and the speed above which travel counts as impossible. The `&gt;` entity is needed because the static text of a template is raw HTML."
+    },
+    {
+      "from": 54,
+      "to": 56,
+      "text": "The minimum distance before travel is judged at all (shorter hops are within geo-IP noise), the rapid-transaction velocity rule and the password-spray rule."
+    },
+    {
+      "from": 57,
+      "to": 60,
+      "text": "The large-transaction amount formatted as US dollars, the score that opens an incident and the correlation window. Line 60 closes the panel and the template."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "The last score shown, so the gauge can animate **from** it. Toggling a +20 signal moves the needle up by 20 instead of sweeping up from zero every time, which makes each signal's effect easy to see. `latest` numbers the requests, so a stale answer can be recognized."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "`evaluate` scores the current selection."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Takes a ticket: toggling quickly sends several requests, and only the newest may draw."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "`evaluate` sends the selected signal names to `POST /risk/evaluate`. The server scores them with the same functions the ingestion pipeline uses."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "A response overtaken by a newer toggle is dropped. Sometimes it used to land last and leave the gauge showing a selection that was no longer current."
+    },
+    {
+      "from": 67,
+      "to": 68,
+      "text": "Redraws the gauge, animating from `previous` to the new score, then remembers the new score for next time."
+    },
+    {
+      "from": 69,
+      "to": 70,
+      "text": "Shows the level badge and the waterfall of contributions. `showDetail: false` hides each row's detail line, which for a dry run would only repeat the signal description already printed on the card."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "Builds the formula terms, writing negative weights with a typographic minus (`− 15`), and the raw sum before clamping."
+    },
+    {
+      "from": 73,
+      "to": 76,
+      "text": "Writes the formula, for example `15 + 20 = 35 → MEDIUM · Monitor and log`. The regex turns `+ −` into a plain `−`, an extra `→ clamp →` step appears only when the sum fell outside 0-100, and the level is shown in its colour. Line 74 closes `evaluate`."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "A debounced version of `evaluate`: rapid clicking sends one request, 90 ms after the last change, instead of one per click."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "`sync` copies the `Set` into each card's `aria-pressed`. The Set is the single source of truth and the DOM only mirrors it."
+    },
+    {
+      "from": 80,
+      "to": 82,
+      "text": "One delegated click listener. For a signal card it ignores clicks on the card's ATT&CK link, so opening the reference doesn't also toggle the signal."
+    },
+    {
+      "from": 83,
+      "to": 85,
+      "text": "Toggles the signal in the Set (a ternary used as a statement) and syncs the cards."
+    },
+    {
+      "from": 86,
+      "to": 88,
+      "text": "Gives the card a small springy press (`scale` 0.97 to 1) and asks for a fresh score."
+    },
+    {
+      "from": 89,
+      "to": 91,
+      "text": "When a preset button was clicked, the current selection is cleared first."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "Adds the chosen preset's signals. `?.[1]` reads the matching preset's signal list; `Clear` (an empty name) matches nothing and falls back to an empty array."
+    },
+    {
+      "from": 93,
+      "to": 94,
+      "text": "Syncs the cards and pops every now-pressed card in a quick 40 ms stagger, so the user sees which signals the preset switched on."
+    },
+    {
+      "from": 95,
+      "to": 97,
+      "text": "Requests the new score, then closes the preset branch and the listener."
+    },
+    {
+      "from": 99,
+      "to": 99,
+      "text": "Staggered fade-up of the signal cards when the page opens."
+    },
+    {
+      "from": 100,
+      "to": 100,
+      "text": "Scores the default selection straight away. Because it is awaited, `render` (and with it the router's progress bar) finishes only once the first result is drawn."
+    },
+    {
+      "from": 101,
+      "to": 102,
+      "text": "Closes `render` and the page object."
+    }
+  ]
+}

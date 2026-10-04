@@ -1,0 +1,15 @@
+# local configuration and secrets
+.env
+
+# runtime data (the database is created and seeded automatically)
+/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Python tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/

@@ -1,0 +1,13 @@
+{
+  "path": "web/js/pages/index.js",
+  "lines": 14,
+  "summary": "The route table. It maps each hash path (`#/events`, `#/lab`, ...) to its page module and defines the two-key g-then-letter shortcuts; `main.js` looks pages up in `PAGES` inside `route()` and reads `SHORTCUTS` in its keyboard handler. Adding a page means writing a module that exports `{ title, render }` and registering it here (plus, to make it reachable, a nav link in `index.html` and an entry in the palette).",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Header comment describing the **page contract**: every page module default-exports an object with a `title` and a `render(view, ctx, params)` function (usually `async`), which `route()` calls with the outlet element, the cleanup context and the URL query parameters."},
+    {"from": 2, "to": 5, "text": "Default-imports each page module, i.e. the `{ title, render }` object it exports. The list is alphabetical: AI Analyst, Events, Incidents and Integration here."},
+    {"from": 6, "to": 9, "text": "The remaining pages: Risk Lab, Overview, Simulation and Customers (`users.js`). These are static imports, so all eight pages load up front together with `main.js` and switching pages never waits for code to download."},
+    {"from": 11, "to": 11, "text": "`PAGES` maps hash paths to page modules using object shorthand (`overview` means `overview: overview`), so `#/lab` renders `PAGES.lab`. `route()` falls back to `overview` for any path that is not a key here."},
+    {"from": 13, "to": 13, "text": "Comment: shortcuts are two-key sequences, 'g' followed by a letter."},
+    {"from": 14, "to": 14, "text": "`SHORTCUTS` maps the second key to a page: usually its first letter, except `c` for Customers (whose route is `users`) and `n` for Integration, because `i` already means Incidents. The keyboard handler in `main.js` reads it, and the nav hints and the palette show the same letters."}
+  ]
+}

@@ -1,0 +1,512 @@
+{
+  "path": "iip/seed.py",
+  "lines": 209,
+  "summary": "Generates the fictional NovaBank world: 25 invented customers with two trusted devices each, a week of routine activity, legitimate business trips, historical and fresh attacks and a password spray, all using documentation-only IP addresses. The same scenario generators are reused by the Simulation Center (`routes/simulation.py`) and the live-traffic generator (`live.py`). Every seeded event goes through `pipeline.process_event`, so demo data is scored and correlated exactly like real input.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring, first line: generators for synthetic (entirely fictional) data and attack scenarios."
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "text": "Every person is invented and every IP comes from **RFC 5737** documentation ranges, blocks reserved for examples that are never routed on the real internet. By convention the generators use `203.0.113.x` for ordinary customer traffic and `198.51.100.x` for attackers; the engine itself judges the `ip_reputation` field, not the address."
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "text": "One set of generators serves three consumers: the startup seeder, the Simulation Center (`routes/simulation.py`) and live traffic (`live.py`), so seeded history and live attacks look alike."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "Deferred evaluation of type hints, as in the other modules."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "`random` for variety. Every generator takes a `random.Random` instance as a parameter instead of using the module's global functions, so a fixed seed reproduces the same data."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "`dataclass` for the `Scenario` record; `asdict` converts one into a plain dict for JSON."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "Datetime types for building timestamps and offsets."
+    },
+    {
+      "from": 13,
+      "to": 14,
+      "text": "`select` for the final incident query, and the `Session` type."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "The single source of \"now\"; the seeded week is laid out backwards from it."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Models the seeder creates directly (users, devices) or updates afterwards (incident status)."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "Seeded events go through the **real** pipeline instead of being inserted pre-scored, so demo data is scored, correlated and stored exactly like live input."
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "text": "25 invented first names, one per letter from A to Y."
+    },
+    {
+      "from": 22,
+      "to": 24,
+      "text": "25 invented surnames. Customer `i` gets `FIRST[i]` plus `LAST[i]`, so `USR-1001` is always \"Ayla Fenwick\" (the API tests search for \"fenwick\")."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Customers' possible home cities: two in the UAE, plus London and Berlin."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "Attacker origins. None of them is a home city, so attacker activity always raises \"Unusual location\"."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "Plausible business-trip destinations; `*HOMES` unpacks the home list into this one, so a trip can also go to another customer city."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Customer segments, descriptive labels only."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "Harmless resources for routine activity. None is in `rules.PRIVILEGED_RESOURCES`, so routine access never raises \"Privileged resource access\"."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "How many customers to create, matching the 25 names."
+    },
+    {
+      "from": 33,
+      "to": 34,
+      "text": "`Scenario` describes one replayable scenario. `@dataclass` generates `__init__`, `__repr__` and equality from the field list, and `frozen=True` makes instances immutable."
+    },
+    {
+      "from": 35,
+      "to": 38,
+      "text": "Fields: a machine `key` (used in URLs such as `/simulation/brute_force`), a display `title`, a one-line `summary`, and a `category` that the UI shows as a tag and the simulator uses to tell benign replays from attacks."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "Builds the catalogue as a dict keyed by each scenario's `key` (a dict comprehension over a tuple of `Scenario` objects), so each key is written once and scenarios can be looked up by name."
+    },
+    {
+      "from": 42,
+      "to": 44,
+      "text": "The two non-attacks: a normal login (\"baseline\") and a business trip (\"benign\"), two cities eight hours apart, which is realistic travel the engine must **not** flag."
+    },
+    {
+      "from": 45,
+      "to": 48,
+      "text": "A new-device sign-in from abroad (\"suspicious\"), then a brute force of five rapid failed logins and impossible travel, two sign-ins twenty minutes apart (both \"attack\")."
+    },
+    {
+      "from": 49,
+      "to": 52,
+      "text": "The two \"fraud\" scenarios: a $12,500 transfer from a new device on a flagged IP, and card testing (three tiny probe payments, then a $2,450 cash-out)."
+    },
+    {
+      "from": 53,
+      "to": 56,
+      "text": "Recovery abuse (key `password_reset_abuse`): failed logins, then a password reset and an attacker sign-in. Password spray: one flagged IP tries a common password against six accounts. Both are \"attack\"."
+    },
+    {
+      "from": 57,
+      "to": 59,
+      "text": "Account takeover (\"attack\"), the full chain: credential attack, foreign sign-in, admin console, then a $15,000 transfer. Line 59 closes the tuple and the dict comprehension."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Scenarios that hit several accounts and therefore need their own generator (`spray_events`)."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "Keys of every non-benign scenario (attack, fraud or suspicious); the live-traffic generator picks from this list when it injects an attack."
+    },
+    {
+      "from": 64,
+      "to": 65,
+      "text": "Returns every scenario as a plain dict for `GET /api/v1/simulation`; `asdict` converts a dataclass instance into a dict."
+    },
+    {
+      "from": 68,
+      "to": 69,
+      "text": "Deterministic trusted-device ids: customer `i` owns `DEV-{2000+2i}` and the next id, so the first customer has `DEV-2000` and `DEV-2001`. Because the id is computed, the seeder can name a user's device without a query."
+    },
+    {
+      "from": 72,
+      "to": 73,
+      "text": "`routine_event()` generates one ordinary payload for `user` at time `ts`. `allow_transaction=False` lets the live-traffic generator avoid back-to-back transactions that would look like card testing."
+    },
+    {
+      "from": 74,
+      "to": 74,
+      "text": "Docstring: home city, trusted device, clean IP, and the occasional mistyped password."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "The possible event kinds and their relative weights: logins 5, transactions 3, resource access 2."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "`rnd.choices()` makes a weighted pick and returns a list, hence `[0]`. When transactions are not allowed, it picks evenly between a login and resource access."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "About one login in ten fails: the mistyped password."
+    },
+    {
+      "from": 78,
+      "to": 80,
+      "text": "The payload starts with the user, kind and time, the home city, a clean-range `203.0.113.x` address and the given trusted device. `device_new` is omitted, so the pipeline derives it (an owned device is not new)."
+    },
+    {
+      "from": 81,
+      "to": 82,
+      "text": "A failed login reports only 1-2 failed attempts, below the threshold of 3, so a typo never raises \"Multiple failed login attempts\". The reputation is always clean."
+    },
+    {
+      "from": 83,
+      "to": 85,
+      "text": "Transactions get an amount between $20 and $3,500 (rounded to cents): under the $10,000 review threshold and from a trusted context, so no \"Suspicious transaction\". Resource access gets a routine resource; other kinds get `None`. Line 85 closes the dict."
+    },
+    {
+      "from": 88,
+      "to": 89,
+      "text": "`scenario_events()` builds the raw payloads for one named scenario against one victim, starting at `start`; `device_id` is the victim's own trusted device."
+    },
+    {
+      "from": 90,
+      "to": 90,
+      "text": "Docstring: one scenario's raw payloads, beginning at `start`."
+    },
+    {
+      "from": 91,
+      "to": 91,
+      "text": "A random foreign city other than the victim's home (the filter is defensive: no foreign city is currently a home)."
+    },
+    {
+      "from": 92,
+      "to": 93,
+      "text": "The victim's usual clean-range address, and an attacker address from the \"flagged\" range."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "An attacker device id between `DEV-9000` and `DEV-9999`, a range that never collides with the seeded trusted devices (`DEV-2000` to `DEV-2049`)."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "The attacker's fingerprint in one dict (flagged IP, foreign city, unknown device, `suspicious` reputation), so it can be merged into any event with `**attacker`."
+    },
+    {
+      "from": 97,
+      "to": 97,
+      "text": "Nested factory for one event `minute` minutes after `start`. By default it is a successful login by the victim from home; `**overrides` collects keyword arguments that change fields."
+    },
+    {
+      "from": 98,
+      "to": 100,
+      "text": "The default victim-like payload. The overrides are unpacked last, so any of them replaces the default with the same key."
+    },
+    {
+      "from": 102,
+      "to": 103,
+      "text": "`n` failed logins one minute apart from the attacker, with the failed-attempt counter climbing 1, 2, 3..., so the third attempt crosses the threshold of 3. Only the first is marked `device_new`: after it, the pipeline has registered the device, so it is no longer new."
+    },
+    {
+      "from": 105,
+      "to": 106,
+      "text": "Normal login: a single routine sign-in."
+    },
+    {
+      "from": 107,
+      "to": 110,
+      "text": "Business trip: a home login, a login in another city eight hours later, then a small purchase there 25 minutes after. Even the longest pairing (London to Abu Dhabi, about 5,500 km) needs under 700 km/h over eight hours, below the 900 km/h limit, so the trip is plausible; device and IP stay trusted and clean."
+    },
+    {
+      "from": 111,
+      "to": 112,
+      "text": "New device: one sign-in from an unknown device in a foreign city, from a clean-range address with a clean reputation, so it scores \"New device\" + \"Unusual location\" (35, MEDIUM), plus \"Impossible travel\" if the user's last trusted sign-in was recent enough."
+    },
+    {
+      "from": 113,
+      "to": 114,
+      "text": "Brute force: five failed logins from the attacker."
+    },
+    {
+      "from": 115,
+      "to": 116,
+      "text": "Impossible travel: a normal home login, then 20 minutes later a successful sign-in from a foreign city on a new device, from a clean-range address. The clean reputation matters: the engine only judges travel on successful clean-IP events, and every foreign city is at least 1,600 km from any home, far beyond airliner speed in 20 minutes."
+    },
+    {
+      "from": 117,
+      "to": 119,
+      "text": "Suspicious transaction: a $12,500 transfer (above the $10,000 review threshold) from a new device on a `suspicious` IP, at the victim's home city."
+    },
+    {
+      "from": 120,
+      "to": 123,
+      "text": "Card testing: three probe payments of $1-9 at minutes 0, 1.5 and 3 from the attacker, then a $2,450 cash-out at minute 4. The third probe already trips \"Rapid transactions\" (three within ten minutes), and the cash-out from a flagged IP exceeds the $2,000 risky-context threshold."
+    },
+    {
+      "from": 124,
+      "to": 125,
+      "text": "Recovery abuse: three failed logins, a password reset at minute 4 (raising \"Password reset after failures\"), then the attacker signs in at minute 6. `*failed_logins(3)` unpacks that list into this one."
+    },
+    {
+      "from": 126,
+      "to": 128,
+      "text": "Account takeover: three failed logins, then a successful login at minute 3 that reports 3 failed attempts and is explicitly marked `device_new`."
+    },
+    {
+      "from": 129,
+      "to": 130,
+      "text": "The attacker then opens the privileged `admin-console` at minute 4 and moves $15,000 at minute 5, the combination the \"Account takeover\" incident title looks for."
+    },
+    {
+      "from": 131,
+      "to": 131,
+      "text": "Any other name is a programming error. `password_spray` never reaches this function because it spans accounts (see `plan_scenario`)."
+    },
+    {
+      "from": 134,
+      "to": 134,
+      "text": "`spray_events()` builds a password spray against a list of target users."
+    },
+    {
+      "from": 135,
+      "to": 135,
+      "text": "Docstring: one attacker, one IP, one failed guess per account, the signature of a spray."
+    },
+    {
+      "from": 136,
+      "to": 136,
+      "text": "One flagged IP, one foreign origin and one attacker device shared by every attempt; the shared IP is what lets the engine tie the attempts together."
+    },
+    {
+      "from": 137,
+      "to": 140,
+      "text": "One failed login per target, 45 seconds apart (six accounts take under four minutes, well inside the 30-minute spray window). Each reports a single failed attempt, so the per-account \"Multiple failed login attempts\" rule stays quiet; from the fifth account on, \"Password spray\" fires."
+    },
+    {
+      "from": 143,
+      "to": 144,
+      "text": "`plan_scenario()` is the entry point the Simulation Center and live traffic use: build a scenario for `user` that **ends** at `end`. `pool` is the list of users that extra victims can be drawn from."
+    },
+    {
+      "from": 145,
+      "to": 145,
+      "text": "Docstring summarising that contract."
+    },
+    {
+      "from": 146,
+      "to": 148,
+      "text": "Multi-account scenarios pick up to five other users at random (`rnd.sample` picks without repeats, and `min` guards a small pool) and spray across them plus the target."
+    },
+    {
+      "from": 149,
+      "to": 150,
+      "text": "Otherwise builds the single-user scenario, provisionally starting at `end` (it is shifted next)."
+    },
+    {
+      "from": 151,
+      "to": 151,
+      "text": "Shifts the whole scenario so its **last** event happens at `end`. Without this, replaying an eight-hour business trip \"now\" would create events eight hours in the future."
+    },
+    {
+      "from": 154,
+      "to": 154,
+      "text": "`ending_at()` re-times a scenario."
+    },
+    {
+      "from": 155,
+      "to": 155,
+      "text": "Docstring stating the goal: the last event lands exactly at `end`."
+    },
+    {
+      "from": 156,
+      "to": 156,
+      "text": "The offset that moves the latest event exactly onto `end` (negative when the scenario currently ends later)."
+    },
+    {
+      "from": 157,
+      "to": 157,
+      "text": "Returns shifted copies: `{**e, ...}` copies each dict and overrides `timestamp`, so the input is untouched. The gaps between events, and therefore travel speeds and velocity windows, are unchanged."
+    },
+    {
+      "from": 160,
+      "to": 160,
+      "text": "`seed()` fills an empty database. It runs on first start (`app.py`), on `python -m iip --reset` and from the demo reset endpoint."
+    },
+    {
+      "from": 161,
+      "to": 161,
+      "text": "Docstring: a reproducible week of NovaBank activity."
+    },
+    {
+      "from": 162,
+      "to": 162,
+      "text": "A private random generator seeded with 42: the same seed gives the same customers, scenarios and random choices on every run, without touching Python's global `random` state."
+    },
+    {
+      "from": 163,
+      "to": 163,
+      "text": "Everything is placed relative to the current time, so the dashboard always looks fresh."
+    },
+    {
+      "from": 164,
+      "to": 165,
+      "text": "Creates `USR-1001` to `USR-1025`, pairing the i-th first and last name, with a random home city and segment."
+    },
+    {
+      "from": 166,
+      "to": 166,
+      "text": "Stages all users in the session."
+    },
+    {
+      "from": 167,
+      "to": 167,
+      "text": "Flushes the users so their rows reach the database before the devices that reference them. With foreign keys switched on (`PRAGMA foreign_keys=ON` in `database.py`), SQLite rejects a device whose user doesn't exist yet."
+    },
+    {
+      "from": 168,
+      "to": 169,
+      "text": "Two trusted devices per user, built by a generator with two `for` clauses: the outer one over users, the inner one over `k` = 0 and 1."
+    },
+    {
+      "from": 170,
+      "to": 170,
+      "text": "Flushes the devices, so they are in the database before the first event looks them up."
+    },
+    {
+      "from": 172,
+      "to": 172,
+      "text": "Comment: step 1, a week of ordinary activity."
+    },
+    {
+      "from": 173,
+      "to": 173,
+      "text": "The **plan**: every payload is collected first and processed later in time order."
+    },
+    {
+      "from": 174,
+      "to": 177,
+      "text": "For each user, 10-18 routine events at random moments between 2 and 168 hours (one week) ago, each on one of their two trusted devices. The most recent two hours stay free of routine noise."
+    },
+    {
+      "from": 179,
+      "to": 179,
+      "text": "Comment: step 2, legitimate business trips that the engine must not flag."
+    },
+    {
+      "from": 180,
+      "to": 180,
+      "text": "Picks four distinct customers."
+    },
+    {
+      "from": 181,
+      "to": 181,
+      "text": "Departure between 30 and 140 hours ago."
+    },
+    {
+      "from": 182,
+      "to": 182,
+      "text": "The period the user is away: from one hour before departure until 22 hours after."
+    },
+    {
+      "from": 183,
+      "to": 183,
+      "text": "Removes that user's routine events inside the window. Otherwise a routine sign-in at home mid-trip would make the trip, or the jump back home, look physically impossible and wrongly flag a legitimate traveller."
+    },
+    {
+      "from": 184,
+      "to": 184,
+      "text": "Adds the trip itself, on the user's first trusted device."
+    },
+    {
+      "from": 186,
+      "to": 186,
+      "text": "Comment: step 3, historical attacks across the week."
+    },
+    {
+      "from": 187,
+      "to": 189,
+      "text": "The attack mix: 20 runs in total, brute force the most common. `[\"x\"] * 4` repeats an item four times, and `+` concatenates the lists."
+    },
+    {
+      "from": 190,
+      "to": 193,
+      "text": "Each run gets a random victim (the same customer can be hit more than once) and a start between 1 and 150 hours ago."
+    },
+    {
+      "from": 194,
+      "to": 194,
+      "text": "One password spray against six distinct customers, starting 30-60 hours ago. It calls `spray_events` directly, so there is no re-timing: the start time is chosen right here."
+    },
+    {
+      "from": 196,
+      "to": 196,
+      "text": "Comment: step 4, fresh attacks so the dashboard opens on active investigations."
+    },
+    {
+      "from": 197,
+      "to": 199,
+      "text": "Three fixed attacks with fixed victims and start times: an account takeover 45 minutes ago on `USR-1004` (index 3), a brute force two hours ago on `USR-1012` and card testing 15 minutes ago on `USR-1008`. Fixed choices keep the demo's opening state predictable."
+    },
+    {
+      "from": 201,
+      "to": 202,
+      "text": "Scores everything through the real pipeline in **chronological order**. Order is essential, because each event's history (travel baseline, velocity counts, correlation window) is read from the events already stored. `commit=False` keeps the whole seed in one transaction."
+    },
+    {
+      "from": 203,
+      "to": 203,
+      "text": "Pushes any still-pending rows (such as the last event's signal rows) to the database before incidents are queried."
+    },
+    {
+      "from": 205,
+      "to": 205,
+      "text": "Comment: incidents older than a day count as already handled by analysts."
+    },
+    {
+      "from": 206,
+      "to": 208,
+      "text": "Every incident whose last activity is over 24 hours old becomes `RESOLVED` with probability 2/3 or `INVESTIGATING` with 1/3 (the list holds `RESOLVED` twice). Recent incidents stay `OPEN`, so the queue looks like a real working day."
+    },
+    {
+      "from": 209,
+      "to": 209,
+      "text": "The single commit that makes the whole seed permanent. Nothing was durable before this, so a failure mid-seed leaves no half-seeded data behind."
+    }
+  ]
+}

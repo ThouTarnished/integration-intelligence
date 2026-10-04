@@ -1,0 +1,25 @@
+{
+  "path": "iip/__main__.py",
+  "lines": 38,
+  "summary": "The command-line launcher: Python runs a package's `__main__.py` when you type `python -m iip`, which is also how the `Dockerfile` starts the container. It parses a few flags, optionally wipes and re-seeds the demo database through `database.py` and `seed.py`, and then hands the FastAPI app defined in `app.py` to the uvicorn web server.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Docstring title. A module named `__main__.py` inside a package is what `python -m <package>` executes, which makes this file the platform's entry point."},
+    {"from": 3, "to": 6, "text": "Usage cheat sheet for the three common ways to start: a plain start on port 8000, `--reset` to wipe and re-seed the demo database first, and `--reload` for development, where the server restarts whenever a source file changes."},
+    {"from": 7, "to": 7, "text": "`from __future__ import annotations` stores type hints as strings instead of evaluating them when the module loads (postponed evaluation). Most modules in `iip/` start with it for consistency; in this file it has no visible effect."},
+    {"from": 9, "to": 9, "text": "`argparse` is the standard-library module for command-line flags; it validates the input and generates the `--help` output automatically."},
+    {"from": 11, "to": 11, "text": "`uvicorn` is the ASGI server that actually runs the app. ASGI is the standard interface between asynchronous Python web servers and frameworks such as FastAPI."},
+    {"from": 13, "to": 13, "text": "Imports the shared `settings` object from `config.py`, which supplies the default host and port."},
+    {"from": 16, "to": 16, "text": "`main()` wraps all start-up work in a function, so nothing happens merely because the module is imported."},
+    {"from": 17, "to": 17, "text": "Creates the parser. `prog` fixes the program name shown in usage and error messages to the command people actually type, and `description` heads the `--help` text."},
+    {"from": 18, "to": 19, "text": "`--host` and `--port` override the bind address. Their defaults come from `settings` (`IIP_HOST` and `PORT`), so the precedence is command-line flag, then environment variable (or `.env`), then the fallback in `config.py`; `type=int` converts the port and rejects anything that is not a number."},
+    {"from": 20, "to": 21, "text": "Two on/off switches: `action=\"store_true\"` means the flag takes no value and becomes `True` only when present. The `help` strings are what `python -m iip --help` prints next to each flag."},
+    {"from": 22, "to": 22, "text": "Parses the real command line (`sys.argv`). An unknown flag or a bad value makes argparse print an error and exit before anything starts."},
+    {"from": 24, "to": 26, "text": "Only for `--reset`: the database layer and the seeder are imported inside the branch, so the launcher loads them only when a reset is requested (importing `database.py` has side effects: it creates the engine and, for SQLite, the `data/` folder). Without `--reset`, those modules are first loaded when uvicorn imports `iip.app`."},
+    {"from": 28, "to": 28, "text": "`reset_db()` drops every table and recreates them empty (see `database.py`)."},
+    {"from": 29, "to": 30, "text": "Opens a session in a `with` block, which closes it automatically even if an error occurs, and calls `seed(db)`. The seeder generates a reproducible week of synthetic users, devices and events, pushes them through the real scoring pipeline and commits."},
+    {"from": 31, "to": 31, "text": "Confirms the reset on the console."},
+    {"from": 33, "to": 33, "text": "Prints a small banner with the two URLs you need: the dashboard served at `/` and `/docs`, the interactive Swagger UI that FastAPI generates from the routes and schemas. The `\\n` escapes put the two URLs on separate lines with a blank line above and below."},
+    {"from": 34, "to": 34, "text": "Starts the server. The app is passed as the import string `\"iip.app:app\"` (module `iip.app`, attribute `app`) because uvicorn requires that for `reload=True`: the reloader must re-import the app in a fresh process after each change. `log_level=\"warning\"` silences uvicorn's own per-request access lines, since `observability.py` already logs every API call."},
+    {"from": 37, "to": 38, "text": "The standard script guard: `__name__` equals `\"__main__\"` only when the file is executed (as `python -m iip` does), not when it is imported. Importing the module, for example from a test or a tool, therefore never starts a server by accident."}
+  ]
+}

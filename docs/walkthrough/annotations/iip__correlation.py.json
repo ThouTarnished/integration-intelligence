@@ -1,0 +1,212 @@
+{
+  "path": "iip/correlation.py",
+  "lines": 79,
+  "summary": "Groups a user's related risky events into **incidents**, the unit an analyst investigates. `pipeline.process_event` calls `correlate()` for every stored event: MEDIUM-or-worse events join the user's active incident, HIGH-or-worse events open a new one, and `refresh_incident()` recomputes the incident's score, severity, signals and action. `incident_title()` names an incident from its signals and is used by `queries.py`; every threshold comes from `rules.py`.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring, first line: correlation turns a user's related risky events into a single investigation, an **incident**, which is the unit an analyst actually works on."
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "text": "Rule 1, joining: an event scoring at least `INCIDENT_JOIN_SCORE` (30, i.e. MEDIUM or worse) joins the user's open incident if that incident saw activity within the correlation window (30 minutes)."
+    },
+    {
+      "from": 5,
+      "to": 7,
+      "text": "Rule 2, opening: with no incident to join, an event scoring at least `INCIDENT_OPEN_SCORE` (60, HIGH or worse) opens one and pulls in the user's suspicious or failed events from the same window, so the lead-up to the attack is included."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Deferred evaluation of type hints, as in the other modules."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "`select` builds queries and `or_` joins conditions with SQL `OR`. Python's own `or` can't be used on SQL expressions, because it would evaluate them as plain booleans instead of producing SQL."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "`Session` type, for hints."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "`rules` supplies the thresholds (`INCIDENT_*_SCORE`, `CORRELATION_WINDOW`), signal weights, levels and actions, so scoring and correlation share one rulebook."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "The two models involved: `Event` rows receive an `incident_id`, and `Incident` rows hold the rolled-up result."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "Comment: the first pattern that matches names the incident, so more specific patterns must come first."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "`_PATTERNS` is a tuple of `(required signals, title)` pairs; the leading underscore marks it private to this module. Each requirement is a `frozenset`, an immutable set, so the patterns can't be changed by accident at runtime."
+    },
+    {
+      "from": 18,
+      "to": 19,
+      "text": "Two **combinations** first, both titled \"Account takeover\": failed logins plus privileged access, or failed logins plus a suspicious transaction. Because they come before the single-signal rules, an attack that gets past the password stage outranks a plain \"Credential attack\"."
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "text": "Many accounts failing from one IP is a \"Password spray\"; a password reset right after failures is \"Account recovery abuse\"."
+    },
+    {
+      "from": 22,
+      "to": 24,
+      "text": "Fraud and travel patterns: rapid transactions read as \"Card testing\", then impossible travel, then a lone suspicious transaction as \"Transaction fraud\"."
+    },
+    {
+      "from": 25,
+      "to": 27,
+      "text": "Failed logins alone are a \"Credential attack\". A new device in an unusual location, checked last, is an \"Unfamiliar sign-in\". Line 27 closes the tuple."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "`incident_title()` derives a readable title from an incident's signals. It is called when incidents are serialized (`queries.incident_dict`) rather than stored, so editing `_PATTERNS` retitles existing incidents too."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "Turns the list into a set for fast subset checks."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "`required <= present` is Python's subset test for sets. `next(generator, default)` returns the title of the first pattern whose signals are all present, or `\"Anomalous activity\"` when none match (for example a lone \"Suspicious IP\")."
+    },
+    {
+      "from": 35,
+      "to": 36,
+      "text": "`pattern_signals()` runs the lookup the other way: from a title back to the signal combinations that earn it. The AI analyst uses it to define a pattern, for example \"Account takeover\" is Multiple failed login attempts plus Privileged resource access, or plus a Suspicious transaction."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Keeps every `_PATTERNS` entry with that title (Account takeover has two) and sorts each set into a list, so the answer reads the same every time and the result is JSON-friendly."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "`correlate()` is the last step of `pipeline.process_event`, called right after the event was flushed, so it already has an id."
+    },
+    {
+      "from": 41,
+      "to": 42,
+      "text": "Events below the join threshold (score under 30, i.e. LOW) never touch incidents. The early return keeps routine traffic cheap: no incident query at all."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "The correlation window: 30 minutes either side of **this event's** timestamp. Using event time rather than the wall clock lets replayed history (the seeder) and backfilled events correlate correctly."
+    },
+    {
+      "from": 44,
+      "to": 47,
+      "text": "Looks for an incident to join: this user's, not `RESOLVED` (a case an analyst is already working still receives new evidence), and active within the window, meaning last updated no earlier than 30 minutes before the event and created no later than 30 minutes after it. The upper bound matters for backfilled events, which used to join incidents that began long after them."
+    },
+    {
+      "from": 48,
+      "to": 50,
+      "text": "Most recently active first, at most one row. `db.scalars(...).first()` returns that `Incident` object, or `None`."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "No incident to join, so decide whether to open one."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "Only events scoring at least 60 (HIGH or CRITICAL) may open an incident; a MEDIUM event (30-59) can only join an existing one."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "Creates the incident as `OPEN`, with `created` and `updated` set to the event's time. Its score, severity, signals and action are filled in by `refresh_incident()` below."
+    },
+    {
+      "from": 56,
+      "to": 57,
+      "text": "Stages the incident and flushes it so the database assigns its `id`, which the events need for their `incident_id`."
+    },
+    {
+      "from": 58,
+      "to": 60,
+      "text": "Selects this user's events that belong to no incident yet (`.is_(None)` renders SQL `IS NULL`), happened in the 30 minutes **up to** this event, and scored at least `INCIDENT_PULL_SCORE` (20) **or** failed: the quieter warning signs that led up to the incident, such as failed logins before a takeover. `between` bounds both sides, so a backfilled event never pulls in activity that came after it."
+    },
+    {
+      "from": 61,
+      "to": 62,
+      "text": "Links each of those events to the new incident. Changing an attribute of a loaded ORM object is enough: the session notices and issues the `UPDATE` at the next flush."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Links the triggering event to the incident, whether it joined an existing one or opened a new one."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Flushes those updates so the query in `refresh_incident()` sees every linked event."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Recomputes the incident's roll-up fields."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "`refresh_incident()` rebuilds an incident's summary from all of its events. Recomputing from scratch, rather than patching values incrementally, keeps the result correct no matter how events were attached (joined one by one or pulled in as a batch)."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "Docstring naming what is recomputed (the code also refreshes `updated`)."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "Loads all of the incident's events, oldest first."
+    },
+    {
+      "from": 72,
+      "to": 74,
+      "text": "Collects the distinct **risk-raising** signals in the order they first appeared; a list rather than a set preserves the attack's story. `rules.WEIGHTS[s] > 0` leaves out the risk-lowering \"Trusted device\" signal."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "The incident's score is its worst event's score (the maximum, not a sum), so it stays on the same 0-100 scale as events."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "`rules.classify()` maps that score to LOW, MEDIUM, HIGH or CRITICAL using the rulebook's floors (30, 60, 80)."
+    },
+    {
+      "from": 77,
+      "to": 78,
+      "text": "Stores the signal list and the recommended action for the severity (for CRITICAL: \"Block session and require additional verification\")."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "`updated` becomes the newest event's time. Since `correlate()` joins incidents updated within the last 30 minutes, an ongoing attack keeps extending the same incident instead of spawning new ones."
+    }
+  ]
+}

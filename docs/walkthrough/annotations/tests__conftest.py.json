@@ -1,0 +1,92 @@
+{
+  "path": "tests/conftest.py",
+  "lines": 33,
+  "summary": "pytest imports `conftest.py` automatically before any test module, which makes it the one safe place to point the app at a throwaway database and a known API key. It defines the shared fixtures (`client`, the whole app running in-process; `db`, a raw SQLAlchemy session) plus two constants that `test_api.py` and `test_simulation.py` import directly.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring. The key word is **before**: `iip/config.py` reads environment variables once, at import time, and `iip/database.py` builds its engine from them, so the test settings must exist before anything imports `iip`."
+    },
+    {
+      "from": 2,
+      "to": 4,
+      "text": "Standard-library imports: `os` to edit environment variables, `tempfile` to create a scratch folder, and `Path` to build the database file path."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "pytest itself, needed here for the `@pytest.fixture` decorator."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Creates a brand-new, uniquely named temporary directory (such as `iip-tests-k3j9x1`) on every test run. Each run therefore starts from an empty database, and the developer's real `data/iip.db` is never touched."
+    },
+    {
+      "from": 9,
+      "to": 10,
+      "text": "Sets the test environment the moment pytest imports this file (the call continues on line 11): the database URL points into the temp folder, the API key becomes the known value `test-key`, the rate limit rises to 100000 a minute so the shared token bucket can never answer 429 mid-suite, and demo mode is forced on because a test checks that the page receives the key."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "`OPENAI_API_KEY` is set to an **empty string** rather than deleted. `load_dotenv` only fills in variables that are missing, so a developer with a real key in a local `.env` still gets the deterministic analyst here and no test ever calls the paid API. `config.py` turns the empty string into `None`."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "The header dictionary that tests of write endpoints pass as `headers=AUTH`. Its value matches the `IIP_API_KEY` set above, so these requests pass `require_api_key`."
+    },
+    {
+      "from": 14,
+      "to": 15,
+      "text": "A minimal valid event payload: an existing customer (`USR-1001`), a login, an IP from the RFC 5737 documentation range, a known city, and `DEV-2000`, which the seeder registers as USR-1001's first trusted device. Tests copy it and override single fields (for example a bad `ip_address`), so each case changes exactly one thing."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "Declares a fixture created once per test **session** rather than once per test, shared by every test that asks for it. Starting the app seeds hundreds of events through the full pipeline, so doing it once keeps the suite fast; the trade-off is shared state, which `test_simulation.py` handles with its `fresh` fixture."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "The fixture function. Any test that lists a parameter named `client` receives the object this function yields."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "Imports FastAPI's `TestClient`, which sends HTTP requests straight into the app in-process, with no real server or network port."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Imports the application object here rather than at the top of the file. That guarantees the environment variables above are set before `iip.config` reads them; a top-level import placed after the `os.environ` code would also break the linter's imports-at-top rule (E402)."
+    },
+    {
+      "from": 24,
+      "to": 25,
+      "text": "Using `TestClient` as a context manager runs the app's lifespan hook: on entry it creates the tables, seeds the empty database and binds the live hub; on exit, at the end of the session, it stops the traffic generator. `yield` hands the client to the tests and pauses here until they have all finished."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "A function-scoped fixture (pytest's default scope): every test that requests `db` gets its own fresh session."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "Depends on `client` even though it never uses it: requesting `client` forces the app to start first, which guarantees the tables exist and the data is seeded before a session is opened."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "Imports the session factory inside the fixture, for the same import-order reason as in `client`."
+    },
+    {
+      "from": 32,
+      "to": 33,
+      "text": "Opens a SQLAlchemy session, gives it to the test, and closes it automatically when the test ends. `test_analyst.py` uses it to call `analyst.ask()` directly, bypassing HTTP."
+    }
+  ]
+}

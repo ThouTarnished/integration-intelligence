@@ -1,0 +1,327 @@
+{
+  "path": "web/css/layout.css",
+  "lines": 131,
+  "summary": "The page skeleton: the two-column app shell (sticky left rail plus main column), the navigation with its sliding highlight, the frosted sticky top bar, the content area and page header, the 12-column grid with its `.span-N` helpers, and the first-visit boot screen. Two media queries at the end re-flow the grid on laptops and turn the rail into a bottom tab bar on phones.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Section comment, then `.shell`, the app's outer frame: a two-column grid with the rail at `--rail` (236px) and the main column taking the rest. `minmax(0, 1fr)` lets that column shrink below its content's natural width so a wide table can't push the page sideways, and `position: relative; z-index: 1` lifts the whole app above the fixed backdrop."
+    },
+    {
+      "from": 4,
+      "to": 12,
+      "text": "The left navigation rail. `position: sticky; top: 0` with `height: 100vh` keeps it pinned while the page scrolls; it is a flex column with a hairline right border, and its slightly translucent dark gradient plus `backdrop-filter: blur(12px)` gives it a frosted-glass look over the dot-grid backdrop."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "`.brand` is the logo link at the top of the rail: a flex row of logo mark and name, with extra bottom padding to separate it from the nav."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "The 30px logo SVG; `flex: none` stops it from shrinking when space is tight."
+    },
+    {
+      "from": 15,
+      "to": 16,
+      "text": "Logo colours: the circuit-like `.trace` strokes are grey (`--t3`) and the `.core` dot is aqua, the brand mark's only spot of colour."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "The \"IIP\" wordmark: semibold 14px with slight letter-spacing and a tight 1.1 line height."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "The \"integration intelligence\" subtitle: `display: block` puts the `small` element on its own line under \"IIP\", in small `--t3` Geist Mono."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "The nav container: a flex column of links with 1px gaps that scrolls vertically if the rail is too short. `position: relative` makes it the positioning context for the absolutely positioned `.nav-indicator`."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "Padding for the group headings (\"Monitor\", \"Engine\", \"Platform\"), which also carry the `.eyebrow` class for their typography."
+    },
+    {
+      "from": 22,
+      "to": 29,
+      "text": "Each nav link: a 34px-tall flex row (icon, label, shortcut hint) with small rounded corners and secondary text colour, easing its colour and background over `--fast`. `position: relative; z-index: 1` keeps the links above the sliding indicator behind them."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "Nav icons are drawn with `stroke=\"currentColor\"`, so setting `color` here makes them a dimmer grey than the label, with a matching colour transition."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "Hover state: brighter text and a barely visible 3% white background."
+    },
+    {
+      "from": 32,
+      "to": 33,
+      "text": "The current page's link, marked with the `active` class by the router in main.js: white text, and its icon turns aqua."
+    },
+    {
+      "from": 34,
+      "to": 35,
+      "text": "The keyboard shortcut hint (for example \"G O\") is pushed to the right with `margin-left: auto` and hidden with `opacity: 0`; hovering the link fades it in, so the rail stays calm until you need the hint."
+    },
+    {
+      "from": 36,
+      "to": 42,
+      "text": "The sliding highlight behind the active link, one shared element: absolutely positioned across the nav's full width, 34px tall to match a link, with an `--s3` fill and a 1px inset `box-shadow` that acts as a border without affecting layout. `moveIndicator()` in main.js springs its vertical position to the active link's `offsetTop`, and `pointer-events: none` lets clicks pass through to the links."
+    },
+    {
+      "from": 43,
+      "to": 46,
+      "text": "A 2px glowing aqua bar on the indicator's left side. `left: -12px` pushes it into the rail's 12px padding so it sits on the rail's outer edge, the `top`/`bottom` insets make it shorter than the link, and because it belongs to the indicator it slides along with it."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "The red badge next to \"Incidents\" with the open-incident count (main.js fills it in and toggles its `hidden` attribute). It is pushed right, set in small mono type with an 18px line height, and uses the critical colour on its soft tint because it counts unresolved risk."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "The rail footer: `margin-top: auto` pushes it to the bottom of the flex column, and it stacks its cards in a grid below a hairline divider."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "The small bordered cards in the footer that hold the live-connection status and the live-traffic switch."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "A row inside a rail card: label on the left, control on the right (`justify-content: space-between`)."
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "text": "Section comment, then `.main`, the right-hand column: a flex column whose `min-width: 0` lets it shrink inside the grid instead of growing to fit wide content."
+    },
+    {
+      "from": 55,
+      "to": 63,
+      "text": "The top bar: `position: sticky; top: 0` keeps it visible while scrolling and `z-index: 20` keeps it above page content. Its 78%-opaque background with `backdrop-filter: blur(14px) saturate(140%)` lets content scrolling underneath show through as a soft, slightly more saturated blur, separated by a hairline bottom border."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "The breadcrumb (\"NovaBank / Overview\"): a small flex row in dim `--t3` text."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "The current page name in the breadcrumb (`#crumb`, updated by the router), highlighted in white at medium weight."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "An empty spacer with `flex: 1` that absorbs the free space, pushing the search button and clock to the right."
+    },
+    {
+      "from": 67,
+      "to": 73,
+      "text": "The search button that opens the command palette: a 34px field-like flex row whose width is `min(340px, 34vw)` so it shrinks on narrower windows, with a hairline border, `--s1` fill, dim text and transitions for its hover change."
+    },
+    {
+      "from": 74,
+      "to": 74,
+      "text": "On hover the search button's border switches to the stronger control colour `--line-ctl`, and its background and text brighten slightly."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "Pushes the \"Ctrl K\" key hint to the right end of the search button (main.js swaps the text to \"⌘ K\" on Apple devices)."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "The UTC clock in the top bar, rewritten every second by `startClock()` in main.js: medium 12px mono in `--t2`."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "The \"UTC\" suffix inside the clock, dimmed to `--t4` so the time itself stands out."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Section comment, then `.view`, the `main` element every page renders into: generous padding (extra at the bottom), a 1560px maximum width and auto side margins that centre it on very wide screens."
+    },
+    {
+      "from": 81,
+      "to": 81,
+      "text": "The page header: a flex row with the title block on the left and actions on the right, aligned along their bottom edges and wrapping onto two lines when space runs out."
+    },
+    {
+      "from": 82,
+      "to": 82,
+      "text": "Page titles use Instrument Serif at 40px with a tight 1.05 line height and slight negative letter-spacing; the serif headline is the main typographic contrast in an otherwise sans and mono interface."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "The italic second word of each title (such as \"center\" in \"Command center\") is set in `--t2`, an accent made with typography instead of colour."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "The intro paragraph under the title, in secondary grey and capped at 640px so lines stay comfortable to read."
+    },
+    {
+      "from": 85,
+      "to": 85,
+      "text": "The container for header buttons and tags: a wrapping flex row with 8px gaps."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "The layout grid: 12 equal columns with 14px gaps. `minmax(0, 1fr)` instead of plain `1fr` lets columns shrink below their content's minimum width, so a long table or label can't stretch one column wider than the others."
+    },
+    {
+      "from": 88,
+      "to": 88,
+      "text": "The adjacent-sibling selector `+` adds 14px between two consecutive grids, matching the gap inside a grid so rows of panels are evenly spaced."
+    },
+    {
+      "from": 89,
+      "to": 91,
+      "text": "Column-span helpers: `.span-N` makes an element cover N of the 12 columns (2, 3, 4, 5, 6, 7, 8 and 12 are defined). For example, four `.span-3` KPI cards fill a row, and the `.span-8` map sits beside the `.span-4` live feed."
+    },
+    {
+      "from": 93,
+      "to": 98,
+      "text": "Section comment, then `.boot`, the full-screen first-visit intro: fixed over the whole viewport at `z-index: 100` (above everything else) on the solid page background, with its content centred by `display: grid; place-items: center`."
+    },
+    {
+      "from": 99,
+      "to": 99,
+      "text": "The boot content column: at most 420px wide (or 86% of the viewport on phones), a grid with 22px gaps and items aligned to the left."
+    },
+    {
+      "from": 100,
+      "to": 101,
+      "text": "The logo row is a flex row of mark and title, and the logo SVG inside it is 44px square."
+    },
+    {
+      "from": 102,
+      "to": 103,
+      "text": "Boot logo colours: the traces use a brighter `--t2` than in the rail and the core dot is aqua. boot.js draws the traces in stroke by stroke and pops the core in with a scale animation."
+    },
+    {
+      "from": 104,
+      "to": 104,
+      "text": "The \"Integration Intelligence\" title in 30px Instrument Serif."
+    },
+    {
+      "from": 105,
+      "to": 105,
+      "text": "The status lines container: a grid of small mono lines in `--t3`. `min-height: 92px` reserves room for all four lines up front, so the progress bar below doesn't shift down as boot.js appends each line."
+    },
+    {
+      "from": 106,
+      "to": 106,
+      "text": "Each status line is a flex row with a 10px gap between the check mark and the text."
+    },
+    {
+      "from": 107,
+      "to": 107,
+      "text": "The check marks in front of each line are aqua."
+    },
+    {
+      "from": 108,
+      "to": 108,
+      "text": "The progress track: a full-width 2px `--s3` line with rounded ends; `overflow: hidden` clips the fill inside it."
+    },
+    {
+      "from": 109,
+      "to": 109,
+      "text": "The progress fill: a full-width aqua bar with a glow, collapsed with `transform: scaleX(0)` from a left `transform-origin`. boot.js animates `scaleX` up step by step, and scaling (rather than changing `width`) is cheap for the browser because it doesn't trigger layout."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "The \"press any key to skip\" hint in small, faint mono type."
+    },
+    {
+      "from": 112,
+      "to": 113,
+      "text": "Section comment, then a media query for windows 1180px wide or narrower (small laptops and tablets), where the column spans are re-flowed."
+    },
+    {
+      "from": 114,
+      "to": 114,
+      "text": "`.span-2` cards widen to a third of the row (span 4), `.span-3` to half (span 6), and `.span-4`/`.span-5` also become half width, so KPI cards sit two per row."
+    },
+    {
+      "from": 115,
+      "to": 116,
+      "text": "Wide panels (`.span-7`, `.span-8`) go full width (span 12), and the closing brace ends the query; `.span-6` and `.span-12` are unchanged at this size."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "A media query for phones and narrow tablets (860px and below), where the rail turns into a bottom tab bar and the content stacks."
+    },
+    {
+      "from": 118,
+      "to": 118,
+      "text": "The shell drops to a single column, since the rail no longer sits beside the content."
+    },
+    {
+      "from": 119,
+      "to": 119,
+      "text": "The rail becomes a bar fixed to the bottom of the screen: full width, automatic height, a horizontal flex row with small padding, and a top hairline instead of the right one. `z-index: 30` keeps it above the content and the top bar."
+    },
+    {
+      "from": 120,
+      "to": 120,
+      "text": "Hides what doesn't fit in a tab bar: the brand, the rail footer cards, the group headings, the shortcut hints and the incident count badge."
+    },
+    {
+      "from": 121,
+      "to": 121,
+      "text": "The nav becomes a horizontal row that scrolls sideways if the icons don't fit."
+    },
+    {
+      "from": 122,
+      "to": 123,
+      "text": "Links keep their natural width (`flex: none`) with a little side padding, and every `span` inside them, including the text label, is hidden, leaving an icon-only tab bar."
+    },
+    {
+      "from": 124,
+      "to": 124,
+      "text": "Hides the indicator's vertical aqua bar, which only makes sense along the left edge of a vertical rail."
+    },
+    {
+      "from": 125,
+      "to": 127,
+      "text": "Top bar adjustments: `.topbar` gets 16px side padding, `.search-trigger` shrinks to fit its contents, and the search button's text label and the `.clock` are hidden, leaving just the search icon and key hint."
+    },
+    {
+      "from": 128,
+      "to": 128,
+      "text": "The content area gets 16px gutters and 96px of bottom padding, so the last panel isn't hidden behind the fixed bottom tab bar."
+    },
+    {
+      "from": 129,
+      "to": 129,
+      "text": "Page titles shrink from 40px to 32px."
+    },
+    {
+      "from": 130,
+      "to": 131,
+      "text": "`.span-2` metric cards go two per row (span 6) and `.span-3` to `.span-6` all go full width; `.span-7`/`.span-8` are already full width because the 1180px query still applies at this size. The closing brace ends the query."
+    }
+  ]
+}

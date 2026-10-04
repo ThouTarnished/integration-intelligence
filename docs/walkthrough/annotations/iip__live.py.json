@@ -1,0 +1,447 @@
+{
+  "path": "iip/live.py",
+  "lines": 162,
+  "summary": "The backend's real-time layer. `LiveHub` pushes messages to every browser connected to the Server-Sent Events stream (served by `iip/routes/system.py`, consumed by `web/js/core/live.js`), and `TrafficGenerator` is an optional background task that feeds realistic activity through the same `process_event` pipeline the REST API uses. The routes in `events.py`, `incidents.py` and `simulation.py` call `broadcast` or `hub.publish` after they change data, and `iip/app.py` binds the hub to the event loop at startup and stops the generator at shutdown.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 5,
+      "text": "Module docstring, first half. It introduces `LiveHub`, the fan-out hub for the Server-Sent Events (SSE) stream, and states the key design point: `publish` may be called from worker threads (sync FastAPI endpoints run in a thread pool), so it hands each message to the event loop with `call_soon_threadsafe`."
+    },
+    {
+      "from": 6,
+      "to": 8,
+      "text": "Second half of the docstring: `TrafficGenerator` is an optional background task that produces a steady trickle of normal activity with the occasional attack, so a demo dashboard keeps moving even when nobody is clicking."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Postpones evaluation of type hints: they are kept as strings instead of being evaluated when the module is imported, which keeps imports cheap and lets hints mention names defined later."
+    },
+    {
+      "from": 11,
+      "to": 12,
+      "text": "`asyncio` provides the event loop, queues and tasks this module is built on; `itertools` supplies `count`, used to number SSE messages."
+    },
+    {
+      "from": 13,
+      "to": 15,
+      "text": "`json` serialises message payloads, `logging` reports failed traffic ticks, and `random` drives the traffic generator's choices and timing."
+    },
+    {
+      "from": 16,
+      "to": 18,
+      "text": "`AsyncIterator` is the type of the async generator `stream`, `suppress` is a context manager that silently ignores the listed exceptions, and `datetime` is used in type hints."
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "text": "SQLAlchemy's `select` builds queries, and `Session` is the database-session type used in `broadcast`'s signature."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "`run_in_threadpool` runs an ordinary blocking function on a worker thread and lets the calling coroutine `await` the result, so slow database work never freezes the event loop."
+    },
+    {
+      "from": 24,
+      "to": 26,
+      "text": "Project imports: `rules` (for the rapid-transaction window), the shared `utcnow` clock, and the ORM models plus `SessionLocal`, the factory that opens database sessions."
+    },
+    {
+      "from": 27,
+      "to": 28,
+      "text": "`metrics` is the shared observability registry (used to count ingested events) and `process_event` is the single write pipeline every event goes through: normalise, enrich, score, store, correlate."
+    },
+    {
+      "from": 29,
+      "to": 30,
+      "text": "`event_dict` and `incidents_page` serialise rows into the same JSON shapes the REST API returns, and the `seed` helpers generate attack scenarios and routine events for the traffic generator."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "A named logger, so log lines from this module are labelled `iip.live`."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "`LiveHub` keeps track of every connected browser and delivers each published message to all of them."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "The constructor; `queue_size` caps how many undelivered messages each client may have waiting (256 by default)."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "The server's asyncio event loop. It starts as `None` and is filled in by `bind()` once the app is running."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "One `asyncio.Queue` of ready-to-send SSE strings per connected browser. A set makes adding and removing a client cheap."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "Remembers the per-client capacity for when `stream()` creates a new queue."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "An endless counter (1, 2, 3...) that numbers every message for the SSE `id:` field; `next()` on it is atomic in CPython, so ids stay unique even when several threads publish at once. (Browsers echo the last id back as `Last-Event-ID` when they reconnect, but this server does not replay missed messages.)"
+    },
+    {
+      "from": 42,
+      "to": 43,
+      "text": "`bind` stores the running event loop. `iip/app.py` calls it once at startup (`hub.bind(asyncio.get_running_loop())`) so worker threads later know which loop to hand messages to."
+    },
+    {
+      "from": 45,
+      "to": 47,
+      "text": "A read-only property: the number of connected SSE clients is simply the number of queues. The health and metrics endpoints report it as `live_clients`."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "`publish` sends one message of type `kind` (`event`, `incident`, `traffic` or `reset`) with a JSON-serialisable `data` payload to every connected client. It is safe to call from any thread."
+    },
+    {
+      "from": 50,
+      "to": 51,
+      "text": "Returns immediately when no loop is bound yet (in unit tests, or before startup) or when nobody is listening, so the payload is not even serialised."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "Builds the SSE wire format: a few `field: value` lines ended by a blank line (`\\n\\n`). `id:` numbers the message, `event:` names its type so the browser's matching `addEventListener` handler fires, and `data:` carries the JSON, which `json.dumps` writes on a single line (a raw newline would end the field) with `default=str` turning values such as datetimes into strings."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "If the server is shutting down and the loop is already closed, `call_soon_threadsafe` raises `RuntimeError`; `suppress` ignores it, because a message nobody can receive is safe to drop."
+    },
+    {
+      "from": 54,
+      "to": 54,
+      "text": "The thread-safety trick. asyncio queues may only be touched from the event loop's own thread, but `publish` is often called from thread-pool workers (sync endpoints, the traffic tick). `call_soon_threadsafe` adds `_fan_out(message)` to the loop's to-do list and wakes the loop, so the queue writes happen safely on the loop thread."
+    },
+    {
+      "from": 56,
+      "to": 56,
+      "text": "`_fan_out` always runs on the event loop thread (scheduled by `publish`) and copies one message into every client's queue."
+    },
+    {
+      "from": 57,
+      "to": 57,
+      "text": "Iterates over a snapshot (`list(...)`) of the set, a defensive habit so a client connecting or disconnecting can never cause a \"set changed size during iteration\" error."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "A full queue means that browser is not reading fast enough (slow network, a laptop gone to sleep). The comment states the policy: drop that client's oldest message rather than block everyone."
+    },
+    {
+      "from": 59,
+      "to": 60,
+      "text": "Removes the oldest waiting message with `get_nowait()`, which never waits; suppressing `QueueEmpty` is purely defensive."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "Adds the new message without waiting (`put_nowait`). A slow client only loses old messages; it can never stall the publisher or the other clients, and memory stays capped at `queue_size` messages per client."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "`stream` is an async generator, one per connected browser. `system.py` hands it to a `StreamingResponse`, which sends every string it yields straight to the client; `heartbeat` is the longest silence, in seconds, before a keep-alive is sent."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Creates this client's private queue, bounded to `queue_size` so a stalled client cannot grow memory without limit."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Registers the queue so `_fan_out` starts delivering to it; from now on `clients` counts this browser."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Opens a `try` so the matching `finally` always runs, however the stream ends."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "The first chunk the browser receives. `retry: 3000` tells `EventSource` to wait 3 seconds before reconnecting if the connection drops, and `: connected` is an SSE comment (lines starting with a colon are ignored by the browser) that gets data flowing before any real event exists."
+    },
+    {
+      "from": 68,
+      "to": 68,
+      "text": "Loops for as long as the browser stays connected."
+    },
+    {
+      "from": 69,
+      "to": 70,
+      "text": "Waits for the next message, but for at most `heartbeat` seconds; when one arrives it is yielded, which writes it to the HTTP response. On timeout `asyncio.wait_for` cancels the pending `queue.get()`, so no message is lost."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "Fifteen seconds without a message: sends `: keep-alive`, another comment the browser ignores. It stops proxies, load balancers and browsers from closing what looks like an idle connection."
+    },
+    {
+      "from": 73,
+      "to": 74,
+      "text": "When the browser disconnects, Starlette cancels the streaming task and the cancellation surfaces inside this generator (normally while it waits on the queue). The `finally` block then unregisters the queue, so disconnected clients never leak."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "One module-level hub shared by the whole process: `app.py` binds it, the routes publish to it and the `/stream` endpoint subscribes to it."
+    },
+    {
+      "from": 80,
+      "to": 80,
+      "text": "`broadcast` is the helper every ingestion path calls after processing events; `source` labels where they came from (`api`, `simulation` or `traffic`) so the UI can tell them apart."
+    },
+    {
+      "from": 81,
+      "to": 81,
+      "text": "Docstring: publish the new events plus every incident they touched."
+    },
+    {
+      "from": 82,
+      "to": 83,
+      "text": "Publishes one `event` message per event, serialised with the same `event_dict` the REST API uses, so the browser can treat live and fetched data identically."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "A set comprehension collecting the distinct incidents these events belong to; events that were not correlated into any incident have `incident_id` `None` and are skipped."
+    },
+    {
+      "from": 85,
+      "to": 87,
+      "text": "If any incident changed, loads them all with a few batched queries via `incidents_page` and publishes each as an `incident` message, so open dashboards can update incident rows and counters."
+    },
+    {
+      "from": 90,
+      "to": 90,
+      "text": "`TrafficGenerator` produces synthetic live activity on demand; it is switched on and off through `POST /api/v1/simulation/traffic`."
+    },
+    {
+      "from": 91,
+      "to": 92,
+      "text": "The constructor: `attack_ratio=0.06` means roughly 6% of ticks replay an attack scenario instead of ordinary activity."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "Running total of generated events, shown in the status payload."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "When the current run started; `None` until the first start."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "Handle to the background asyncio task, used to check, cancel and await it."
+    },
+    {
+      "from": 96,
+      "to": 96,
+      "text": "The tick currently running in a worker thread, if any, so `stop()` can wait for it to finish."
+    },
+    {
+      "from": 97,
+      "to": 97,
+      "text": "Each user's last generated transaction time, so the generator can avoid unrealistically frequent transactions (see `_tick`)."
+    },
+    {
+      "from": 99,
+      "to": 101,
+      "text": "`running` is true only while a task exists and has not finished; a task that was cancelled or crashed counts as stopped."
+    },
+    {
+      "from": 103,
+      "to": 105,
+      "text": "`status()` returns the small dict shared by the API and the SSE `traffic` messages: whether it is enabled, how many events it produced, and the start time (only while running)."
+    },
+    {
+      "from": 107,
+      "to": 107,
+      "text": "Declared `async` even though it awaits nothing: `asyncio.create_task` needs a running event loop in the current thread, and an `async def` awaited by an async endpoint is guaranteed to run on the loop, not in a worker thread."
+    },
+    {
+      "from": 108,
+      "to": 108,
+      "text": "Does nothing if the generator is already running, so a double click cannot start two loops."
+    },
+    {
+      "from": 109,
+      "to": 109,
+      "text": "Records the start time with the shared naive-UTC clock."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "Schedules `_run()` as a background task on the event loop and returns immediately; the name `iip-live-traffic` makes it easy to spot when debugging."
+    },
+    {
+      "from": 111,
+      "to": 111,
+      "text": "Tells every connected dashboard about the new state, so all traffic toggles update, not just the one that was clicked."
+    },
+    {
+      "from": 113,
+      "to": 113,
+      "text": "Stops the background task. Also called by the reset endpoint and by the `lifespan` in `app.py` at shutdown."
+    },
+    {
+      "from": 114,
+      "to": 116,
+      "text": "Takes the task and clears the handle **first**, so `running` reports `False` at once and a `start()` that arrives while this method waits creates a task of its own instead of being orphaned. Nothing to do if no task exists."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "Requests cancellation: a `CancelledError` will be raised inside `_run` at its next `await`."
+    },
+    {
+      "from": 118,
+      "to": 119,
+      "text": "Waits for the task to actually finish, swallowing the expected `CancelledError`."
+    },
+    {
+      "from": 120,
+      "to": 126,
+      "text": "A tick may still be running in its worker thread, and threads can't be cancelled. Waiting for it means that when `stop()` returns nothing is writing to the database any more, which the reset endpoint relies on before it drops and re-seeds the tables. A failure in that last tick is still logged."
+    },
+    {
+      "from": 127,
+      "to": 127,
+      "text": "Broadcasts the stopped state to all dashboards."
+    },
+    {
+      "from": 129,
+      "to": 129,
+      "text": "The background loop that `start()` schedules."
+    },
+    {
+      "from": 130,
+      "to": 130,
+      "text": "A private random generator, so the traffic stream neither uses nor disturbs the global `random` state."
+    },
+    {
+      "from": 131,
+      "to": 131,
+      "text": "Runs until `stop()` cancels it."
+    },
+    {
+      "from": 132,
+      "to": 132,
+      "text": "Sleeps a random 1 to 2.8 seconds between ticks for a natural, uneven rhythm; `await asyncio.sleep` hands control back to the loop so SSE streams and requests keep flowing."
+    },
+    {
+      "from": 133,
+      "to": 135,
+      "text": "`_tick` does blocking SQLAlchemy work, so it runs on a worker thread via `run_in_threadpool`. The running tick is kept in `_ticking`, and `asyncio.shield` lets the loop be cancelled without abandoning that tick: a thread can't be interrupted, so `stop()` waits for it instead. Ticks never overlap, because each one is awaited before the next sleep."
+    },
+    {
+      "from": 136,
+      "to": 137,
+      "text": "A failed tick (for example a locked database) is logged with its traceback and the loop carries on. Cancellation still stops the loop, because `CancelledError` derives from `BaseException`, not `Exception`."
+    },
+    {
+      "from": 138,
+      "to": 138,
+      "text": "A finished tick is forgotten, so `stop()` only waits for one that is still running."
+    },
+    {
+      "from": 140,
+      "to": 140,
+      "text": "One unit of synthetic activity; it runs on a worker thread."
+    },
+    {
+      "from": 141,
+      "to": 141,
+      "text": "Opens a dedicated database session for this tick (sessions must not be shared between threads); the `with` block closes it afterwards."
+    },
+    {
+      "from": 142,
+      "to": 143,
+      "text": "Loads every user and picks one at random to act."
+    },
+    {
+      "from": 144,
+      "to": 144,
+      "text": "Fetches the ids of that user's trusted devices, so routine activity looks legitimate."
+    },
+    {
+      "from": 145,
+      "to": 145,
+      "text": "One timestamp for the whole tick."
+    },
+    {
+      "from": 146,
+      "to": 147,
+      "text": "With probability `attack_ratio`, plans a random scenario from `ATTACKS` (the attack, fraud and suspicious categories) ending now; the full user list is passed as the victim pool for multi-account attacks such as a password spray."
+    },
+    {
+      "from": 148,
+      "to": 148,
+      "text": "Otherwise, ordinary customer activity."
+    },
+    {
+      "from": 149,
+      "to": 149,
+      "text": "Explains the guard below: generating a transaction every few seconds for the same customer would trip the \"Rapid transactions\" rule and create false alarms."
+    },
+    {
+      "from": 150,
+      "to": 151,
+      "text": "Allows a transaction only if this user has not had one within `rules.RAPID_TRANSACTION_WINDOW` (10 minutes)."
+    },
+    {
+      "from": 152,
+      "to": 152,
+      "text": "Builds one routine event (home city, clean IP, one of the user's trusted devices); with `allow_transaction=False` it can only be a login or a resource access."
+    },
+    {
+      "from": 153,
+      "to": 153,
+      "text": "Runs each payload through the real pipeline: `process_event` commits and returns `(event, assessment)`, and `[0]` keeps the stored `Event`. Generated traffic is scored exactly like API traffic."
+    },
+    {
+      "from": 154,
+      "to": 156,
+      "text": "Records the timestamp of any transaction just produced, which feeds the rapid-transaction guard on later ticks."
+    },
+    {
+      "from": 157,
+      "to": 157,
+      "text": "Adds to the running total shown by `status()`."
+    },
+    {
+      "from": 158,
+      "to": 158,
+      "text": "Counts the events in the per-minute ingest throughput charted on the Integration page."
+    },
+    {
+      "from": 159,
+      "to": 159,
+      "text": "Pushes the new events and any touched incidents to all dashboards. This call happens on a worker thread, which is exactly why `publish` uses `call_soon_threadsafe`."
+    },
+    {
+      "from": 162,
+      "to": 162,
+      "text": "The single generator instance, controlled by the simulation routes and stopped by `app.py` on shutdown."
+    }
+  ]
+}

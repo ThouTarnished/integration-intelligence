@@ -1,0 +1,272 @@
+{
+  "path": "scripts/build_world_dots.py",
+  "lines": 91,
+  "summary": "A one-off generator that produced `web/js/data/world-dots.js`, the land mask behind the dashboard's dot-matrix threat map (drawn by `web/js/charts/worldmap.js`). It decodes Natural Earth land shapes stored as TopoJSON, tests the centre of every 2-degree grid cell for whether it lies on land, and packs the answers into hex strings at 1 bit per cell. It is not part of the running app and only needs re-running if the map's resolution or crop changes.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Docstring first line: names the generated file and what it is for."
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "text": "Credits the input: Natural Earth's 1:110m land shapes (public domain), packaged as TopoJSON by the `world-atlas` npm package (ISC licence), with the exact CDN URL so the file can be downloaded again."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Usage: pass the path of the downloaded `land-110m.json`."
+    },
+    {
+      "from": 8,
+      "to": 10,
+      "text": "Describes the output: an equirectangular grid (longitude and latitude mapped straight onto x and y), one hex string per row at 1 bit per cell, so the browser needs no map library and no network request to draw the world. Line 10 closes the docstring."
+    },
+    {
+      "from": 11,
+      "to": 11,
+      "text": "Makes type hints lazy strings, so modern annotation syntax is never evaluated at runtime."
+    },
+    {
+      "from": 13,
+      "to": 15,
+      "text": "Standard library only: `json` reads the TopoJSON input and writes the mask array, `sys` reads the command-line argument, and `Path` handles file paths. The script has no third-party dependencies."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Grid resolution: one dot every 2 degrees of longitude and of latitude."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "The grid spans the full 360 degrees of longitude."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "Latitude runs from 58 degrees south to 82 degrees north; as the comment says, this crops off Antarctica and the high Arctic."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "The output path, resolved relative to this script (`scripts/../web/js/data/world-dots.js`), so the script works from any working directory."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "Decodes every arc (a shared stretch of boundary line) into real longitude/latitude points."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Docstring naming the two compression tricks TopoJSON uses: coordinates are **quantized** (stored as small integers on a grid) and **delta-encoded** (each point is stored as its offset from the previous point)."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Reads the quantization transform: `scale` (degrees per integer step) and `translate` (the real position of grid point 0,0). Tuple unpacking splits each two-element list into its x and y parts."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "Collects the decoded arcs."
+    },
+    {
+      "from": 27,
+      "to": 29,
+      "text": "For each arc, the running position restarts at (0, 0), because delta encoding begins afresh with every arc; `points` collects that arc's decoded coordinates."
+    },
+    {
+      "from": 30,
+      "to": 31,
+      "text": "Undoes delta encoding: adding each `(dx, dy)` offset to the running total recovers the absolute integer position."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "Undoes quantization: multiplying by the scale and adding the translation turns the integer grid position back into a real longitude and latitude."
+    },
+    {
+      "from": 33,
+      "to": 34,
+      "text": "Stores each decoded arc and returns them all in their original order, so the arc indices used by polygons still point at the right arc."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Builds one closed ring (a polygon boundary) from a list of arc indices."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "The ring's points, accumulated across arcs."
+    },
+    {
+      "from": 39,
+      "to": 40,
+      "text": "TopoJSON stores a boundary shared by neighbouring shapes only once, so a ring sometimes has to walk an arc backwards, written as a negative index. `~i` (bitwise NOT, equal to -i-1) maps -1 to 0, -2 to 1 and so on, and `[::-1]` reverses that arc's point order."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "Consecutive arcs meet at a shared point, so after the first arc each new arc's starting point is skipped (`arc[1:]`) to avoid duplicates."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "Returns the ring as one list of (lon, lat) points."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "Point-in-polygon test: is the point (lon, lat) inside the shape made of these rings?"
+    },
+    {
+      "from": 46,
+      "to": 46,
+      "text": "Docstring: the even-odd rule is applied across **all** rings together, so holes such as lakes and inland seas are subtracted correctly."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "Starts as outside; every boundary crossing flips the answer."
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "text": "Walks every edge of every ring. Zipping the point list with a copy rotated by one (`pts[1:] + pts[:1]`) pairs each point with the next and also closes the ring from the last point back to the first. `strict=True` asserts both lists have the same length (the linter's B905 rule requires an explicit `strict`)."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "Ray casting: picture a ray going east from the point. The first condition checks that the edge straddles the point's latitude (one end above it, one not); the second computes where the edge crosses that latitude and checks the crossing lies east of the point. The first condition guarantees `y1 != y2`, so the division can never be by zero."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "Each crossing toggles between inside and outside."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "An odd number of crossings means inside. For example, a point in a lake typically crosses the lake's ring once and the coastline once, an even total, so it correctly counts as outside."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "The entry point, given the path of the TopoJSON file."
+    },
+    {
+      "from": 56,
+      "to": 56,
+      "text": "Reads and parses the TopoJSON file."
+    },
+    {
+      "from": 57,
+      "to": 57,
+      "text": "Decodes all arcs once, up front; polygons then refer to them by index."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "Will hold every land polygon as a list of rings."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "Loops over the geometries of the `land` object."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Normalizes the two geometry types: a MultiPolygon's `arcs` is already a list of polygons, while a single Polygon's is just a list of rings, so it is wrapped in a list to look the same."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "Converts each polygon's rings of arc indices into rings of real points and appends them to `polygons`."
+    },
+    {
+      "from": 62,
+      "to": 63,
+      "text": "Precomputes a bounding box (min lon, max lon, min lat, max lat) for each polygon. Checking a box is far cheaper than the full point-in-polygon test, so it works as a quick pre-filter."
+    },
+    {
+      "from": 65,
+      "to": 66,
+      "text": "Grid size: 360 / 2 = 180 columns and (82 - (-58)) / 2 = 70 rows."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "`encoded` collects one hex string per row; `land` counts land dots for the final report."
+    },
+    {
+      "from": 68,
+      "to": 69,
+      "text": "Rows run north to south. Each sample sits at the **centre** of its cell (`r + 0.5`), so no dot falls exactly on a cell edge."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "The bits of the current row."
+    },
+    {
+      "from": 71,
+      "to": 72,
+      "text": "Columns run west to east, again sampling at the cell centre."
+    },
+    {
+      "from": 73,
+      "to": 74,
+      "text": "A cell is land if **any** polygon contains its centre. Because `and` short-circuits, the expensive `inside` test only runs when the point is inside that polygon's bounding box."
+    },
+    {
+      "from": 75,
+      "to": 76,
+      "text": "Appends `1` (land) or `0` (sea). `land += on` works because Python booleans are integers (True counts as 1)."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "Pads the row with trailing zeros up to a multiple of 4 bits, since each hex digit holds exactly 4 bits. With 180 columns no padding is needed, but the code stays correct for any width."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "Converts the bit string to an integer, then to lowercase hex zero-padded to `len(bitstring) // 4` digits. The padding is essential: a row that starts with sea (0 bits) would otherwise lose its leading zeros and shift the whole row."
+    },
+    {
+      "from": 80,
+      "to": 80,
+      "text": "Creates `web/js/data/` if it doesn't exist yet."
+    },
+    {
+      "from": 81,
+      "to": 82,
+      "text": "Writes the output file. The first string is a header comment marking it as generated, so nobody edits it by hand."
+    },
+    {
+      "from": 83,
+      "to": 84,
+      "text": "The module body: `export const WORLD = {...}` with the grid size, step, bounds and the `mask` array, where `json.dumps` turns the Python list into valid JavaScript string literals. Doubled braces in the f-strings produce literal braces. `worldmap.js` imports `WORLD` and expands each hex digit back into 4 bits."
+    },
+    {
+      "from": 85,
+      "to": 86,
+      "text": "Writes the file as UTF-8 with Unix line endings (`newline=\"\\n\"`, so a rebuild on Windows produces the same bytes as anywhere else) and closes the call."
+    },
+    {
+      "from": 87,
+      "to": 87,
+      "text": "Reports the grid size, the number of land dots and the output path."
+    },
+    {
+      "from": 90,
+      "to": 91,
+      "text": "Runs `main` when the file is executed as a script, using the first command-line argument as the input path, or `land-110m.json` in the current directory if none is given."
+    }
+  ]
+}

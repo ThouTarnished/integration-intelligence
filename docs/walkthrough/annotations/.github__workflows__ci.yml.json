@@ -1,0 +1,72 @@
+{
+  "path": ".github/workflows/ci.yml",
+  "lines": 23,
+  "summary": "The GitHub Actions continuous-integration workflow. On every push and pull request it installs the dev requirements, lints with Ruff and runs the full pytest suite, once for each of three Python versions in parallel. A red check on a pull request means one of those steps failed.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "The workflow's display name in GitHub's Actions tab and in pull-request checks."
+    },
+    {
+      "from": 3,
+      "to": 5,
+      "text": "Triggers: run on every `push` (to any branch) and on every `pull_request`. Leaving both keys empty means no branch or path filters."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "Starts the list of jobs; this workflow has just one."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "The job's ID, `test`."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Runs on a fresh GitHub-hosted Ubuntu Linux virtual machine every time."
+    },
+    {
+      "from": 10,
+      "to": 12,
+      "text": "A build matrix: GitHub runs the job four times in parallel, once per supported Python version, from 3.10 (the minimum in `pyproject.toml`) to 3.13. The versions are quoted so YAML reads them as strings; unquoted, `3.10` would become the number 3.1."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "The job's ordered steps; if one fails, the remaining steps are skipped."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "Checks out the repository's code onto the runner."
+    },
+    {
+      "from": 15,
+      "to": 17,
+      "text": "Installs the Python version for this matrix run; `${{ matrix.python-version }}` is GitHub's expression syntax for the current matrix value."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "Caches pip's downloaded packages between workflow runs, so installs get faster."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "Installs the runtime and dev dependencies (pytest, Ruff, Pygments) in one go."
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "text": "The Lint step runs `ruff check .` with the settings in `pyproject.toml`; any violation fails the build before the tests run."
+    },
+    {
+      "from": 22,
+      "to": 23,
+      "text": "The Test step runs `pytest`, which reads `testpaths` and `pythonpath` from `pyproject.toml`. No database or secret setup is needed, because `conftest.py` creates a temporary database and its own test key."
+    }
+  ]
+}

@@ -1,0 +1,217 @@
+{
+  "path": "web/js/core/dom.js",
+  "lines": 81,
+  "summary": "The small DOM toolkit and the formatters shared by almost every frontend module. Its centrepiece is the `html` tagged template, which escapes every interpolated value unless it is already `html` or `raw` output, so rendering API data through `innerHTML` is **XSS-safe by default** and unescaped markup has to be requested explicitly. It also provides the `$`/`$$` query shortcuts, `mount`, and the `fmt` helpers that turn the backend's naive-UTC timestamps and raw numbers into display strings.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Header comment stating the module's key promise: `html` escapes every interpolated value unless it is itself `html` or `raw` output, so **XSS safety is the default** and only deliberate code can insert unescaped markup."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "`$` is a short alias for `querySelector` (first match, or `null`). The optional `root` narrows the search, e.g. `$('[data-uptime]', view)` only looks inside the current page."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "`$$` returns **all** matches as a real array (by spreading the `NodeList`), so callers can use `map`, `filter` and `forEach` directly."
+    },
+    {
+      "from": 7,
+      "to": 7,
+      "text": "The five characters that are special in HTML, mapped to their entity equivalents."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "`esc()` makes any value safe to place in HTML: `??` turns `null` and `undefined` into an empty string, then every special character is replaced. Escaping both kinds of quote makes the result safe inside attribute values too."
+    },
+    {
+      "from": 10,
+      "to": 13,
+      "text": "`SafeHTML` is a marker wrapper meaning 'this string is markup that is already escaped or trusted'. Its `toString()` returns the markup, so `String(x)` or assigning it to `innerHTML` yields the plain string."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "`raw()` is the explicit opt-out: it marks a string as safe so `html` inserts it without escaping. It is meant only for markup the code builds itself (icon SVGs, chart fragments), never for API or user data."
+    },
+    {
+      "from": 16,
+      "to": 17,
+      "text": "`render` decides how one interpolated value becomes text. `null`, `undefined` and `false` render as nothing, so a template can write `${isOpen && badge}` and get an empty string when the condition is false."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "Arrays are rendered item by item and joined, so `${items.map(...)}` can produce a whole list without a manual `join`."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "Values that are already `SafeHTML` (nested `html` templates or `raw`) pass through untouched, which prevents double escaping."
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "text": "Everything else, including strings and numbers from the API, is escaped."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "`html` is a **tagged template** function: writing `html` directly before a template literal makes JavaScript call it with `strings` (the literal chunks) and `values` (the results of the `${}` expressions), always with one more chunk than values."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "Starts the output with the first literal chunk."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "For each value, appends its rendered (escaped) form followed by the next literal chunk, rebuilding the template in order."
+    },
+    {
+      "from": 26,
+      "to": 27,
+      "text": "Returns the result wrapped as `SafeHTML`, so it can be nested inside another `html` template, or passed to `mount()`, without being escaped twice."
+    },
+    {
+      "from": 29,
+      "to": 30,
+      "text": "`mount(el, content)` replaces an element's content and returns the element, so calls can be chained."
+    },
+    {
+      "from": 31,
+      "to": 33,
+      "text": "Assigns `String(content)` to `innerHTML`; the content is normally an `html` result, so everything interpolated into it has already been escaped. Then returns the element."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "Section marker: formatting helpers."
+    },
+    {
+      "from": 36,
+      "to": 37,
+      "text": "Two `Intl.NumberFormat` instances, created once and reused because building one per call is slower: `NUMBER` adds thousands separators (`12,345`) and `MONEY` formats US dollars (`$1,234.50`)."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "`utc()` parses backend timestamps. The API sends naive UTC strings with no zone (see `iip/clock.py`) and `new Date()` would read those as **local** time, so a `Z` is appended unless the string already carries a `Z` or an offset like `+02:00`; empty input gives `null`."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "`fmt` groups the display formatters used throughout the UI."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "`num` rounds to a whole number and adds separators; `?? 0` stops a missing value from printing 'NaN'."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "`money` formats as US dollars, treating a missing value as 0."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "`pct` turns a fraction into a percentage string with `digits` decimals, so 0.256 becomes `26%`."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "`time` shows hours and minutes in the viewer's own locale and time zone on a 24-hour clock (`hourCycle` set to `h23`). `?.` and `??` print an em dash when there is no timestamp."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "`dateTime` does the same with a short month and day added, e.g. `Oct 2, 14:03`."
+    },
+    {
+      "from": 46,
+      "to": 49,
+      "text": "`ago` produces relative times: it parses the timestamp, prints an em dash if it is missing, and measures the age in seconds. Subtracting a `Date` converts it to milliseconds, and `Math.max(0, ...)` clamps slightly-future times (small clock differences) to zero."
+    },
+    {
+      "from": 50,
+      "to": 54,
+      "text": "Buckets the age: under 45 seconds is 'just now', then minutes, hours and finally days, each rounded to the nearest whole unit."
+    },
+    {
+      "from": 55,
+      "to": 57,
+      "text": "`duration` splits a number of seconds into days, hours, minutes and seconds using integer division (`Math.floor`) and remainders (`%`)."
+    },
+    {
+      "from": 58,
+      "to": 59,
+      "text": "Shows only the two most significant units, e.g. `2d 4h`, `3h 12m`, `5m 9s` or `42s`; the Integration page uses it for the server's uptime."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "`initials` turns a name into up to two capital letters for avatars ('Ada Lovelace' becomes 'AL'), using '?' when the name is missing."
+    },
+    {
+      "from": 61,
+      "to": 62,
+      "text": "`type` maps event-type codes from the API to readable labels, falling back to the raw code for anything unknown. The last line closes `fmt`."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "`LEVELS` lists the risk levels from lowest to highest; components use the position in this list, e.g. to decide how many severity pips to light."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "`levelOf` converts a 0-100 score into a level using the same thresholds as `LEVELS` in `iip/rules.py` (80 critical, 60 high, 30 medium), so charts colour values exactly as the backend classifies them."
+    },
+    {
+      "from": 66,
+      "to": 69,
+      "text": "`debounce` returns a wrapper that restarts a timer on every call, so `fn` only runs once calls have paused for `ms` milliseconds. The Events search box uses it so typing does not fire one request per keystroke, and the Risk Lab uses it to batch quick toggles."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "`sleep` returns a Promise that resolves after `ms` milliseconds, so async code can simply `await sleep(260)` between steps, as the boot sequence does."
+    },
+    {
+      "from": 72,
+      "to": 73,
+      "text": "`trapTab(container, e)` keeps keyboard focus inside a modal. The drawer and the palette are marked `aria-modal`, but Tab used to walk out of them into the page behind."
+    },
+    {
+      "from": 74,
+      "to": 74,
+      "text": "Only Tab presses matter, and only for an existing container."
+    },
+    {
+      "from": 75,
+      "to": 76,
+      "text": "Every control that can take focus, keeping only visible ones: `offsetParent` is `null` for elements hidden with `display: none`."
+    },
+    {
+      "from": 77,
+      "to": 78,
+      "text": "Nothing focusable means nothing to trap. Otherwise: the first and last controls, and whether focus is currently on one of them (it may be on the container itself)."
+    },
+    {
+      "from": 79,
+      "to": 80,
+      "text": "Shift+Tab on the first control (or from outside the list) jumps to the last; Tab on the last jumps to the first. `preventDefault` stops the browser's own move."
+    },
+    {
+      "from": 81,
+      "to": 81,
+      "text": "Closes `trapTab()`."
+    }
+  ]
+}

@@ -1,0 +1,1217 @@
+{
+  "path": "iip/analyst.py",
+  "lines": 832,
+  "summary": "The AI analyst behind `POST /api/v1/ai/ask`. It turns a free-text question into explicit search terms with plain rules (record IDs, a customer, signals, attack patterns, places, risk levels, statuses, event types, an outcome and a time window), retrieves only the matching records with SQL, and answers from that context: through an OpenAI-compatible model when a key is configured, otherwise with a deterministic writer that works offline. The rule engine's scores are attached unchanged, so the analyst explains decisions but never makes them. Every total it quotes is an exact count, and the terms it understood are read back in each answer.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 8,
+      "text": "Module docstring: the division of labour. The rule engine decides; the analyst only explains. Questions become explicit search terms by plain rules, only matching records are fetched, and either an OpenAI-compatible model or the built-in deterministic writer phrases the answer from that same context."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "Postponed evaluation of annotations, so type hints such as `User | None` work on Python 3.10 and cost nothing at runtime."
+    },
+    {
+      "from": 11,
+      "to": 17,
+      "text": "Standard library: `json` serializes the context for the model, `re` does all the question parsing, `unicodedata` strips accents, `Counter` tallies statuses and customers, the dataclass helpers build and copy `Question` objects, and `datetime`/`timedelta` handle time windows."
+    },
+    {
+      "from": 19,
+      "to": 21,
+      "text": "Third-party: httpx calls the chat API; SQLAlchemy's `exists`, `func` and `select` build the search queries, and `Session` types the database handle."
+    },
+    {
+      "from": 23,
+      "to": 27,
+      "text": "Platform modules: the city table (`geo`), the rulebook (`rules`), the single clock, settings, the incident-title helpers, and the ORM models, including `RiskSignal`, the indexed one-row-per-signal table that makes signal searches fast."
+    },
+    {
+      "from": 28,
+      "to": 37,
+      "text": "Serializers and read models shared with the API, so the analyst describes records exactly as the dashboard shows them, plus `LEVEL_ORDER` for sorting risk levels."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "Logger used to record OpenAI failures before falling back."
+    },
+    {
+      "from": 41,
+      "to": 46,
+      "text": "The model's instructions: answer only from the JSON context (which includes how the question was interpreted), explain scores without changing them, stay concise, and quote record IDs exactly so the UI can link them."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "At most eight records are listed per answer. Totals are always exact counts, so the reader knows how many more exist."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "From here: the vocabulary, regular expressions that map phrases in a normalized question (lower case, no accents) to search terms."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "A negative lookahead shared by the ID patterns: a number followed by a unit (\"24 hours\", \"3 days\") is a duration, not a record number, so \"events in the last 24 hours\" never becomes EVT-00024."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "Incident references in any common form: INC-0012, inc 12, incident #12, inc12. Leading zeros are skipped (`0*`) and the number is captured."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "The same for events: EVT-00520, event 520, evt520."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Customer IDs: USR-1004, user 1004, customer #1004 (four to six digits)."
+    },
+    {
+      "from": 55,
+      "to": 55,
+      "text": "The phrase tables below are matched after hyphens, underscores and slashes become spaces, so \"sign-in\", \"sign in\" and \"signin\" all read the same."
+    },
+    {
+      "from": 56,
+      "to": 59,
+      "text": "Attack patterns that are incident titles needing several signals together (see `correlation._PATTERNS`): account takeover (also \"ATO\" and \"taken over\") and unfamiliar sign-in. The other titles map one-to-one to a signal, so the signal table covers them."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "Every signal the engine can raise, with the ways people refer to it."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "Impossible travel or trips, and \"geo-velocity\"."
+    },
+    {
+      "from": 62,
+      "to": 63,
+      "text": "A risk word right before \"IP\" (suspicious, malicious, bad, risky or flagged IP addresses), \"IP reputation\", proxies and Tor."
+    },
+    {
+      "from": 64,
+      "to": 65,
+      "text": "Suspicious, large, big, huge or fraudulent transactions, transfers or payments, \"high value\" and \"transaction fraud\"."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Any form of \"spray\" (spray, spraying, sprayed)."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "Unusual location, abroad, away from home, outside their home."
+    },
+    {
+      "from": 68,
+      "to": 70,
+      "text": "Brute force, failed login or sign-in *attempts*, password guessing, credential attacks or stuffing. Plain \"failed logins\" is deliberately not here: it is read later as a failed outcome on login events."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "Rapid transactions, card testing and transaction velocity: the card-testing pattern is this signal."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "A new, unknown, unrecognized or unfamiliar device."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "Reset or recovery abuse, account recovery, \"reset after failures\"."
+    },
+    {
+      "from": 74,
+      "to": 75,
+      "text": "Privileged access: admin console or access, wire approvals and PII export, the resources in `rules.PRIVILEGED_RESOURCES`."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "The one negative signal, for completeness."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "End of the signal table."
+    },
+    {
+      "from": 78,
+      "to": 83,
+      "text": "Risk levels. \"High\" (or high-risk, high severity) means HIGH *or above*, like the dashboard's high-risk KPI, which counts HIGH and CRITICAL. \"Highest\" is not matched, so \"highest-risk incidents\" sets an order, not a filter."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "Vague risk words (flagged, suspicious, risky, unusual, anomalous) with nothing more specific mean MEDIUM or above, the levels at which the engine flags anything at all."
+    },
+    {
+      "from": 85,
+      "to": 90,
+      "text": "Incident statuses: resolved or closed; investigating; and open, unresolved, pending or ongoing (or \"active incidents\"), which means OPEN and INVESTIGATING, the same \"active\" the dashboard uses. Each status set is written sorted."
+    },
+    {
+      "from": 91,
+      "to": 96,
+      "text": "The four event types under their everyday names: logins and sign-ins; transactions, payments, transfers and purchases; password resets; resource access."
+    },
+    {
+      "from": 97,
+      "to": 100,
+      "text": "Whether the event failed or succeeded (\"failed logins\", \"successful transfers\")."
+    },
+    {
+      "from": 101,
+      "to": 105,
+      "text": "What kind of record to list, first match wins: customers (\"who\", users, accounts, but not \"account takeover\"), then incidents (cases, alerts, attacks), then events (activity or any event type)."
+    },
+    {
+      "from": 106,
+      "to": 107,
+      "text": "\"This incident\", \"this score\", or a singular top, worst or most urgent incident: explain the single most urgent incident, as two of the chat's suggestion chips ask."
+    },
+    {
+      "from": 108,
+      "to": 108,
+      "text": "\"Riskiest customer\" in the singular: the answer leads with that one customer."
+    },
+    {
+      "from": 109,
+      "to": 110,
+      "text": "Questions about the scoring model itself: how scores, levels or weights work."
+    },
+    {
+      "from": 111,
+      "to": 112,
+      "text": "Definitional wording: what is, define, what does … mean, explain …, how does … work, tell me about."
+    },
+    {
+      "from": 113,
+      "to": 113,
+      "text": "Words that ask for a list (show, list, find, which, any): with them, \"which … is\" becomes a search rather than a definition."
+    },
+    {
+      "from": 114,
+      "to": 114,
+      "text": "How many, number of, count: lead with the exact total."
+    },
+    {
+      "from": 115,
+      "to": 116,
+      "text": "Summary questions: summarize, overview, recap, what's going on, what happened."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "Latest, newest or recent: order by time instead of by risk."
+    },
+    {
+      "from": 119,
+      "to": 119,
+      "text": "Each signal's trigger, built from the rulebook's own constants, so a definition can never drift from what the engine really does."
+    },
+    {
+      "from": 120,
+      "to": 134,
+      "text": "The trigger sentences, for example \"above 900 km/h over at least 500 km\" for impossible travel. Signals whose description already says everything (such as New device) have no entry."
+    },
+    {
+      "from": 135,
+      "to": 136,
+      "text": "Signals that fire on only one event type. When a question names one, that type is implied, so \"suspicious transactions\" reads back as one term instead of \"Suspicious transaction · transaction\"."
+    },
+    {
+      "from": 139,
+      "to": 139,
+      "text": "Normalizes the question once, so every rule sees the same text."
+    },
+    {
+      "from": 140,
+      "to": 140,
+      "text": "Lower case, curly quotes made straight, accents dropped, whitespace collapsed."
+    },
+    {
+      "from": 141,
+      "to": 141,
+      "text": "The curly apostrophe (U+2019) becomes `'` first, so \"Kira’s\" still reads as \"kira's\". NFKD decomposition splits \"ã\" into \"a\" plus a combining mark, and the ASCII encode with `ignore` drops the mark: \"São Paulo\" becomes \"Sao Paulo\"."
+    },
+    {
+      "from": 142,
+      "to": 142,
+      "text": "Lower case, with runs of whitespace collapsed into single spaces."
+    },
+    {
+      "from": 145,
+      "to": 145,
+      "text": "Builds, once at import time, every way a question can name a known city."
+    },
+    {
+      "from": 146,
+      "to": 146,
+      "text": "City and country names both lead to cities: \"lagos\" or \"nigeria\" → Lagos, \"uae\" → Abu Dhabi and Dubai."
+    },
+    {
+      "from": 147,
+      "to": 150,
+      "text": "Splits each canonical label (\"Lagos, Nigeria\") into its parts and files the label under each normalized part, so a country collects all its cities."
+    },
+    {
+      "from": 151,
+      "to": 152,
+      "text": "Alternative country names (Emirates, England, Britain, United States, America, Saudi, KSA and so on) come from `geo.COUNTRY_ALIASES`, the same table the pipeline uses for incoming events, so questions and events agree on what a country is. \"us\" is left out: in a question it is usually the pronoun. `|=` merges dictionaries (Python 3.9+)."
+    },
+    {
+      "from": 153,
+      "to": 155,
+      "text": "Longer names are tried first, so \"new york\" is consumed before any shorter name inside it. Each entry becomes a word-bounded regex plus the labels it stands for."
+    },
+    {
+      "from": 158,
+      "to": 158,
+      "text": "Computed once at import."
+    },
+    {
+      "from": 159,
+      "to": 159,
+      "text": "The US cities, used only when a question writes \"US\" in capitals (lowercase \"us\" is almost always the pronoun)."
+    },
+    {
+      "from": 162,
+      "to": 164,
+      "text": "`Question` holds everything read from the text. No model is involved in deciding what to retrieve, so retrieval is predictable and testable."
+    },
+    {
+      "from": 165,
+      "to": 165,
+      "text": "The normalized question."
+    },
+    {
+      "from": 166,
+      "to": 166,
+      "text": "The kind of answer: focus on a record, the top incident, the scoring model, a definition, a count, a summary, or a list."
+    },
+    {
+      "from": 167,
+      "to": 167,
+      "text": "What to list: incidents, events or customers (or not said)."
+    },
+    {
+      "from": 168,
+      "to": 170,
+      "text": "Explicit record references, plus a customer matched by ID or by name."
+    },
+    {
+      "from": 171,
+      "to": 176,
+      "text": "The filter terms. `field(default_factory=list)` gives every `Question` its own lists (a plain `[]` default would be shared between instances)."
+    },
+    {
+      "from": 177,
+      "to": 177,
+      "text": "\"failure\" or \"success\"."
+    },
+    {
+      "from": 178,
+      "to": 180,
+      "text": "The time window: a start, an optional end (for \"yesterday\") and a readable label."
+    },
+    {
+      "from": 181,
+      "to": 182,
+      "text": "Order by time instead of risk; asks for the single riskiest customer."
+    },
+    {
+      "from": 183,
+      "to": 183,
+      "text": "IDs that were mentioned but do not exist, reported back honestly."
+    },
+    {
+      "from": 185,
+      "to": 188,
+      "text": "`filtered` is true when any search term narrows the result."
+    },
+    {
+      "from": 190,
+      "to": 196,
+      "text": "The interpretation as a compact dict: empty and false fields are dropped, and datetimes become ISO strings so the context serializes to JSON. The deterministic writer reads it back to phrase the answer, and the model sees exactly how the question was understood."
+    },
+    {
+      "from": 199,
+      "to": 202,
+      "text": "Finds a phrase and blanks it out, so a later rule cannot read the same words again: once \"password reset after failures\" has named a signal, its \"failures\" is gone and is not read as a failed outcome. `re.subn` returns the new text and the number of replacements."
+    },
+    {
+      "from": 205,
+      "to": 206,
+      "text": "Reads a time window and returns its start, optional end, readable label, and the text with the phrase removed."
+    },
+    {
+      "from": 207,
+      "to": 207,
+      "text": "Today's midnight, in UTC like every timestamp in the database."
+    },
+    {
+      "from": 208,
+      "to": 209,
+      "text": "Today (also \"today's\", \"tonight\", \"this morning\"): from midnight on."
+    },
+    {
+      "from": 210,
+      "to": 211,
+      "text": "Yesterday: from the previous midnight up to, not including, today's."
+    },
+    {
+      "from": 212,
+      "to": 213,
+      "text": "Minutes per unit word: a minute, an hour, a day, a week, and a 30-day month."
+    },
+    {
+      "from": 214,
+      "to": 215,
+      "text": "Either \"last/past/previous/this N unit\" (\"last 3 days\", \"past week\", \"this month\") or a bare \"24h\", \"48 hours\" or \"7 days\"."
+    },
+    {
+      "from": 216,
+      "to": 217,
+      "text": "No window: nothing changes."
+    },
+    {
+      "from": 218,
+      "to": 219,
+      "text": "A missing number means one (\"last hour\"). The plural `s` is stripped (\"hrs\" → \"hr\"), and the unit's minutes are looked up and mapped back to a canonical word for the label."
+    },
+    {
+      "from": 220,
+      "to": 221,
+      "text": "The label reads \"last 24 hours\" or \"last hour\", and the window starts that many minutes before now."
+    },
+    {
+      "from": 224,
+      "to": 226,
+      "text": "Finds the customer a question names. Full names beat surnames, and surnames beat first names. Several first names (Dev, Sol, Pax, Wren) are also ordinary words, so short first names count only when written with a capital letter."
+    },
+    {
+      "from": 227,
+      "to": 227,
+      "text": "The question's words, with possessive \"'s\" removed so \"Kira's\" matches Kira."
+    },
+    {
+      "from": 228,
+      "to": 228,
+      "text": "The best match so far, as (rank, user)."
+    },
+    {
+      "from": 229,
+      "to": 230,
+      "text": "Checks each customer (25 in the demo). Star-unpacking takes the first and last words of the name, whatever is in between."
+    },
+    {
+      "from": 231,
+      "to": 238,
+      "text": "Rank 3 for the full name, 2 for the surname as a whole word, and 1 for the first name, which counts only if it is longer than three letters or capitalized in the original question."
+    },
+    {
+      "from": 239,
+      "to": 241,
+      "text": "Keeps the highest-ranked customer; on a tie the first by ID wins."
+    },
+    {
+      "from": 244,
+      "to": 246,
+      "text": "The parser. Matched phrases are blanked out as they are used, so every phrase counts once."
+    },
+    {
+      "from": 247,
+      "to": 248,
+      "text": "Normalizes once and starts an empty `Question`."
+    },
+    {
+      "from": 249,
+      "to": 254,
+      "text": "Record IDs are read first, from the normalized text while its hyphens are still there. Incident and event numbers are stored as integers (their primary keys), and the customer ID is rebuilt in canonical form."
+    },
+    {
+      "from": 255,
+      "to": 255,
+      "text": "`plain` is the text with hyphens, underscores and slashes turned into spaces. The subject and the intent are read from this complete text."
+    },
+    {
+      "from": 256,
+      "to": 258,
+      "text": "`rest` is the working copy that phrases are blanked out of. The record IDs go first, so their digits can't be misread later, for example as a \"24h\" window."
+    },
+    {
+      "from": 259,
+      "to": 261,
+      "text": "Multi-signal patterns first, so \"account takeover\" is consumed before anything else can read \"account\"."
+    },
+    {
+      "from": 262,
+      "to": 264,
+      "text": "Then every signal phrase."
+    },
+    {
+      "from": 265,
+      "to": 267,
+      "text": "Then cities and countries, longest names first."
+    },
+    {
+      "from": 268,
+      "to": 269,
+      "text": "\"US\" counts only in capitals, checked on the original question."
+    },
+    {
+      "from": 270,
+      "to": 270,
+      "text": "Then the time window, measured from the platform clock."
+    },
+    {
+      "from": 271,
+      "to": 274,
+      "text": "Risk levels are collected as a set, so \"high and critical\" becomes {HIGH, CRITICAL} once."
+    },
+    {
+      "from": 275,
+      "to": 277,
+      "text": "Statuses, merged and kept sorted so the read-back can recognize the unresolved pair."
+    },
+    {
+      "from": 278,
+      "to": 278,
+      "text": "Event types are only detected, not blanked out: the same words also help tell the subject apart."
+    },
+    {
+      "from": 279,
+      "to": 279,
+      "text": "The first outcome phrase that remains: failure or success."
+    },
+    {
+      "from": 280,
+      "to": 282,
+      "text": "\"Which transactions were flagged as suspicious?\" puts its risk word far from \"transactions\", so no signal phrase matched. A vague risk word in a question about transactions names the transaction signal."
+    },
+    {
+      "from": 283,
+      "to": 284,
+      "text": "Otherwise a vague risk word with nothing more specific means MEDIUM or above: \"users with unusual activity\" are the customers the engine currently rates at least MEDIUM."
+    },
+    {
+      "from": 285,
+      "to": 285,
+      "text": "Levels in severity order, LOW to CRITICAL."
+    },
+    {
+      "from": 286,
+      "to": 286,
+      "text": "Drops the event types a named signal already implies (see `IMPLIED_TYPES`)."
+    },
+    {
+      "from": 287,
+      "to": 287,
+      "text": "Removes duplicates while keeping order, for a city named both directly and through its country."
+    },
+    {
+      "from": 288,
+      "to": 289,
+      "text": "Without an explicit customer ID, a customer named in the text."
+    },
+    {
+      "from": 290,
+      "to": 290,
+      "text": "The subject comes from the complete text, so nouns inside matched phrases (\"suspicious *transactions*\") still count."
+    },
+    {
+      "from": 291,
+      "to": 291,
+      "text": "The ordering and singular-customer flags."
+    },
+    {
+      "from": 292,
+      "to": 293,
+      "text": "Finally the intent, which depends on everything read so far."
+    },
+    {
+      "from": 296,
+      "to": 298,
+      "text": "Decides what kind of answer to give. `named` means a signal or pattern was mentioned; `narrowed` means a place, level, status, outcome or time window was."
+    },
+    {
+      "from": 299,
+      "to": 300,
+      "text": "An explicit record or customer wins: the answer is about that record."
+    },
+    {
+      "from": 301,
+      "to": 302,
+      "text": "\"This incident\" or \"the most urgent incident\": the single most urgent incident."
+    },
+    {
+      "from": 303,
+      "to": 304,
+      "text": "A question about scores or levels that names nothing to search for is about the scoring model itself."
+    },
+    {
+      "from": 305,
+      "to": 307,
+      "text": "\"What is impossible travel?\": definitional wording and a signal or pattern, with no other terms, no listing words, and no explicit incidents or customers. Event-type words are allowed because they appear inside signal names such as \"sign-in\"."
+    },
+    {
+      "from": 308,
+      "to": 309,
+      "text": "\"How many …\" leads with the total."
+    },
+    {
+      "from": 310,
+      "to": 312,
+      "text": "A summary question with nothing to filter on (a time window is allowed) gets the overview."
+    },
+    {
+      "from": 313,
+      "to": 313,
+      "text": "Everything else is a search that lists matches."
+    },
+    {
+      "from": 316,
+      "to": 316,
+      "text": "From here: retrieval. Each function fetches only the records that match."
+    },
+    {
+      "from": 317,
+      "to": 318,
+      "text": "Customer names for a set of IDs in one query (no query at all for an empty set)."
+    },
+    {
+      "from": 321,
+      "to": 326,
+      "text": "The compact event shape used in lists and in the model's context. A focused event gets the full `event_dict` with every contribution; lists don't need that."
+    },
+    {
+      "from": 329,
+      "to": 330,
+      "text": "The WHERE clauses an event must satisfy."
+    },
+    {
+      "from": 331,
+      "to": 331,
+      "text": "Each named signal becomes a correlated `EXISTS` on the risk_signals table, which is indexed on `name`, so \"events with impossible travel\" never scans the JSON signal lists."
+    },
+    {
+      "from": 332,
+      "to": 336,
+      "text": "Customer, event type, place, level and outcome each become an `IN (...)` filter when present. Writing them as (column, values) pairs avoids five near-identical ifs."
+    },
+    {
+      "from": 337,
+      "to": 341,
+      "text": "The time window: on or after its start, and before its end for \"yesterday\"."
+    },
+    {
+      "from": 344,
+      "to": 347,
+      "text": "Incident order: newest first for \"latest\"; otherwise unresolved before resolved (`False` sorts before `True`), then riskiest, then most recently updated, the triage board's queue order."
+    },
+    {
+      "from": 350,
+      "to": 352,
+      "text": "Every matching incident, best first. SQL does what it can, and the rest is checked per incident."
+    },
+    {
+      "from": 353,
+      "to": 357,
+      "text": "Customer, status and severity filters (an incident's severity is its level)."
+    },
+    {
+      "from": 358,
+      "to": 361,
+      "text": "An incident is in the window when it was active in it: updated after the start and created before the end."
+    },
+    {
+      "from": 362,
+      "to": 366,
+      "text": "Place, event type and outcome belong to events, so they become one `EXISTS` over the incident's own events: \"incidents in Lagos\" are incidents with an event in Lagos."
+    },
+    {
+      "from": 367,
+      "to": 368,
+      "text": "Signals are checked against the incident's stored signal list (the union across its events) and patterns against its computed title. Incidents are few, so this check in Python is cheap."
+    },
+    {
+      "from": 371,
+      "to": 376,
+      "text": "The incident search: the exact total, a breakdown by status, and the first eight serialized by `incidents_page`, which batches the name and event-count lookups."
+    },
+    {
+      "from": 379,
+      "to": 380,
+      "text": "The event search starts from the shared conditions."
+    },
+    {
+      "from": 381,
+      "to": 383,
+      "text": "An event belongs to a pattern when its incident carries that title, for example the events of account-takeover incidents."
+    },
+    {
+      "from": 384,
+      "to": 385,
+      "text": "Riskiest first (newest first for \"latest\"), at most eight rows."
+    },
+    {
+      "from": 386,
+      "to": 386,
+      "text": "One grouped query counts the matches per risk level: that is the breakdown, and summed it is the total."
+    },
+    {
+      "from": 387,
+      "to": 388,
+      "text": "Customer names for the listed events, then the result."
+    },
+    {
+      "from": 391,
+      "to": 393,
+      "text": "The fields of a customer summary that answers use."
+    },
+    {
+      "from": 396,
+      "to": 397,
+      "text": "Customers are found through what they did."
+    },
+    {
+      "from": 398,
+      "to": 399,
+      "text": "Everyone's current risk, from the same read model as the Customers page (five queries in total)."
+    },
+    {
+      "from": 400,
+      "to": 402,
+      "text": "Event terms: customers with matching events, and how many each."
+    },
+    {
+      "from": 403,
+      "to": 404,
+      "text": "Incident terms: customers with matching incidents, and how many each."
+    },
+    {
+      "from": 405,
+      "to": 407,
+      "text": "No terms: everyone whose current level is MEDIUM or above (or at the levels named). `None` means there is no match count to show."
+    },
+    {
+      "from": 408,
+      "to": 409,
+      "text": "Riskiest first, then most matches, then by ID for a stable order."
+    },
+    {
+      "from": 410,
+      "to": 412,
+      "text": "The first eight, with their match count when there is one."
+    },
+    {
+      "from": 415,
+      "to": 415,
+      "text": "The search for each subject, looked up by name."
+    },
+    {
+      "from": 418,
+      "to": 419,
+      "text": "The data behind a summary answer."
+    },
+    {
+      "from": 420,
+      "to": 421,
+      "text": "The window defaults to the last 24 hours."
+    },
+    {
+      "from": 422,
+      "to": 422,
+      "text": "Events in the window, per risk level."
+    },
+    {
+      "from": 423,
+      "to": 425,
+      "text": "The four most frequent risk signals in the window. `weight > 0` leaves out Trusted device, which lowers risk."
+    },
+    {
+      "from": 426,
+      "to": 431,
+      "text": "The incident queue right now (unresolved incidents by status, the critical ones, the three most urgent), incidents created in the window, and the three riskiest customers."
+    },
+    {
+      "from": 432,
+      "to": 439,
+      "text": "The overview as plain data, for the context and the deterministic writer."
+    },
+    {
+      "from": 442,
+      "to": 445,
+      "text": "Definitions for the signals and patterns a question names. Incidents are loaded once, newest first, so the latest match is found by a simple scan."
+    },
+    {
+      "from": 446,
+      "to": 452,
+      "text": "A signal's weight, description, exact trigger and MITRE ATT&CK technique, plus where it occurred: the incidents containing it, the events carrying it (counted on risk_signals) and the latest such incident."
+    },
+    {
+      "from": 453,
+      "to": 457,
+      "text": "A pattern's signal combinations (from `correlation.pattern_signals`) and where it occurred."
+    },
+    {
+      "from": 460,
+      "to": 464,
+      "text": "The levels as score ranges. `rules.LEVELS` lists each level's floor from the highest down, so each level ends one below the previous floor: CRITICAL 80–100, HIGH 60–79 and so on."
+    },
+    {
+      "from": 465,
+      "to": 467,
+      "text": "Weights, levels and the correlation thresholds, all straight from the rulebook."
+    },
+    {
+      "from": 470,
+      "to": 474,
+      "text": "A focused event: the full event with its contributions, plus the customer's name and the title of the incident it belongs to."
+    },
+    {
+      "from": 477,
+      "to": 480,
+      "text": "A focused customer: profile, current risk (the riskiest of their last 10 events, as on the Customers page) and those 10 events."
+    },
+    {
+      "from": 481,
+      "to": 485,
+      "text": "With more terms (\"Kira's failed logins\", \"What incidents does Hana have?\"), the matching events or incidents of that customer. The searches are scoped automatically because `q.user_id` is set."
+    },
+    {
+      "from": 488,
+      "to": 489,
+      "text": "When nothing matches, one looser search helps the reader."
+    },
+    {
+      "from": 490,
+      "to": 496,
+      "text": "First without the time window (nothing in Moscow today, but 18 events at other times), else without the place (no new-device logins in Dubai, but some elsewhere). The first relaxation that finds something is returned with what was dropped. `replace` copies the dataclass with those fields changed."
+    },
+    {
+      "from": 499,
+      "to": 500,
+      "text": "The most urgent incident in queue order (an empty `Question` gives the default order)."
+    },
+    {
+      "from": 503,
+      "to": 506,
+      "text": "Builds the context: the model's entire world, and the deterministic writer's input."
+    },
+    {
+      "from": 507,
+      "to": 511,
+      "text": "A referenced incident in full detail (timeline and contributions), or a note that it does not exist."
+    },
+    {
+      "from": 512,
+      "to": 516,
+      "text": "The same for an event."
+    },
+    {
+      "from": 517,
+      "to": 522,
+      "text": "The same for a customer. An unknown customer ID is cleared, so the searches below are not scoped to a customer who does not exist."
+    },
+    {
+      "from": 523,
+      "to": 525,
+      "text": "With no focused record, the intent decides. \"This incident\" gets the most urgent incident in full."
+    },
+    {
+      "from": 526,
+      "to": 531,
+      "text": "The scoring model, definitions, or the overview."
+    },
+    {
+      "from": 532,
+      "to": 534,
+      "text": "A search. With no subject named, signal, pattern, status or level terms point at incidents (the unit of triage); anything else points at events."
+    },
+    {
+      "from": 535,
+      "to": 536,
+      "text": "Nothing matched: also run the looser search."
+    },
+    {
+      "from": 537,
+      "to": 538,
+      "text": "Named signals are defined alongside the results, so the answer can say what they mean."
+    },
+    {
+      "from": 539,
+      "to": 540,
+      "text": "Nothing specific asked, or only IDs that don't exist: the incident queue, most urgent first."
+    },
+    {
+      "from": 541,
+      "to": 544,
+      "text": "Records how the question was understood, and any missing IDs."
+    },
+    {
+      "from": 547,
+      "to": 549,
+      "text": "The engine's verdict for the record the answer is about. The UI shows it apart from the explanation, so it is always clear that the rule engine decided."
+    },
+    {
+      "from": 550,
+      "to": 552,
+      "text": "An incident or an event carries its own score, level, signals and action."
+    },
+    {
+      "from": 553,
+      "to": 555,
+      "text": "A customer's verdict is their current risk. Lists, definitions and summaries have no single verdict."
+    },
+    {
+      "from": 558,
+      "to": 561,
+      "text": "The ID of any listed item: events have an `event_id`, incidents a `title`, customers only a `user_id`. Events and incidents carry other IDs too, so the order of these checks matters."
+    },
+    {
+      "from": 564,
+      "to": 565,
+      "text": "The records an answer used; the UI turns them into clickable links."
+    },
+    {
+      "from": 566,
+      "to": 569,
+      "text": "Focused records first, then the incident a focused event belongs to."
+    },
+    {
+      "from": 570,
+      "to": 572,
+      "text": "Then every listed record: a customer's matches, the search or looser-search results, and the overview's most urgent incidents."
+    },
+    {
+      "from": 573,
+      "to": 574,
+      "text": "A definition names its latest incident, so that is a source too. In a search, definitions appear only as short notes, so their incidents are not cited."
+    },
+    {
+      "from": 575,
+      "to": 575,
+      "text": "Duplicates removed in order, capped at ten links."
+    },
+    {
+      "from": 578,
+      "to": 578,
+      "text": "From here: the deterministic analyst. It writes markdown from the same context the model would get, so it works offline and every answer is reproducible in tests."
+    },
+    {
+      "from": 579,
+      "to": 580,
+      "text": "Compact timestamps such as \"02 Oct 16:38\"."
+    },
+    {
+      "from": 583,
+      "to": 584,
+      "text": "\"1 incident\", \"2 incidents\"."
+    },
+    {
+      "from": 587,
+      "to": 593,
+      "text": "The first concrete detail recorded for each signal across an incident's events (\"Dubai → Lagos: 5,100 km in 40 min\"), so explanations quote evidence rather than generic descriptions."
+    },
+    {
+      "from": 596,
+      "to": 598,
+      "text": "One bullet per incident: ID, title, severity and score, customer, status, last update."
+    },
+    {
+      "from": 601,
+      "to": 605,
+      "text": "One bullet per event: ID, type and outcome, place, time, level and score, customer, and only the signals that add risk (Trusted device is left out)."
+    },
+    {
+      "from": 608,
+      "to": 611,
+      "text": "One bullet per customer: name, ID, current risk, open incidents and, in a search, how many records matched."
+    },
+    {
+      "from": 614,
+      "to": 615,
+      "text": "The bullet writer and the noun for each kind of record."
+    },
+    {
+      "from": 618,
+      "to": 619,
+      "text": "All the bullets for a list."
+    },
+    {
+      "from": 622,
+      "to": 623,
+      "text": "Reads the search terms back to the user, so every answer shows how the question was understood, for example *Impossible travel · Lagos · last 24 hours*."
+    },
+    {
+      "from": 624,
+      "to": 624,
+      "text": "Patterns and signals first."
+    },
+    {
+      "from": 625,
+      "to": 628,
+      "text": "Levels in words: the two common ranges read \"HIGH or above\" and \"MEDIUM or above\"."
+    },
+    {
+      "from": 629,
+      "to": 632,
+      "text": "OPEN plus INVESTIGATING reads as \"unresolved\"."
+    },
+    {
+      "from": 633,
+      "to": 635,
+      "text": "Event types in words, then the outcome."
+    },
+    {
+      "from": 636,
+      "to": 640,
+      "text": "City names without their countries (once each) and the window label, all joined with middle dots."
+    },
+    {
+      "from": 643,
+      "to": 650,
+      "text": "The breakdown after a count: incidents by status (\"6 open, 4 investigating\"), events by level from CRITICAL down."
+    },
+    {
+      "from": 653,
+      "to": 656,
+      "text": "Writes a search answer."
+    },
+    {
+      "from": 657,
+      "to": 658,
+      "text": "Nothing matched: the answer says so and reads the terms back."
+    },
+    {
+      "from": 659,
+      "to": 661,
+      "text": "If a looser search found something, the answer says what was dropped and lists those records instead."
+    },
+    {
+      "from": 662,
+      "to": 664,
+      "text": "Otherwise it suggests using fewer terms."
+    },
+    {
+      "from": 665,
+      "to": 670,
+      "text": "\"Who is the riskiest customer?\" leads with that one customer (within the search terms, if there are any), then lists the next four."
+    },
+    {
+      "from": 671,
+      "to": 676,
+      "text": "A plain listing (\"List all incidents\", \"Show the latest events\") gets a heading that says what the order is."
+    },
+    {
+      "from": 677,
+      "to": 679,
+      "text": "A count leads with the exact total in bold, followed by the breakdown."
+    },
+    {
+      "from": 680,
+      "to": 682,
+      "text": "A search says how many matched and, when there are more than eight, which eight are shown."
+    },
+    {
+      "from": 683,
+      "to": 686,
+      "text": "Then the bullets, and a one-line reminder of what each named signal means and weighs."
+    },
+    {
+      "from": 689,
+      "to": 691,
+      "text": "Explains one incident; the question is checked for wording about contributions."
+    },
+    {
+      "from": 692,
+      "to": 694,
+      "text": "Every signal the incident saw, heaviest first, with its signed weight (`:+d` writes +40 and -15) and the concrete evidence recorded for it."
+    },
+    {
+      "from": 695,
+      "to": 697,
+      "text": "Asked which signals contributed: an incident's score is the score of its riskiest event, so that event's contributions are what add up to it."
+    },
+    {
+      "from": 698,
+      "to": 700,
+      "text": "That event's weights, their sum, and whether the 0–100 clamp applied."
+    },
+    {
+      "from": 701,
+      "to": 703,
+      "text": "The breakdown names the peak event and quotes exactly its total (a test checks this), then lists every signal seen."
+    },
+    {
+      "from": 704,
+      "to": 708,
+      "text": "Otherwise a narrative: the first six correlated events in time order, with a note when there are more."
+    },
+    {
+      "from": 709,
+      "to": 712,
+      "text": "Title, severity, status and customer, the timeline, why it scored this high, and the recommended action."
+    },
+    {
+      "from": 715,
+      "to": 717,
+      "text": "Explains one event: each contribution with its signed weight and evidence, or a note that nothing fired."
+    },
+    {
+      "from": 718,
+      "to": 719,
+      "text": "The weights' sum, and whether the score was clamped to 0–100."
+    },
+    {
+      "from": 720,
+      "to": 723,
+      "text": "Optional details: the amount of a transaction, the resource accessed, and the incident the event belongs to."
+    },
+    {
+      "from": 724,
+      "to": 727,
+      "text": "What happened, who did it, where and when (UTC), the score and its breakdown, the incident, and the recommended action."
+    },
+    {
+      "from": 730,
+      "to": 733,
+      "text": "Explains a customer: who they are and their current risk."
+    },
+    {
+      "from": 734,
+      "to": 738,
+      "text": "With search terms: that customer's matching events or incidents, with the terms read back."
+    },
+    {
+      "from": 739,
+      "to": 740,
+      "text": "\"What did Kira do recently?\": the five latest events."
+    },
+    {
+      "from": 741,
+      "to": 743,
+      "text": "Otherwise the three riskiest of their last ten events."
+    },
+    {
+      "from": 744,
+      "to": 744,
+      "text": "And the action the engine recommends at their current level."
+    },
+    {
+      "from": 747,
+      "to": 751,
+      "text": "Writes definitions; each one ends with where it was seen."
+    },
+    {
+      "from": 752,
+      "to": 756,
+      "text": "A signal: its weight, what it means, its exact trigger, its MITRE ATT&CK technique, and how often it occurred."
+    },
+    {
+      "from": 757,
+      "to": 760,
+      "text": "A pattern: the signal combinations that earn the title (Account takeover has two) and how many incidents carry it."
+    },
+    {
+      "from": 761,
+      "to": 761,
+      "text": "One paragraph per definition."
+    },
+    {
+      "from": 764,
+      "to": 766,
+      "text": "The scoring model in words: every weight, then each level's range and action."
+    },
+    {
+      "from": 767,
+      "to": 771,
+      "text": "How a score is computed, what each level triggers, and how events become incidents, using the rulebook's own thresholds."
+    },
+    {
+      "from": 774,
+      "to": 778,
+      "text": "The overview's parts: the most frequent signals, the queue by status, the riskiest customers and the most urgent incidents."
+    },
+    {
+      "from": 779,
+      "to": 783,
+      "text": "One compact report for the window."
+    },
+    {
+      "from": 786,
+      "to": 788,
+      "text": "The deterministic writer's entry point; it reads the interpretation back from the context."
+    },
+    {
+      "from": 789,
+      "to": 792,
+      "text": "Missing IDs are named first. When nothing else was found, the answer says it is showing the overall picture instead."
+    },
+    {
+      "from": 793,
+      "to": 798,
+      "text": "A focused record decides the answer: an incident, an event or a customer."
+    },
+    {
+      "from": 799,
+      "to": 804,
+      "text": "Then the scoring model, a summary or definitions."
+    },
+    {
+      "from": 805,
+      "to": 805,
+      "text": "Everything else is a search answer."
+    },
+    {
+      "from": 808,
+      "to": 809,
+      "text": "Calls an OpenAI-compatible chat completions API."
+    },
+    {
+      "from": 810,
+      "to": 812,
+      "text": "The endpoint is configurable (`OPENAI_BASE_URL`), so any compatible provider works, and a 20-second timeout keeps a request from hanging."
+    },
+    {
+      "from": 813,
+      "to": 817,
+      "text": "Low temperature for steady wording. The system prompt sets the rules; the user message carries the JSON context (capped at 14,000 characters) and the question."
+    },
+    {
+      "from": 818,
+      "to": 819,
+      "text": "HTTP errors raise, and the answer is the first choice's message."
+    },
+    {
+      "from": 822,
+      "to": 824,
+      "text": "The public entry point: gather the context once, then attach the engine's decision and the sources, whichever writer answers."
+    },
+    {
+      "from": 825,
+      "to": 831,
+      "text": "With a key, the model explains. Any HTTP or response-shape error is logged and noted, and the deterministic analyst answers instead."
+    },
+    {
+      "from": 832,
+      "to": 832,
+      "text": "Without a key, or after a failure, the deterministic analyst answers from the same context."
+    }
+  ]
+}

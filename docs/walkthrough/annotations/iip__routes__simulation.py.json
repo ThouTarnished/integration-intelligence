@@ -1,0 +1,452 @@
+{
+  "path": "iip/routes/simulation.py",
+  "lines": 145,
+  "summary": "The Simulation Center API. It lists scenarios, starts and stops the live traffic generator (`iip/live.py`), wipes and re-seeds the demo database, and replays any scenario from `iip/seed.py` through the real `process_event` pipeline, returning a six-stage trace (ingest, normalise, enrich, score, correlate, publish) that the frontend animates. Every state-changing route uses the `WRITE` dependencies from `deps.py`.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring: replay attack scenarios through the real pipeline, run live traffic and reset the demo."
+    },
+    {
+      "from": 2,
+      "to": 2,
+      "text": "Postpones evaluation of type hints (they are kept as strings); FastAPI still resolves them when it inspects each endpoint's signature."
+    },
+    {
+      "from": 4,
+      "to": 6,
+      "text": "`random` picks users, `asdict` turns a dataclass into a dict, and `timedelta` expresses durations."
+    },
+    {
+      "from": 8,
+      "to": 8,
+      "text": "Router and error responses."
+    },
+    {
+      "from": 9,
+      "to": 9,
+      "text": "SQLAlchemy helpers for the queries in `_settled_users`."
+    },
+    {
+      "from": 10,
+      "to": 10,
+      "text": "`run_in_threadpool` offloads blocking work from `async` endpoints."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "`live` (hub and traffic generator) and `rules` (weights and thresholds)."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "The shared naive-UTC clock."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "ORM models, the session factory and `reset_db`, which drops and recreates every table."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "Metrics registry, for ingest throughput."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "The real ingestion pipeline."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "Serialisers, plus `incident_ref`, which formats an id as `INC-0001`."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "`TrafficIn`, a body with a single boolean, `enabled`."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "Scenario definitions, the scenario planner, the catalog helper and the database seeder."
+    },
+    {
+      "from": 20,
+      "to": 20,
+      "text": "Session alias and write protection."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "Router tagged `simulation`."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Registers `GET /api/v1/simulation`."
+    },
+    {
+      "from": 26,
+      "to": 27,
+      "text": "Returns every scenario's key, title, summary and category."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "Routes are matched in the order they are declared and the first full match wins. If `POST /simulation/{scenario}` came first, a POST to `/simulation/traffic` or `/simulation/reset` would be captured by it with `scenario=\"traffic\"` (or `\"reset\"`) and answered \"Unknown scenario\"; declaring the fixed paths first prevents that."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "Registers `GET /api/v1/simulation/traffic`."
+    },
+    {
+      "from": 32,
+      "to": 33,
+      "text": "Returns the generator's status: enabled, events generated and start time."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Registers `POST /api/v1/simulation/traffic`, protected by `WRITE`."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Declared `async` because starting or stopping the generator creates or cancels an asyncio task, which must happen on the event loop rather than in a worker thread."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "A conditional expression picks the coroutine (`start()` when `enabled` is true, otherwise `stop()`) and awaits it."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "Returns the new status; `start()` and `stop()` have already broadcast any change to every other dashboard as a `traffic` SSE message."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "`_reseed` is plain blocking code, kept in its own function so it can be handed to a worker thread."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "Drops and recreates all tables."
+    },
+    {
+      "from": 44,
+      "to": 45,
+      "text": "Opens a session and seeds a fresh, reproducible week of synthetic NovaBank activity."
+    },
+    {
+      "from": 48,
+      "to": 48,
+      "text": "Registers `POST /api/v1/simulation/reset`, protected by `WRITE`."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "`async`, so it can await the traffic generator's `stop()`."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "Stops live traffic first, so the generator cannot write into tables that are being dropped."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "Re-seeding pushes hundreds of events through the pipeline. `run_in_threadpool` does that on a worker thread, keeping the event loop, and with it every SSE stream, responsive."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "Tells every connected dashboard that the data was reset; the frontend shows a toast and reloads the current view."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Confirms the reset and returns the (now stopped) traffic status."
+    },
+    {
+      "from": 56,
+      "to": 56,
+      "text": "Scenario categories that represent legitimate behaviour and should not raise alarms (a normal login, a business trip)."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "`_settled_users` finds customers whose recent history will not contradict a benign replay, and returns the quiet ones and the settled ones separately. As in the other helpers, `db: DB` is only a type hint here."
+    },
+    {
+      "from": 60,
+      "to": 61,
+      "text": "The docstring explains why with an example: if a customer logged in at home two hours ago, replaying a trip that started eight hours ago would make the travel look impossible."
+    },
+    {
+      "from": 62,
+      "to": 64,
+      "text": "A window-function subquery over each user's successful, clean-IP events (the same \"trustworthy\" definition the pipeline uses for its travel baseline): `row_number()` numbers each user's events newest first, restarting for every user."
+    },
+    {
+      "from": 65,
+      "to": 65,
+      "text": "Keeps rank 1 only: a dict mapping each user to the location of their latest trustworthy event."
+    },
+    {
+      "from": 66,
+      "to": 66,
+      "text": "Each user's most recent event of any kind."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "\"Settled\" users are those whose trustworthy baseline is their home city (users with no baseline count as home)."
+    },
+    {
+      "from": 68,
+      "to": 68,
+      "text": "Of those, the users with no activity during the last `idle_for` window."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "Returns both lists: a replayed trip needs a quiet customer, while a login at home fits any settled one."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "`_travel_text` produces a readable line about travel for the \"Enriched\" step, or `None`."
+    },
+    {
+      "from": 73,
+      "to": 73,
+      "text": "Finds the first event carrying travel enrichment, which the rule engine records whenever the location changed from the baseline."
+    },
+    {
+      "from": 74,
+      "to": 75,
+      "text": "No travel happened: the caller falls back to a generic sentence."
+    },
+    {
+      "from": 76,
+      "to": 77,
+      "text": "One of the cities has no known coordinates, so only the time between the two sign-ins can be shown."
+    },
+    {
+      "from": 78,
+      "to": 79,
+      "text": "The verdict: \"impossible\" if the engine flagged the trip, \"plausible\" if it was judged and passed, otherwise \"not judged\", because the engine only judges travel on successful, clean-IP events (a flagged IP or a failed sign-in makes geolocation untrustworthy). The parentheses let the conditional expression span two lines."
+    },
+    {
+      "from": 80,
+      "to": 81,
+      "text": "Formats origin → destination, distance in km, minutes, implied speed in km/h and the verdict; `:,` adds thousands separators and `or 0` covers a speed stored as `None`."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "Registers `POST /api/v1/simulation/{scenario}`, the catch-all declared last, protected by `WRITE`."
+    },
+    {
+      "from": 85,
+      "to": 85,
+      "text": "A plain `def`, so it runs in the thread pool. `scenario` comes from the path and the optional `user_id` from the query string."
+    },
+    {
+      "from": 86,
+      "to": 86,
+      "text": "The docstring, which FastAPI also shows as this operation's description in `/docs`."
+    },
+    {
+      "from": 87,
+      "to": 88,
+      "text": "Unknown scenario names get a 404 that lists the valid keys."
+    },
+    {
+      "from": 89,
+      "to": 89,
+      "text": "Loads every user: candidates for targeting, and the victim pool for multi-account scenarios."
+    },
+    {
+      "from": 90,
+      "to": 91,
+      "text": "`409 Conflict` if the database is empty: the request is valid, but the current state cannot satisfy it."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "A fresh, unseeded random generator for this request."
+    },
+    {
+      "from": 93,
+      "to": 94,
+      "text": "A requested `user_id` is matched case-insensitively against the loaded users."
+    },
+    {
+      "from": 95,
+      "to": 96,
+      "text": "An unknown requested user is a 404."
+    },
+    {
+      "from": 97,
+      "to": 98,
+      "text": "Benign scenarios target settled customers. `_settled_users` also finds those quiet for 9 hours, longer than the longest benign scenario (the business trip spans 8 hours 25 minutes), so real history can't turn a legitimate replay into an alert."
+    },
+    {
+      "from": 99,
+      "to": 102,
+      "text": "A business trip (category `benign`) needs such a quiet customer. When live traffic has touched everyone, a replayed trip would collide with a real home login minutes earlier and the engine would rightly call it impossible, so the API refuses with a 409 that says why and what to do instead of producing a misleading result."
+    },
+    {
+      "from": 103,
+      "to": 103,
+      "text": "A routine login at home fits any settled customer, and anyone as a last resort."
+    },
+    {
+      "from": 104,
+      "to": 105,
+      "text": "Attack scenarios can target anyone."
+    },
+    {
+      "from": 106,
+      "to": 106,
+      "text": "The user's first trusted device, used for the legitimate-looking events in the scenario."
+    },
+    {
+      "from": 107,
+      "to": 108,
+      "text": "Without a trusted device the scenario cannot be built: 409."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "Plans the scenario's raw payloads ending now (a password spray also picks extra victims from `users`), then runs each through the real pipeline and keeps the stored `Event` (`[0]` of the returned tuple). Simulated attacks are scored exactly like real traffic."
+    },
+    {
+      "from": 111,
+      "to": 111,
+      "text": "Counts the events in ingest throughput."
+    },
+    {
+      "from": 112,
+      "to": 112,
+      "text": "Pushes them, and any incidents they touched, to every open dashboard."
+    },
+    {
+      "from": 114,
+      "to": 114,
+      "text": "The headline event: highest risk score, ties broken by the latest timestamp."
+    },
+    {
+      "from": 115,
+      "to": 115,
+      "text": "Every incident touched, de-duplicated with `dict.fromkeys` while keeping first-seen order."
+    },
+    {
+      "from": 116,
+      "to": 116,
+      "text": "The incident to show in full: the top event's, otherwise the last one touched, otherwise none."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "All risk-raising signals across the events (positive weights only, so \"Trusted device\" is left out), heaviest first."
+    },
+    {
+      "from": 118,
+      "to": 118,
+      "text": "The distinct accounts involved; a password spray touches several."
+    },
+    {
+      "from": 119,
+      "to": 119,
+      "text": "A readable subject: the customer's name and id, or \"N accounts\" for multi-account scenarios."
+    },
+    {
+      "from": 120,
+      "to": 120,
+      "text": "Incident ids formatted as `INC-0001, INC-0002`."
+    },
+    {
+      "from": 121,
+      "to": 121,
+      "text": "`steps` is the six-stage trace the Simulation Center animates: one dict per pipeline stage with a `stage` key, a `title` and a `detail` line."
+    },
+    {
+      "from": 122,
+      "to": 123,
+      "text": "Ingest: how many events entered the pipeline, and for whom."
+    },
+    {
+      "from": 124,
+      "to": 125,
+      "text": "Normalise: fixed descriptive text for this stage; the real work happens in `pipeline.normalize` (and, for API input, in the Pydantic schema)."
+    },
+    {
+      "from": 126,
+      "to": 127,
+      "text": "Enrich: the travel summary if there was a trip, otherwise a generic description."
+    },
+    {
+      "from": 128,
+      "to": 129,
+      "text": "Score: the peak score and level, plus the signals (or \"no risk signals\")."
+    },
+    {
+      "from": 130,
+      "to": 132,
+      "text": "Correlate: the incidents opened or updated, or, when no event was correlated, a message citing the incident-opening threshold `rules.INCIDENT_OPEN_SCORE` (60)."
+    },
+    {
+      "from": 133,
+      "to": 135,
+      "text": "Publish: fixed text saying the events were stored in SQLite and streamed over SSE; the bracket closes the list."
+    },
+    {
+      "from": 136,
+      "to": 136,
+      "text": "The response body."
+    },
+    {
+      "from": 137,
+      "to": 137,
+      "text": "The scenario's metadata, converted from its frozen dataclass with `asdict`."
+    },
+    {
+      "from": 138,
+      "to": 138,
+      "text": "The targeted customer."
+    },
+    {
+      "from": 139,
+      "to": 139,
+      "text": "Every affected account id."
+    },
+    {
+      "from": 140,
+      "to": 140,
+      "text": "The stage trace built above."
+    },
+    {
+      "from": 141,
+      "to": 142,
+      "text": "Every event produced, plus the headline event, serialised."
+    },
+    {
+      "from": 143,
+      "to": 143,
+      "text": "Full detail of the primary incident (timeline, user, ATT&CK), or `None` when no incident was touched."
+    },
+    {
+      "from": 144,
+      "to": 145,
+      "text": "All touched incident ids in display form; the brace closes the response dict."
+    }
+  ]
+}

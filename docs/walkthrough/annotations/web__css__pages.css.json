@@ -1,0 +1,997 @@
+{
+  "path": "web/css/pages.css",
+  "lines": 254,
+  "summary": "Page-specific styles, grouped by screen: shared pieces (ID links, the route progress bar), the Overview KPIs, live feed and customer list, the detail drawers (verdict card, travel check, event timeline), the Events filters and new-events pill, the Incidents board, the Customers risk spectrum, the Risk Lab, the Simulation pipeline, the Integration health page and the AI Analyst chat. Two media queries at the end adapt these layouts for laptops and phones.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 2,
+      "text": "Section comment, then `.link`, text-style buttons for IDs (an incident ID in the Events table, a customer ID in the event drawer): aqua 12px mono, because aqua means \"you can click this\"."
+    },
+    {
+      "from": 3,
+      "to": 3,
+      "text": "Links underline on hover to confirm they are clickable."
+    },
+    {
+      "from": 4,
+      "to": 4,
+      "text": "Font size for the \"synced HH:MM\" timestamp in the Overview header."
+    },
+    {
+      "from": 5,
+      "to": 5,
+      "text": "The route progress bar: a 2px strip fixed across the top of the viewport at `z-index: 50`, ignoring the pointer."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "The progress fill: a glowing aqua bar collapsed with `scaleX(0)` from the left. On each navigation the router in main.js animates it to 70% while the page loads, then to 100% while fading it out, like the loading bar on GitHub or YouTube."
+    },
+    {
+      "from": 8,
+      "to": 9,
+      "text": "Section comment, then the KPI card (a `.panel` that also has `.kpi`): padding on the top and sides only, because the sparkline or split bar sits flush at the bottom, and `overflow: hidden` clips those to the card's rounded corners."
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "text": "The card's top row puts the eyebrow label on the left and the icon on the right; the icon is faint grey."
+    },
+    {
+      "from": 12,
+      "to": 12,
+      "text": "The big KPI number: 38px medium-weight Geist with tight negative letter-spacing so large numbers look compact."
+    },
+    {
+      "from": 13,
+      "to": 13,
+      "text": "The \"High-risk events\" and \"Critical incidents\" numbers are coloured through their `lvl-HIGH`/`lvl-CRITICAL` class; the other KPIs stay white."
+    },
+    {
+      "from": 14,
+      "to": 14,
+      "text": "The line under the number (change versus the previous day, status counts): a small flex row in `--t3`, with a `min-height` so cards stay aligned even when it is empty."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "The change indicator (an up or down triangle plus a percentage): small medium-weight mono."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "`.delta.up` is white and `.delta.down` grey, deliberately not green and red: more traffic is neither good nor bad, and colour is reserved for risk."
+    },
+    {
+      "from": 17,
+      "to": 17,
+      "text": "The sparkline area: 38px tall, with -16px side margins that cancel the card's padding so the line runs edge to edge."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "A 6px stacked proportion bar (open versus investigating, or incidents by severity): a flex row of segments with 2px gaps on an `--s3` track, rounded and clipped."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "Each segment fills the bar's height; widths and colours are set inline by overview.js, and `transform-origin: left` lets it grow them in with `scaleX`."
+    },
+    {
+      "from": 21,
+      "to": 21,
+      "text": "The live feed list: no bullets or default spacing, a grid of rows 2px apart, and a fixed `max-height` with `overflow: hidden`, so incoming events never make the panel grow (overview.js also trims the list to 12 items)."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "A feed row: a three-column grid (30px icon, flexible text, auto-width score pill), padded with rounded corners and clickable to open the event."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "Hovered feed rows get an `--s2` background."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "The event-type icon tile: a 30px rounded square with a hairline border, centring a grey icon."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "For HIGH and CRITICAL events the icon tile switches to the level colour on its soft tint and drops its border, so dangerous events stand out at a glance."
+    },
+    {
+      "from": 26,
+      "to": 26,
+      "text": "The text column: `min-width: 0` lets its content truncate inside the grid column instead of widening it."
+    },
+    {
+      "from": 27,
+      "to": 27,
+      "text": "The first line (event type, customer and location) stays on one line and is cut off with an ellipsis."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "The second line (event ID, time and signal count) in small faint mono."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "The score pill: a small rounded badge in bold mono with text in `var(--lvl)` on `var(--lvl-soft)`. In the feed the pill has no level class of its own and inherits `--lvl` from its `.feed-item` row's `lvl-` class, because custom properties inherit."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "A tiny aqua uppercase label showing where a live-streamed event came from (for example `traffic` for the demo generator)."
+    },
+    {
+      "from": 32,
+      "to": 32,
+      "text": "The \"Riskiest customers\" list container, a plain grid."
+    },
+    {
+      "from": 33,
+      "to": 34,
+      "text": "A customer row: a flex row of avatar, name and score pill with padding and a pointer cursor; hovering adds an `--s2` background."
+    },
+    {
+      "from": 35,
+      "to": 36,
+      "text": "The name block takes the remaining width (`flex: 1`), pushing the score pill right, and its `small` element sits on its own line as the faint mono ID and home city."
+    },
+    {
+      "from": 38,
+      "to": 39,
+      "text": "Section comment, then the verdict card that opens every drawer (gauge beside the engine's decision): a two-column grid (200px gauge, flexible text) with a hairline border and a 135° wash of the level's soft colour that fades out by 60%, picked up from the card's `lvl-` class."
+    },
+    {
+      "from": 40,
+      "to": 40,
+      "text": "The recommended action in 24px Instrument Serif, the most prominent text in the drawer after the title."
+    },
+    {
+      "from": 41,
+      "to": 41,
+      "text": "The explanation paragraph: 12.5px secondary grey without margins."
+    },
+    {
+      "from": 42,
+      "to": 42,
+      "text": "The incident drawer's triage row: the status segmented control and the \"Ask analyst\" button spread apart, wrapping on narrow sheets."
+    },
+    {
+      "from": 43,
+      "to": 43,
+      "text": "The affected-customer card (a button): a full-width flex row of avatar, details and chevron with a hairline border, left-aligned text and transitions."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "On hover the customer card gets the stronger control border and an `--s2` fill."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "The text block between avatar and chevron: `:not(.avatar)` skips the avatar span, and the remaining direct child span grows to fill the space and stacks name and details in a grid."
+    },
+    {
+      "from": 46,
+      "to": 46,
+      "text": "The customer's details line (ID, segment, home city) in small `--t3` text."
+    },
+    {
+      "from": 47,
+      "to": 47,
+      "text": "Two equal columns with an 18px gap, used for Devices beside Locations in the customer drawer."
+    },
+    {
+      "from": 48,
+      "to": 48,
+      "text": "The device list: a grid with 6px between rows."
+    },
+    {
+      "from": 49,
+      "to": 49,
+      "text": "A device row: a four-column grid (16px icon, device ID, trusted/unknown tag, event count) in small `--t3` text."
+    },
+    {
+      "from": 50,
+      "to": 50,
+      "text": "Trusted devices are one step brighter (`--t2`)."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "The customer's incident list: a grid with 4px between rows."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "An incident row (a button): a four-column grid (80px ID, title, severity badge, status) with padding, rounded corners and left-aligned text."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "Hovered incident rows get an `--s2` background."
+    },
+    {
+      "from": 54,
+      "to": 55,
+      "text": "The \"Simulate against this customer\" row: a flex row in which the scenario select takes all the spare width (`flex: 1`) beside the Run button."
+    },
+    {
+      "from": 56,
+      "to": 56,
+      "text": "The \"Show JSON\" toggle of the raw-record `details` element: pointer cursor, small `--t3` text and space before the code block."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "The travel-check card in the event drawer: a padded `--s2` box with a hairline border and large radius."
+    },
+    {
+      "from": 59,
+      "to": 59,
+      "text": "For impossible travel the card gets a 35% red border and a 135° gradient from the critical tint into `--s2`, so the warning registers before you read the numbers."
+    },
+    {
+      "from": 60,
+      "to": 60,
+      "text": "The route row: origin city, the path graphic and destination city in a medium-weight flex row."
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "text": "The path between the cities: a 1px-high flexible strip whose `repeating-linear-gradient` draws a dashed line (4px dash, 4px gap), with the plane icon centred on it in `--t2` (icons use `currentColor`)."
+    },
+    {
+      "from": 62,
+      "to": 62,
+      "text": "The plane icon gets an `--s2` background and 6px side padding, which cuts a gap in the dashed line around it. `box-sizing: content-box` adds that padding outside the icon's 14px instead of squeezing the icon, as the global `border-box` rule would."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "On impossible trips the plane icon turns critical red."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "The four travel facts (distance, elapsed time, implied speed, verdict) in a four-column grid."
+    },
+    {
+      "from": 65,
+      "to": 66,
+      "text": "Each fact has a tiny uppercase faint mono label on its own line above a medium-weight 13px value."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "The speed meter wrapper; its bottom padding leaves room for the \"airliner\" label that hangs below the track."
+    },
+    {
+      "from": 68,
+      "to": 68,
+      "text": "The meter track: a 6px rounded `--s4` bar with `position: relative`, so the airliner marker can be placed along it."
+    },
+    {
+      "from": 69,
+      "to": 69,
+      "text": "The implied-speed fill: slate by default, its width set inline relative to the scale, and grown in from the left with `scaleX` by the drawer's JS."
+    },
+    {
+      "from": 70,
+      "to": 70,
+      "text": "For impossible travel the fill becomes an amber-to-red gradient."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "The airliner reference marker: a 2px white tick standing 5px above and below the track, placed inline at the 900 km/h point so you can see how far beyond a plane's speed the trip was."
+    },
+    {
+      "from": 72,
+      "to": 72,
+      "text": "The marker's label (\"airliner · 900 km/h\") hangs 18px below it, centred with `left: 50%` plus `translateX(-50%)`, in small mono where `font-style: normal` cancels the italics of the `em` element."
+    },
+    {
+      "from": 74,
+      "to": 74,
+      "text": "The vertical event timeline (an ordered list): no bullets or margins, a grid of rows 2px apart, and `position: relative` for the connector line."
+    },
+    {
+      "from": 75,
+      "to": 75,
+      "text": "The connector line: a 1px vertical hairline at `left: 13px`, running through the centre of the dots and inset 14px at both ends. `transform-origin: top` lets details.js draw it downward with `scaleY` from 0 to 1."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "Each event row: a four-column grid (20px dot, 46px time, flexible description, auto-width score) with rounded corners and a pointer cursor, since rows open the event."
+    },
+    {
+      "from": 77,
+      "to": 77,
+      "text": "Hovered timeline rows get an `--s2` background."
+    },
+    {
+      "from": 78,
+      "to": 78,
+      "text": "The dot: a 9px circle centred in its column, hollow (`--s1` fill) with a 2px ring in the level colour. `z-index: 1` lifts it above the connector line, and it works without `position` because the dot is a grid item."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "HIGH and CRITICAL dots are filled with the level colour and get a 4px soft halo (a `box-shadow` spread), while LOW and MEDIUM dots stay hollow."
+    },
+    {
+      "from": 80,
+      "to": 80,
+      "text": "The time column in small `--t3` text (it is also `.mono`)."
+    },
+    {
+      "from": 81,
+      "to": 82,
+      "text": "The title line (event icon, type and detail) is a flex row with a 7px gap, and its icon is `--t3`."
+    },
+    {
+      "from": 83,
+      "to": 83,
+      "text": "The sub line (location, device, signals) in small `--t3` text, cut off with an ellipsis."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "The score at the end of each row (also a `.score`) is set slightly smaller, at 12px."
+    },
+    {
+      "from": 85,
+      "to": 85,
+      "text": "`.compact` timelines (a customer's recent activity, simulation results) use tighter 5px vertical padding."
+    },
+    {
+      "from": 87,
+      "to": 88,
+      "text": "Section comment, then the Events filter bar: a wrapping flex row of search field and segmented controls with 10px gaps."
+    },
+    {
+      "from": 89,
+      "to": 89,
+      "text": "The search field grows to fill spare space but stays between 240px and 420px wide."
+    },
+    {
+      "from": 90,
+      "to": 90,
+      "text": "The \"N new events · show\" pill. It is sticky just below the top bar (`top: calc(var(--topbar) + 10px)`) so it stays visible while scrolling, and `height: 0` means it takes no space in the layout: showing it never pushes the table down, the button simply overflows the zero-height row."
+    },
+    {
+      "from": 91,
+      "to": 91,
+      "text": "The pill button: a 30px aqua capsule with dark text and an aqua glow, nudged up 4px (events.js animates it in from higher up to that position)."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "The table footer (\"Showing X of Y\" and \"Load more\"): a flex row with a hairline above, in small `--t3` text."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "The red marker after a location in the Events table (plane icon plus implied speed) that flags impossible travel."
+    },
+    {
+      "from": 95,
+      "to": 96,
+      "text": "Section comment, then the incident board: three equal columns with 14px gaps. `align-items: start` lets each column be only as tall as its own cards instead of stretching to the tallest one."
+    },
+    {
+      "from": 97,
+      "to": 97,
+      "text": "A board column: a flex column at least 320px tall (so even an empty one is a comfortable drop target), with a hairline border, large radius and a 60%-opaque `--s1` background, transitioning its border and background."
+    },
+    {
+      "from": 98,
+      "to": 98,
+      "text": "The column currently under a dragged card (incidents.js toggles `drop` on `dragover`) gets an aqua border and a faint aqua wash."
+    },
+    {
+      "from": 99,
+      "to": 99,
+      "text": "The column header (status label, hint, count) as a flex row with a hairline below."
+    },
+    {
+      "from": 100,
+      "to": 100,
+      "text": "The card count is pushed to the right in `--t3` mono."
+    },
+    {
+      "from": 101,
+      "to": 101,
+      "text": "The column body: a grid of cards with 8px gaps, packed to the top."
+    },
+    {
+      "from": 102,
+      "to": 102,
+      "text": "An incident card: a padded grid on `--s1` with a hairline border and 10px radius, `cursor: grab` because it is draggable, and transitions for border, transform and shadow. `position: relative` anchors its severity stripe and, on the most urgent card, the border beam."
+    },
+    {
+      "from": 103,
+      "to": 103,
+      "text": "Hover gives the card the stronger control border and a soft drop shadow, so it looks liftable."
+    },
+    {
+      "from": 104,
+      "to": 104,
+      "text": "While a card is being dragged (`dragging` class), the original fades to 40% and shows the grabbing cursor."
+    },
+    {
+      "from": 105,
+      "to": 105,
+      "text": "A 2px severity stripe on the card's left edge in the level colour, set at `left: -1px` to sit on the card's border and inset 12px from the top and bottom to clear the rounded corners."
+    },
+    {
+      "from": 106,
+      "to": 106,
+      "text": "The card's top row (severity badge, incident ID, grip icon) as a flex row."
+    },
+    {
+      "from": 107,
+      "to": 107,
+      "text": "The incident title in medium-weight 13.5px."
+    },
+    {
+      "from": 108,
+      "to": 109,
+      "text": "The meta row (customer, score, event count, age) is a flex row of small `--t3` text, with the mono score one step brighter in `--t2`."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "The drag-grip icon is pushed to the right and drawn in faint grey."
+    },
+    {
+      "from": 111,
+      "to": 111,
+      "text": "Spacing for the \"Show N more\" button at the bottom of the Resolved column."
+    },
+    {
+      "from": 113,
+      "to": 114,
+      "text": "Section comment, then the Customers risk-spectrum area: 122px tall, with extra right padding so dots near 100 aren't cut off."
+    },
+    {
+      "from": 115,
+      "to": 115,
+      "text": "The inner box that everything is positioned against: `position: relative` at full height."
+    },
+    {
+      "from": 116,
+      "to": 116,
+      "text": "The level bands: a 6px strip laid 20px above the bottom across the full width, a flex row of segments with 2px gaps, rounded and clipped."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "Each band is coloured by its `lvl-` class at 35% opacity; widths of 30/30/20/20% are set inline to match the score ranges."
+    },
+    {
+      "from": 118,
+      "to": 118,
+      "text": "The axis row along the bottom for the 0, 30, 60, 80 and 100 labels, in small faint mono."
+    },
+    {
+      "from": 119,
+      "to": 119,
+      "text": "Each axis label is absolutely positioned at its percentage (set inline) and shifted left by half its own width (`translateX(-50%)`) so it is centred on its tick."
+    },
+    {
+      "from": 120,
+      "to": 120,
+      "text": "A customer dot: a 13px circle in the level colour with a 2px `--s1` border to separate touching dots, positioned inline (left from the risk score, bottom stacking customers with similar scores). `margin-left: -6.5px` centres it on its x position, and its `transform` is transitioned for the hover zoom."
+    },
+    {
+      "from": 121,
+      "to": 121,
+      "text": "Low-risk customers are neutral grey (`--t3`) rather than slate, so only risky customers are coloured."
+    },
+    {
+      "from": 122,
+      "to": 122,
+      "text": "Hovered dots grow by 35% and rise above their neighbours (`z-index: 2`)."
+    },
+    {
+      "from": 124,
+      "to": 125,
+      "text": "Section comment, then the row of preset buttons (\"Clean login\", \"Account takeover\"…): a wrapping flex row with 6px gaps."
+    },
+    {
+      "from": 126,
+      "to": 126,
+      "text": "The signal cards grid: `repeat(auto-fill, minmax(230px, 1fr))` fits as many columns of at least 230px as the space allows, without needing a media query."
+    },
+    {
+      "from": 127,
+      "to": 127,
+      "text": "A signal card (a toggle button): a padded, left-aligned grid on `--s1` with a hairline border, transitioning border, background and its press scale."
+    },
+    {
+      "from": 128,
+      "to": 129,
+      "text": "Hover strengthens the border to `--line-ctl`, and pressing shrinks the card to 98.5% for tactile feedback."
+    },
+    {
+      "from": 130,
+      "to": 131,
+      "text": "The card's top row (checkbox, name, weight) is a flex row, and the signal name is medium-weight 13px."
+    },
+    {
+      "from": 132,
+      "to": 133,
+      "text": "The weight (such as \"+30\") sits at the right in bold mono `--t2`; negative weights, like the one for \"Trusted device\", are slate."
+    },
+    {
+      "from": 134,
+      "to": 134,
+      "text": "The signal description: small `--t3` text with a comfortable 1.45 line height."
+    },
+    {
+      "from": 135,
+      "to": 135,
+      "text": "The custom checkbox: a 16px rounded square with the control border colour. `color: transparent` hides the check icon inside (drawn with `currentColor`) until the card is selected, and `transition: all` animates the change."
+    },
+    {
+      "from": 136,
+      "to": 136,
+      "text": "A selected card (`aria-pressed=\"true\"`, toggled by lab.js) gets an aqua border and a faint aqua wash fading down from the top."
+    },
+    {
+      "from": 137,
+      "to": 137,
+      "text": "Its checkbox fills with aqua, and its colour becomes `--accent-ink`, which reveals the dark check mark."
+    },
+    {
+      "from": 138,
+      "to": 138,
+      "text": "The weight of a selected signal brightens to white, since it now counts toward the score."
+    },
+    {
+      "from": 139,
+      "to": 139,
+      "text": "The Engine output panel sticks 14px below the top bar while you scroll through the signal cards, so the score stays in view."
+    },
+    {
+      "from": 140,
+      "to": 140,
+      "text": "The formula readout (the weights summed, any clamping, then the level and recommended action): a dashed-border box of medium-weight mono with a tall line height, allowed to break anywhere so long formulas wrap."
+    },
+    {
+      "from": 141,
+      "to": 142,
+      "text": "The sum and clamped score (in `b` elements) are white and semibold, and the level name (`.lvl` plus its `lvl-` class) takes the level colour."
+    },
+    {
+      "from": 143,
+      "to": 143,
+      "text": "The detection-thresholds grid, auto-filling columns of at least 190px."
+    },
+    {
+      "from": 144,
+      "to": 146,
+      "text": "Each threshold tile has padding and a hairline border, with a tiny uppercase faint mono label on its own line above a 15px mono value."
+    },
+    {
+      "from": 147,
+      "to": 147,
+      "text": "The levels ruler: a four-column grid sized 30fr, 30fr, 20fr and 20fr, proportional to the score ranges of LOW (0-29), MEDIUM (30-59), HIGH (60-79) and CRITICAL (80+)."
+    },
+    {
+      "from": 148,
+      "to": 149,
+      "text": "Each level cell has a 3px top border in its level colour above small grey action text, and its heading (such as \"HIGH · 60+\") is block-level bold mono in the level colour."
+    },
+    {
+      "from": 151,
+      "to": 152,
+      "text": "Section comment, then the scenario cards grid, auto-filling columns of at least 220px."
+    },
+    {
+      "from": 153,
+      "to": 155,
+      "text": "A scenario card (a button) uses the same spotlight-border trick as `.panel`: a transparent border, an `--s1` fill on the `padding-box` and a cursor-centred radial gradient on the `border-box` (installSpotlight also targets `.scenario`), resting here at the brighter `--line-2`. It is a padded grid at least 118px tall and transitions `transform` for its hover lift."
+    },
+    {
+      "from": 156,
+      "to": 156,
+      "text": "Hovered scenario cards lift 2px."
+    },
+    {
+      "from": 157,
+      "to": 157,
+      "text": "While a scenario runs, simulation.js disables every card: they fade to 50%, show a busy cursor and stop lifting."
+    },
+    {
+      "from": 158,
+      "to": 159,
+      "text": "The scenario title is medium-weight 13.5px, and its summary paragraph is small `--t3` text."
+    },
+    {
+      "from": 160,
+      "to": 161,
+      "text": "Category tags take risk colours: `attack` and `fraud` are critical red with a 30% red border, and `suspicious` is amber; `baseline` and `benign` scenarios keep the default grey tag."
+    },
+    {
+      "from": 162,
+      "to": 162,
+      "text": "The running card swaps its background layers for an `--s2` fill and a solid aqua `border-box` layer, giving a steady aqua outline in place of the spotlight."
+    },
+    {
+      "from": 164,
+      "to": 164,
+      "text": "The pipeline: six equal columns, one per stage (Ingest, Normalize, Enrich, Score, Correlate, Publish), with no gap so the connectors can span between them."
+    },
+    {
+      "from": 165,
+      "to": 165,
+      "text": "A stage: a centred grid of node, name and detail; `position: relative` anchors its connector."
+    },
+    {
+      "from": 166,
+      "to": 166,
+      "text": "The stage node: a 48px rounded icon tile with a hairline border on `--s2`, `z-index: 1` above the connector, transitioning colour, border, background and glow over `--slow` (320ms) for a deliberate light-up."
+    },
+    {
+      "from": 167,
+      "to": 167,
+      "text": "The stage currently running: aqua icon, aqua border and tint, plus a two-part glow (a 6px faint aqua ring and a wider 28px aqua blur)."
+    },
+    {
+      "from": 168,
+      "to": 168,
+      "text": "Finished stages turn white with the control border but no aqua, so only the active stage glows."
+    },
+    {
+      "from": 169,
+      "to": 170,
+      "text": "Stage names are tiny uppercase letter-spaced mono in `--t3`, turning white once the stage is active or done."
+    },
+    {
+      "from": 171,
+      "to": 171,
+      "text": "The text typed under each stage by `typeText()`: `min-height: 54px` reserves its space so the row doesn't jump while typing, and `max-width` keeps the lines short."
+    },
+    {
+      "from": 172,
+      "to": 172,
+      "text": "The connector to the next stage: an absolutely positioned 1px dashed line at the node's vertical centre (`top: 24px`). `left: calc(50% + 30px)` starts it just right of this node, and `right: calc(-50% + 30px)` extends it into the next column, ending 30px before that column's centre, just short of the next node."
+    },
+    {
+      "from": 173,
+      "to": 173,
+      "text": "The data packet: a 7px glowing aqua dot centred on the line, hidden at `opacity: 0` until simulation.js animates its `left` from 0% to 100% while fading it in and out."
+    },
+    {
+      "from": 174,
+      "to": 174,
+      "text": "Once a packet has passed, the connector becomes a solid aqua-tinted line."
+    },
+    {
+      "from": 175,
+      "to": 175,
+      "text": "The last stage (Publish) has nothing to connect to, so its connector is hidden."
+    },
+    {
+      "from": 176,
+      "to": 176,
+      "text": "The result call-to-action box (the incident and its Open button): a flex row with a hairline border on `--s2`."
+    },
+    {
+      "from": 177,
+      "to": 178,
+      "text": "A settings row in the Controls panel: label on the left, control on the right, with a hairline between rows that is removed after the last one."
+    },
+    {
+      "from": 179,
+      "to": 179,
+      "text": "The description under each setting's label: block-level small `--t3` text."
+    },
+    {
+      "from": 181,
+      "to": 182,
+      "text": "Section comment, then the Connection hero: a two-column grid with the orb at its natural width and the text taking the rest."
+    },
+    {
+      "from": 183,
+      "to": 183,
+      "text": "The status orb: an 84px square centring its core dot, with `position: relative` for its rings."
+    },
+    {
+      "from": 184,
+      "to": 184,
+      "text": "Two full-size circular rings with aqua-tinted borders, one from each pseudo-element."
+    },
+    {
+      "from": 185,
+      "to": 185,
+      "text": "Only the `::after` ring is animated (`orb`, every 2.8s), so one ring stays still while its twin pulses outward."
+    },
+    {
+      "from": 186,
+      "to": 186,
+      "text": "The 24px aqua core dot with a wide glow."
+    },
+    {
+      "from": 187,
+      "to": 187,
+      "text": "The `orb` keyframes scale the ring from 55% to 135% while fading it out, a heartbeat for \"connected\"."
+    },
+    {
+      "from": 188,
+      "to": 188,
+      "text": "The status headline (\"Connected\") in 40px Instrument Serif."
+    },
+    {
+      "from": 189,
+      "to": 190,
+      "text": "The facts row (uptime, version, rate limit…) is a wrapping flex row in small `--t3` text, with each value in a `b` element set in white medium weight."
+    },
+    {
+      "from": 191,
+      "to": 191,
+      "text": "Padding for the six metric cards (a `.panel` that also has `.metric`)."
+    },
+    {
+      "from": 192,
+      "to": 192,
+      "text": "The metric value: 26px medium-weight Geist with negative letter-spacing."
+    },
+    {
+      "from": 193,
+      "to": 193,
+      "text": "The unit after the value (\"ms\", \"%\"): small `--t3` mono with `letter-spacing: 0` so it doesn't inherit the value's tight tracking."
+    },
+    {
+      "from": 194,
+      "to": 194,
+      "text": "The 34px sparkline area under each metric."
+    },
+    {
+      "from": 195,
+      "to": 196,
+      "text": "The API console stacks its parts in a grid with 10px gaps, and its top bar is a wrapping flex row of method, path and Send."
+    },
+    {
+      "from": 197,
+      "to": 197,
+      "text": "The method select has a fixed 120px width (`flex: none`) and 12px mono text."
+    },
+    {
+      "from": 198,
+      "to": 198,
+      "text": "The path input grows to fill the rest of the bar, with `min-width: 0` so it can shrink, also in 12px mono."
+    },
+    {
+      "from": 199,
+      "to": 199,
+      "text": "The response metadata row (status, timing, request ID): a wrapping flex row of small `--t3` mono, with a `min-height` so the layout doesn't jump when a response arrives."
+    },
+    {
+      "from": 200,
+      "to": 200,
+      "text": "The HTTP status badge: a 22px rounded inline-flex label in bold mono."
+    },
+    {
+      "from": 201,
+      "to": 202,
+      "text": "`.http.ok` is aqua on the accent tint (the palette has no green, so success uses the accent), and `.http.bad` is critical red on its tint."
+    },
+    {
+      "from": 203,
+      "to": 203,
+      "text": "The HTTP method label: a fixed 52px-wide inline-block in bold mono, so every method takes the same space."
+    },
+    {
+      "from": 204,
+      "to": 204,
+      "text": "Method colours: `.GET` slate, `.POST` aqua and `.PATCH` amber, a quick visual key in the endpoint catalog."
+    },
+    {
+      "from": 205,
+      "to": 205,
+      "text": "The endpoint catalog: a grid of rows 2px apart."
+    },
+    {
+      "from": 206,
+      "to": 206,
+      "text": "A catalog row: a three-column grid (56px method, flexible path, 18px lock icon) with padding, rounded corners and a pointer cursor, since clicking loads the endpoint into the console."
+    },
+    {
+      "from": 207,
+      "to": 207,
+      "text": "Hovered catalog rows get an `--s2` background."
+    },
+    {
+      "from": 208,
+      "to": 208,
+      "text": "The endpoint path in white mono, cut off with an ellipsis if too long."
+    },
+    {
+      "from": 209,
+      "to": 209,
+      "text": "The summary under each path: block-level `--t3` text that switches back to the sans font, because it sits inside the mono `.path`."
+    },
+    {
+      "from": 210,
+      "to": 210,
+      "text": "The lock icon marking endpoints that need the API key, in faint grey."
+    },
+    {
+      "from": 212,
+      "to": 213,
+      "text": "Section comment, then the chat column: a flex column at least 560px tall."
+    },
+    {
+      "from": 214,
+      "to": 214,
+      "text": "The message thread grows to fill the column (`flex: 1`) and lays messages out as a grid with 18px gaps, packed to the top."
+    },
+    {
+      "from": 215,
+      "to": 215,
+      "text": "A message: a grid of header and bubble, at most 760px wide for readable line lengths."
+    },
+    {
+      "from": 216,
+      "to": 216,
+      "text": "User messages align to the right of the thread with `justify-self: end`."
+    },
+    {
+      "from": 217,
+      "to": 217,
+      "text": "The user's bubble: `--s3` with a hairline border and a sharp bottom-right corner (`14px 14px 4px 14px`), a \"tail\" pointing to the sender on the right."
+    },
+    {
+      "from": 218,
+      "to": 218,
+      "text": "The analyst's bubble: `--s1` with a sharp top-left corner (`4px 14px 14px 14px`) pointing up at the \"Analyst\" header."
+    },
+    {
+      "from": 219,
+      "to": 220,
+      "text": "The message header (\"Analyst\", and the sources line under answers) in small uppercase letter-spaced mono `--t3`, with its sparkles icon in aqua."
+    },
+    {
+      "from": 221,
+      "to": 222,
+      "text": "Answer paragraphs are white with a relaxed 1.6 line height and 10px between them, with no margin after the last one."
+    },
+    {
+      "from": 223,
+      "to": 223,
+      "text": "Bullet lists in answers: an 18px indent and a grid with 4px between items, in secondary grey."
+    },
+    {
+      "from": 224,
+      "to": 224,
+      "text": "Bold text in answers (written with double asterisks in the analyst's markdown) is white and semibold."
+    },
+    {
+      "from": 225,
+      "to": 225,
+      "text": "Inline code in answers: 12px mono on an `--s3` chip with small padding and radius."
+    },
+    {
+      "from": 226,
+      "to": 226,
+      "text": "Record references in answers (`INC-0001`, `EVT-00001`, `USR-1001`): aqua mono with a dashed aqua underline drawn as a bottom border; main.js opens the matching drawer when one is clicked."
+    },
+    {
+      "from": 227,
+      "to": 227,
+      "text": "The engine-decision strip above an answer: a three-column grid (score, subject and badge, \"deterministic\" tag) with a hairline border and a horizontal wash of the level's soft colour, keeping the rule engine's decision visually separate from the AI's explanation."
+    },
+    {
+      "from": 228,
+      "to": 229,
+      "text": "The score is 22px bold mono in the level colour, and the `small` line (\"Engine decision · …\") sits on its own line in `--t3`."
+    },
+    {
+      "from": 230,
+      "to": 230,
+      "text": "The question box: `position: sticky; bottom: 16px` keeps it pinned near the bottom of the screen while a long conversation scrolls. It is a flex row with a hairline border, 14px radius, a translucent blurred background and a shadow, so messages scroll softly beneath it."
+    },
+    {
+      "from": 231,
+      "to": 231,
+      "text": "The composer's input fills the row at 38px tall with no border, background or outline, so it blends into the composer box."
+    },
+    {
+      "from": 232,
+      "to": 232,
+      "text": "The suggested questions: a wrapping flex row with 8px gaps."
+    },
+    {
+      "from": 233,
+      "to": 234,
+      "text": "Each suggestion is a 30px pill button with a hairline border and grey text; on hover its border turns aqua and its text white."
+    },
+    {
+      "from": 235,
+      "to": 235,
+      "text": "The \"How the analyst works\" steps: a grid with 14px gaps in small secondary grey."
+    },
+    {
+      "from": 236,
+      "to": 236,
+      "text": "Each step is a two-column grid: a 28px number column and the text."
+    },
+    {
+      "from": 237,
+      "to": 237,
+      "text": "The step number: a 26px rounded square with a hairline border, centring a bold mono digit."
+    },
+    {
+      "from": 238,
+      "to": 238,
+      "text": "The step name (Retrieve, Decide, Explain, Cite) on its own line in white medium weight."
+    },
+    {
+      "from": 240,
+      "to": 240,
+      "text": "A media query for windows 1180px wide or narrower, the same breakpoint layout.css uses."
+    },
+    {
+      "from": 241,
+      "to": 242,
+      "text": "The incident board stacks its three columns into one, and the verdict card puts the gauge above the text."
+    },
+    {
+      "from": 243,
+      "to": 243,
+      "text": "The pipeline wraps into two rows of three stages with 24px between the rows."
+    },
+    {
+      "from": 244,
+      "to": 245,
+      "text": "The dashed connectors are hidden, since in the wrapped layout they would point at the wrong stage; the brace closes the query."
+    },
+    {
+      "from": 246,
+      "to": 246,
+      "text": "A media query for phones and narrow tablets (860px and below)."
+    },
+    {
+      "from": 247,
+      "to": 247,
+      "text": "Two rules on one line: the customer drawer's Devices and Locations sections stack into a single column on narrow screens, and the travel facts drop from four columns to two."
+    },
+    {
+      "from": 248,
+      "to": 248,
+      "text": "Any input wrapper in a panel header goes full width. `!important` is needed because the Customers filter has an inline `style=\"width:260px\"`, and inline styles beat normal stylesheet rules."
+    },
+    {
+      "from": 249,
+      "to": 249,
+      "text": "The map stats strip drops from five columns to two."
+    },
+    {
+      "from": 250,
+      "to": 250,
+      "text": "Scenario cards and Risk Lab signal cards collapse to a single column."
+    },
+    {
+      "from": 251,
+      "to": 252,
+      "text": "Waterfall rows become two columns (label and a 70px weight), and the track moves to its own full-width second row (`grid-column: 1 / -1; grid-row: 2`) beneath them."
+    },
+    {
+      "from": 253,
+      "to": 254,
+      "text": "The Connection hero stacks the orb above the text; the brace closes the query."
+    }
+  ]
+}

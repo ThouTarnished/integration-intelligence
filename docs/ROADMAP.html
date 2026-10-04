@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IIP · Study roadmap</title>
+<meta name="description" content="A guided, staged roadmap for learning the Integration Intelligence Platform codebase.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap">
+<!-- anime.js v4 from the project (offline-friendly); a CDN copy is tried if this file was moved. -->
+<script src="../web/vendor/anime.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0a0b0d; --s1: #101114; --s2: #15171b; --s3: #1c1e23; --s4: #24272d;
+  --line: rgb(255 255 255 / .065); --line-2: rgb(255 255 255 / .11); --line-ctl: #474b54;
+  --t1: #ecedee; --t2: #a3a6ad; --t3: #7d818a; --t4: #565a62;
+  --accent: #3ee6d1; --accent-ink: #04201c; --accent-soft: rgb(62 230 209 / .12); --accent-line: rgb(62 230 209 / .35);
+  --low: #8a9bb0; --medium: #f4d35e; --high: #f08a4b; --critical: #f04e66;
+  --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body { margin: 0; background: var(--bg); color: var(--t1); font: 400 15px/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+::selection { background: var(--accent-soft); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 5px; }
+code, .mono { font-family: var(--mono); font-size: .88em; }
+code { color: var(--t1); background: var(--s3); padding: 1px 6px; border-radius: 5px; }
+.backdrop { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(1000px 520px at 78% -160px, rgb(62 230 209 / .08), transparent 70%),
+    radial-gradient(rgb(255 255 255 / .05) 1px, transparent 1px) 0 0 / 22px 22px;
+  -webkit-mask-image: linear-gradient(#000, transparent 75%); mask-image: linear-gradient(#000, transparent 75%); }
+.eyebrow { font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--t3); }
+.wrap { position: relative; z-index: 1; width: min(1180px, 100% - 40px); margin: 0 auto; }
+
+/* nav */
+.nav { position: sticky; top: 0; z-index: 30; border-bottom: 1px solid var(--line); background: rgb(10 11 13 / .8); backdrop-filter: blur(14px) saturate(140%); }
+.nav .wrap { display: flex; align-items: center; gap: 22px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.brand svg { width: 28px; height: 28px; }
+.brand small { display: block; font: 400 10.5px var(--mono); color: var(--t3); }
+.links { display: flex; gap: 4px; margin-left: auto; position: relative; }
+.links a { position: relative; z-index: 1; padding: 6px 10px; border-radius: 7px; font-size: 13px; color: var(--t3); transition: color .15s; }
+.links a:hover, .links a.on { color: var(--t1); }
+.links .pill { position: absolute; z-index: 0; top: 0; height: 100%; border-radius: 7px; background: var(--s3); box-shadow: inset 0 0 0 1px var(--line-2); opacity: 0; }
+.ring { display: flex; align-items: center; gap: 8px; font: 500 12px var(--mono); color: var(--t2); white-space: nowrap; }
+.ring svg { width: 28px; height: 28px; transform: rotate(-90deg); }
+.ring .track { fill: none; stroke: var(--s4); stroke-width: 3; }
+.ring .fill { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 1px solid var(--line-2); border-radius: 9px; background: var(--s2); font-weight: 500; font-size: 13.5px; white-space: nowrap; transition: background-color .15s, border-color .15s, transform .15s var(--ease-out); }
+.btn:hover { background: var(--s3); border-color: var(--line-ctl); }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.primary:hover { background: #63eedd; }
+.btn.sm { height: 30px; padding: 0 11px; font-size: 12.5px; }
+
+/* hero */
+.hero { padding: 72px 0 34px; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.hero h1 { margin: 16px 0 16px; font: 400 clamp(46px, 6.4vw, 84px)/.98 var(--serif); letter-spacing: -.02em; }
+.hero h1 .w { display: inline-block; }
+.hero h1 em { color: var(--t2); }
+.lede { color: var(--t2); font-size: 17px; max-width: 560px; margin: 0 0 26px; }
+.hero-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0 0 26px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--line); }
+.hero-stats div { padding: 14px 16px; background: var(--s1); }
+.hero-stats b { display: block; margin-top: 6px; font: 500 28px/1 var(--sans); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.cta { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* architecture diagram */
+.arch { position: relative; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(180deg, rgb(16 17 20 / .9), rgb(10 11 13 / .9)); padding: 14px; }
+.arch::before, .arch::after { content: ""; position: absolute; width: 10px; height: 10px; border-color: var(--t4); border-style: solid; }
+.arch::before { left: 10px; top: 10px; border-width: 1px 0 0 1px; }
+.arch::after { right: 10px; bottom: 10px; border-width: 0 1px 1px 0; }
+.arch svg { width: 100%; height: auto; display: block; overflow: visible; }
+.arch .edge { fill: none; stroke: var(--line-2); stroke-width: 1.4; }
+.arch .edge.hot { stroke: var(--accent-line); }
+.arch .node rect { fill: var(--s2); stroke: var(--line-2); stroke-width: 1; transition: stroke .2s, fill .2s; }
+.arch .node:hover rect, .arch .node.on rect { stroke: var(--accent); fill: #13201f; }
+.arch .node text { fill: var(--t1); font: 500 11.5px var(--sans); }
+.arch .node .sub { fill: var(--t3); font: 400 9.5px var(--mono); }
+.arch .node { cursor: pointer; transform-box: fill-box; transform-origin: center; }
+.arch .packet { fill: var(--accent); filter: drop-shadow(0 0 5px var(--accent)); }
+.arch .packet.risk { fill: var(--critical); filter: drop-shadow(0 0 5px var(--critical)); }
+.arch-caption { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; padding: 10px 12px; border-top: 1px solid var(--line); min-height: 64px; }
+.arch-caption b { display: block; font-weight: 500; }
+.arch-caption span { color: var(--t3); font-size: 13px; }
+.arch-caption .files { font: 400 11.5px var(--mono); color: var(--accent); text-align: right; white-space: nowrap; }
+
+/* sections */
+section.block { padding: 70px 0 10px; }
+.head { display: grid; gap: 10px; margin-bottom: 28px; max-width: 760px; }
+.head h2 { margin: 0; font: 400 clamp(34px, 4.4vw, 52px)/1.04 var(--serif); letter-spacing: -.015em; }
+.head h2 em { color: var(--t2); }
+.head p { margin: 0; color: var(--t2); }
+
+/* path */
+.path { position: relative; display: grid; gap: 18px; padding-left: 54px; }
+.rail { position: absolute; left: 19px; top: 8px; bottom: 8px; width: 2px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+.rail i { display: block; width: 100%; height: 100%; background: linear-gradient(var(--accent), rgb(62 230 209 / .3)); transform-origin: top; transform: scaleY(0); }
+.stage { position: relative; border: 1px solid transparent; border-radius: 16px;
+  background: linear-gradient(var(--s1), var(--s1)) padding-box, radial-gradient(320px circle at var(--mx, -500px) var(--my, -500px), rgb(255 255 255 / .2), var(--line) 70%) border-box; }
+.stage.done { background: linear-gradient(var(--s1), var(--s1)) padding-box, linear-gradient(var(--accent-line), var(--line)) border-box; }
+.stage-num { position: absolute; left: -54px; top: 18px; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--line-2); background: var(--s2); font: 600 13px var(--mono); color: var(--t2); transition: all .3s var(--ease-out); }
+.stage.done .stage-num { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: 0 0 24px rgb(62 230 209 / .35); }
+.stage-head { display: flex; align-items: flex-start; gap: 16px; padding: 18px 20px; cursor: pointer; }
+.stage-head h3 { margin: 4px 0 2px; font: 400 28px/1.1 var(--serif); }
+.stage-head p { margin: 0; color: var(--t2); font-size: 14px; }
+.stage-meta { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex: none; }
+.time { font: 500 11.5px var(--mono); color: var(--t3); }
+.chev { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; border: 1px solid var(--line-2); color: var(--t3); transition: transform .3s var(--ease-out); }
+.stage.open .chev { transform: rotate(180deg); }
+.stage-body { overflow: hidden; height: 0; }
+.stage-inner { padding: 0 20px 20px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; }
+.stage-inner > div, .box { min-width: 0; }
+.box { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: rgb(255 255 255 / .012); }
+.box h4 { margin: 0 0 10px; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--t3); }
+.files { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; counter-reset: f; }
+.files li { counter-increment: f; display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: baseline; }
+.files li::before { content: counter(f, decimal-leading-zero); font: 500 10.5px var(--mono); color: var(--t4); }
+.files a { font: 500 12.5px var(--mono); color: var(--accent); }
+.files a:hover { text-decoration: underline; }
+.files span { display: block; color: var(--t3); font-size: 12.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border: 1px solid var(--line-2); border-radius: 7px; font-size: 12px; color: var(--t2); background: var(--s2); }
+.try { margin: 0; padding-left: 18px; color: var(--t2); font-size: 13.5px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.try .cmd-item { list-style: none; margin-left: -18px; }
+pre.cmd { margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: #0c0d10; font: 12px/1.6 var(--mono); color: #c3c7ce; overflow-x: auto; }
+details.q { border-top: 1px solid var(--line); padding: 9px 0; }
+details.q:first-of-type { border-top: 0; }
+details.q summary { cursor: pointer; font-size: 13.5px; color: var(--t1); list-style: none; display: flex; gap: 8px; }
+details.q summary::before { content: "?"; flex: none; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 5px; background: var(--s3); font: 600 11px var(--mono); color: var(--accent); }
+details.q[open] summary::before { content: "✓"; }
+details.q p { margin: 8px 0 0 26px; color: var(--t2); font-size: 13.5px; }
+.complete { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); font: 500 12px var(--mono); color: var(--t2); transition: all .2s; }
+.complete:hover { border-color: var(--accent-line); color: var(--t1); }
+.stage.done .complete { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-line); }
+
+/* lifecycle player */
+.player { border: 1px solid var(--line); border-radius: 18px; background: var(--s1); overflow: hidden; }
+.player-top { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.player-top .label { font: 500 12.5px var(--mono); color: var(--t2); }
+.player-top .label b { color: var(--accent); }
+.player-top .grow { flex: 1; }
+.track-wrap { position: relative; padding: 26px 22px 8px; overflow-x: auto; }
+.lane { position: relative; display: flex; gap: 0; min-width: 980px; }
+.lane::before { content: ""; position: absolute; left: 14px; right: 14px; top: 13px; height: 2px; background: var(--s3); }
+.lane .fill { position: absolute; left: 14px; top: 13px; height: 2px; width: calc(100% - 28px); background: var(--accent); transform-origin: left; transform: scaleX(0); box-shadow: 0 0 10px var(--accent); }
+.dot-step { position: relative; flex: 1; display: grid; justify-items: center; gap: 8px; text-align: center; }
+.dot-step i { position: relative; z-index: 1; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line-2); background: var(--s2); font: 600 10.5px var(--mono); font-style: normal; color: var(--t3); transition: all .25s var(--ease-out); }
+.dot-step.past i { background: var(--s3); color: var(--t1); border-color: var(--line-ctl); }
+.dot-step.on i { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: 0 0 0 6px rgb(62 230 209 / .12), 0 0 24px rgb(62 230 209 / .4); }
+.dot-step span { font: 500 10px var(--mono); color: var(--t4); letter-spacing: .04em; max-width: 84px; line-height: 1.3; }
+.dot-step.on span, .dot-step.past span { color: var(--t2); }
+.step-card { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; margin: 12px 16px 16px; padding: 16px 18px; border: 1px solid var(--line-2); border-radius: 14px; background: linear-gradient(135deg, rgb(62 230 209 / .05), transparent 60%); min-height: 104px; }
+.step-card h4 { margin: 4px 0 6px; font: 400 26px/1.1 var(--serif); }
+.step-card p { margin: 0; color: var(--t2); font-size: 14px; }
+.step-card .where { font: 500 12px var(--mono); color: var(--accent); text-align: right; white-space: nowrap; }
+
+/* repo map */
+.repo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.tree { border: 1px solid var(--line); border-radius: 16px; background: var(--s1); padding: 12px; font: 13px var(--mono); }
+.tree button { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border-radius: 7px; text-align: left; color: var(--t2); }
+.tree button:hover, .tree button.on { background: var(--s3); color: var(--t1); }
+.tree .folder { color: var(--t1); font-weight: 500; }
+.tree .kids { margin-left: 18px; border-left: 1px dashed var(--line-2); padding-left: 6px; overflow: hidden; }
+.tree .twisty { width: 12px; color: var(--t4); transition: transform .25s var(--ease-out); display: inline-block; }
+.tree .folder.closed .twisty { transform: rotate(-90deg); }
+.tree .ico { width: 8px; height: 8px; border-radius: 2px; background: var(--t4); flex: none; }
+.tree .py { background: var(--accent); } .tree .js { background: var(--medium); } .tree .css { background: var(--low); } .tree .doc { background: var(--high); }
+.detail { position: sticky; top: 86px; align-self: start; border: 1px solid var(--line); border-radius: 16px; background: var(--s1); padding: 22px; min-height: 260px; }
+.detail h3 { margin: 6px 0 8px; font: 400 32px/1.1 var(--serif); word-break: break-word; }
+.detail p { margin: 0 0 14px; color: var(--t2); }
+
+/* demo */
+.demo { display: grid; gap: 10px; }
+.beat { display: grid; grid-template-columns: 80px 1fr 1.2fr; gap: 18px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--s1); align-items: start; }
+.beat time { font: 600 18px var(--mono); color: var(--accent); }
+.beat b { display: block; font-weight: 500; margin-bottom: 2px; }
+.beat .do { color: var(--t2); font-size: 13.5px; }
+.beat .say { color: var(--t1); font-size: 14px; font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.4; border-left: 2px solid var(--accent-line); padding-left: 14px; }
+
+/* glossary */
+.gloss-tools { display: flex; gap: 10px; margin-bottom: 16px; }
+.gloss-tools input { flex: 1; max-width: 360px; height: 38px; padding: 0 14px; border: 1px solid var(--line-ctl); border-radius: 9px; background: var(--s1); color: var(--t1); font: inherit; outline: none; }
+.gloss-tools input:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+.gloss { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.term { border: 1px solid var(--line); border-radius: 14px; background: var(--s1); padding: 16px 18px; transition: border-color .2s, transform .2s var(--ease-out); }
+.term:hover { border-color: var(--line-ctl); transform: translateY(-2px); }
+.term b { display: block; font: 400 22px/1.15 var(--serif); margin-bottom: 6px; }
+.term p { margin: 0 0 8px; color: var(--t2); font-size: 13.5px; }
+.term small { font: 500 11px var(--mono); color: var(--t4); }
+footer { padding: 70px 0 60px; color: var(--t3); font-size: 13px; }
+footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 24px; }
+
+@media (max-width: 1000px) {
+  .hero { grid-template-columns: 1fr; padding-top: 44px; }
+  .links { display: none; }
+  .stage-inner, .repo { grid-template-columns: minmax(0, 1fr); }
+  .detail { position: static; }
+  .gloss { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .beat { grid-template-columns: 64px 1fr; } .beat .say { grid-column: 1 / -1; }
+}
+@media (max-width: 620px) {
+  .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gloss { grid-template-columns: 1fr; }
+  .path { padding-left: 0; } .stage-num { position: static; margin: 18px 0 0 20px; } .rail { display: none; }
+  .stage-head { flex-wrap: wrap; }
+  .ring span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+
+<nav class="nav"><div class="wrap">
+  <a class="brand" href="#top">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="8.5" fill="#111215" stroke="rgba(255,255,255,.12)"/>
+      <path d="M7 11h8l3 5-3 5H7" stroke="#7d818a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 16h7" stroke="#7d818a" stroke-width="1.8" stroke-linecap="round"/><circle cx="22.5" cy="16" r="3.2" fill="#3ee6d1"/></svg>
+    <span>IIP<small>study roadmap</small></span>
+  </a>
+  <div class="links" id="links">
+    <span class="pill" id="navPill"></span>
+    <a href="#architecture">Architecture</a><a href="#path">The path</a><a href="#lifecycle">Lifecycle</a><a href="#repo">Repo map</a><a href="#demo">Demo</a><a href="#glossary">Glossary</a>
+  </div>
+  <div class="ring" title="Stages completed">
+    <svg viewBox="0 0 28 28" aria-hidden="true"><circle class="track" cx="14" cy="14" r="11"/><circle class="fill" id="ring" cx="14" cy="14" r="11" pathLength="100" stroke-dasharray="0 100"/></svg>
+    <span id="ringLabel">0 / 9</span>
+  </div>
+  <a class="btn sm" href="CODE_WALKTHROUGH.html">Code walkthrough →</a>
+</div></nav>
+
+<main class="wrap" id="top">
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Integration Intelligence Platform · study roadmap</div>
+      <h1><span class="w">Learn</span> <span class="w">this</span> <span class="w">codebase</span> <span class="w">in</span> <span class="w"><em>nine</em></span> <span class="w"><em>stages.</em></span></h1>
+      <p class="lede">A guided path from "run it" to "explain every module." Each stage tells you which files to read, in which order, the concepts behind them,
+        something to try with your hands, and questions to check yourself. Tick stages off as you go; your progress stays in this browser.</p>
+      <div class="hero-stats">
+        <div><span class="eyebrow">stages</span><b data-count="9">0</b></div>
+        <div><span class="eyebrow">hours</span><b data-count="8">0</b></div>
+        <div><span class="eyebrow">files</span><b data-count="83">0</b></div>
+        <div><span class="eyebrow">tests</span><b data-count="93">0</b></div>
+      </div>
+      <div class="cta"><a class="btn primary" href="#path">Start at stage 0</a><a class="btn" href="CODE_WALKTHROUGH.html">Open the line-by-line walkthrough</a></div>
+    </div>
+    <div class="arch" id="architecture">
+      <svg viewBox="0 0 560 360" role="img" aria-label="System architecture">
+        <g id="edges"></g><g id="nodes"></g><g id="packets"></g>
+      </svg>
+      <div class="arch-caption" id="archCaption"><div><b>Hover a box</b><span>Every box is a module; packets show an event's journey.</span></div><div class="files"></div></div>
+    </div>
+  </header>
+
+  <section class="block" id="path">
+    <div class="head"><div class="eyebrow">The path</div><h2>Nine stages, <em>outside in.</em></h2>
+      <p>Start with the running product, then go engine → API → real-time → AI → frontend → delivery. Every file link opens the exact file in the walkthrough, with each line explained.</p></div>
+    <div class="path" id="stages"><div class="rail"><i id="railFill"></i></div></div>
+  </section>
+
+  <section class="block" id="lifecycle">
+    <div class="head"><div class="eyebrow">Request lifecycle</div><h2>One event, <em>start to screen.</em></h2>
+      <p>Follow a single <code>POST /api/v1/events</code> through every layer, from the moment it hits the server to the moment a dashboard animates. Press play, or step through.</p></div>
+    <div class="player">
+      <div class="player-top">
+        <button class="btn sm primary" id="play">▶ Play</button><button class="btn sm" id="prev">← Step</button><button class="btn sm" id="next">Step →</button>
+        <span class="grow"></span><span class="label" id="stepLabel">step <b>1</b> / 16</span>
+      </div>
+      <div class="track-wrap"><div class="lane" id="lane"><span class="fill" id="laneFill"></span></div></div>
+      <div class="step-card" id="stepCard"></div>
+    </div>
+  </section>
+
+  <section class="block" id="repo">
+    <div class="head"><div class="eyebrow">Repository map</div><h2>Where everything <em>lives.</em></h2>
+      <p>Click a folder to fold it, click a file to see its role and jump into the walkthrough.</p></div>
+    <div class="repo"><div class="tree" id="tree"></div><div class="detail" id="detail"></div></div>
+  </section>
+
+  <section class="block" id="demo">
+    <div class="head"><div class="eyebrow">Presenting it</div><h2>A five-minute <em>demo script.</em></h2>
+      <p>A tested choreography for showing the project to colleagues: what to click, and what to say while it animates. Start with a fresh dataset: <code>python -m iip --reset</code>.</p></div>
+    <div class="demo" id="beats"></div>
+  </section>
+
+  <section class="block" id="glossary">
+    <div class="head"><div class="eyebrow">Glossary</div><h2>Words you'll <em>meet.</em></h2><p>Short definitions, plus where each idea shows up in the code.</p></div>
+    <div class="gloss-tools"><input id="glossQ" placeholder="Filter terms…" aria-label="Filter glossary"></div>
+    <div class="gloss" id="gloss"></div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>Integration Intelligence Platform · study roadmap</span><span><a href="CODE_WALKTHROUGH.html">Code walkthrough</a> · <a href="TECHNICAL_IMPLEMENTATION.md">Technical implementation</a> · <a href="IMPROVEMENTS.md">Improvements</a></span></div></footer>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const W = (path) => `CODE_WALKTHROUGH.html#file=${path}`;
+  let A = window.anime;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  const moving = () => A && !reduce.matches && document.visibilityState === "visible";
+  const animate = (t, p) => (moving() ? A.animate(t, p) : A ? A.animate(t, { ...p, duration: 0, delay: 0, loop: 0, ease: "linear" }) : null);
+
+  // ------------------------------------------------------------ content
+  const STAGES = [
+    { title: "Run it and explore", time: "20 min", goal: "See the product working before you read a line of code.",
+      files: [["README.md", "How to install, run and test."], ["web/index.html", "The page you'll be clicking around."]],
+      concepts: ["Virtual environments", "FastAPI dev server", "OpenAPI docs", "Synthetic data"],
+      try: ["Create a virtualenv, install, and start the platform:", "<pre class='cmd'>python -m venv .venv\n.venv\\Scripts\\activate      # macOS/Linux: source .venv/bin/activate\npip install -r requirements-dev.txt\npython -m iip</pre>",
+        "Open <code>http://127.0.0.1:8000</code>, turn on <b>Live traffic</b> in the sidebar, and watch the feed and the map.",
+        "In Simulation, run <b>Impossible travel</b> and then <b>Business trip</b>. Compare their travel checks.",
+        "Open <code>/docs</code> and call <code>POST /api/v1/risk/evaluate</code> yourself."],
+      qs: [["Where does the data come from?", "It's synthetic. iip/seed.py generates 25 fictional customers and a week of activity on first start (and again with --reset)."],
+           ["Why does Business trip not raise Impossible travel?", "The two cities are eight hours apart, so the implied speed is far below the 900 km/h airliner threshold."]] },
+    { title: "Configuration & persistence", time: "45 min", goal: "Understand how settings are loaded and how data is modelled and stored.",
+      files: [["iip/__init__.py", "Package marker and version."], ["iip/config.py", "Every setting, read once from the environment."], ["iip/clock.py", "The one definition of \"now\"."],
+              ["iip/database.py", "SQLAlchemy 2.0 models, session factory, SQLite pragmas."], ["iip/__main__.py", "The python -m iip command line."]],
+      concepts: ["Environment config", "Frozen dataclass", "ORM models", "Sessions", "Foreign keys", "JSON columns", "SQLite WAL"],
+      try: ["Copy <code>.env.example</code> to <code>.env</code>, change <code>IIP_API_KEY</code>, restart, and confirm writes now need the new key.",
+            "Open <code>data/iip.db</code> in any SQLite viewer and find one event's <code>contributions</code> JSON."],
+      qs: [["Why are timestamps stored as naive UTC?", "One convention everywhere means comparisons never mix time zones, and SQLite stores datetimes without zone info anyway."],
+           ["Why enable WAL mode?", "Write-ahead logging lets the live-traffic writer and dashboard readers work concurrently without 'database is locked' errors."]] },
+    { title: "The rulebook", time: "60 min", goal: "Learn exactly how a risk score is computed: pure functions, no database.",
+      files: [["iip/geo.py", "City labels, coordinates, haversine distance, travel speed."], ["iip/rules.py", "Signals, weights, thresholds, detection and assessment."]],
+      concepts: ["Pure functions", "Additive weighted scoring", "Clamping", "Haversine", "Geo-velocity", "MITRE ATT&CK", "Explainability"],
+      try: ["Use the <b>Risk Lab</b> page to reproduce a score by hand, then confirm it with <code>POST /api/v1/risk/evaluate</code>.",
+            "Exercise: add a signal (say, \"Off-hours login\" +10). Add it to <code>SIGNALS</code>, raise it in <code>detect()</code>, and add a test to <code>tests/test_rules.py</code>."],
+      qs: [["Why is Abu Dhabi → Dubai in 20 minutes not impossible travel?", "They're ~120 km apart, below MIN_TRAVEL_KM (500 km), which is inside geo-IP noise. The original version flagged any city change within two hours."],
+           ["Why is travel only judged on successful, clean-IP events?", "Proxies and VPN exits make geolocation unreliable; a flagged IP is scored by the Suspicious IP signal instead, the same approach Panther and Microsoft Defender take."],
+           ["What does clamping do?", "Weights can sum past 100 (or below 0 with Trusted device); the score is clamped into 0–100 before mapping to a level."]] },
+    { title: "The write path", time: "60 min", goal: "Follow one event from HTTP request to stored, scored and correlated row.",
+      files: [["iip/schemas.py", "Pydantic validation of untrusted input."], ["iip/routes/deps.py", "Session, API-key and rate-limit dependencies."], ["iip/routes/events.py", "The ingestion endpoint."],
+              ["iip/pipeline.py", "normalize → enrich → score → persist → correlate."], ["iip/correlation.py", "Grouping risky events into incidents."]],
+      concepts: ["Validation", "Normalization", "Enrichment", "flush vs commit", "Correlation window", "Dependencies"],
+      try: ["Send an event with curl and read the response's <code>risk.contributions</code>:",
+            "<pre class='cmd'>curl -X POST http://127.0.0.1:8000/api/v1/events -H \"X-API-Key: demo-key-change-me\" \\\n  -H \"Content-Type: application/json\" -d '{\"user_id\":\"USR-1001\",\"event_type\":\"login\",\n  \"ip_address\":\"198.51.100.7\",\"location\":\"lagos\",\"device_id\":\"DEV-9999\",\"ip_reputation\":\"suspicious\"}'</pre>",
+            "Notice <code>location</code> came back as <code>Lagos, Nigeria</code>: that's normalization."],
+      qs: [["What pulls earlier events into a brand-new incident?", "When an event ≥60 opens an incident, the user's events from the last 30 minutes that scored ≥20 or failed are attached to it."],
+           ["Why flush before adding RiskSignal rows?", "flush() sends the INSERT so the database assigns event.id, which the signal rows reference, without committing yet."]] },
+    { title: "The read side", time: "45 min", goal: "See how the dashboard's numbers are computed efficiently.",
+      files: [["iip/queries.py", "Serializers and batched aggregate queries."], ["iip/routes/users.py", "Customer endpoints."], ["iip/routes/incidents.py", "Incident list, detail and triage."],
+              ["iip/routes/dashboard.py", "The summary endpoint."], ["iip/routes/risk.py", "Rulebook and what-if endpoints."]],
+      concepts: ["N+1 queries", "Batching", "Window functions", "Aggregation", "Serialization"],
+      try: ["Open <code>/api/v1/dashboard/summary</code> and match each key to a panel on the Overview page.",
+            "Read <code>users_overview()</code>: count how many queries it runs for 25 users (the original ran ~100)."],
+      qs: [["What is the N+1 problem?", "Running one query for a list and then one more per row. Batching with grouped queries keeps the count constant as data grows."],
+           ["What does row_number() over (partition by user_id …) give us?", "A per-user ranking of events by time, so we can take each user's 10 most recent events in a single query."]] },
+    { title: "Real-time & operations", time: "60 min", goal: "Understand live streaming, background traffic, metrics and rate limiting.",
+      files: [["iip/app.py", "Application factory, middleware, lifespan."], ["iip/live.py", "SSE hub and live-traffic generator."], ["iip/observability.py", "Request IDs, metrics, rate limiter."],
+              ["iip/routes/system.py", "Health, metrics and the /stream endpoint."], ["iip/routes/simulation.py", "Scenarios, traffic toggle, demo reset."], ["iip/seed.py", "Synthetic data and scenario generators."]],
+      concepts: ["Server-Sent Events", "Event loop vs thread pool", "call_soon_threadsafe", "ASGI middleware", "p50/p95/p99", "Token bucket", "Lifespan"],
+      try: ["Watch the raw stream while you run a scenario in another tab:", "<pre class='cmd'>curl -N http://127.0.0.1:8000/api/v1/stream</pre>",
+            "Check response headers in the browser devtools: every API response carries <code>X-Request-ID</code> and <code>X-Response-Time</code>."],
+      qs: [["Why can't a sync endpoint just put a message on an asyncio.Queue?", "Sync endpoints run in worker threads; asyncio objects aren't thread-safe. call_soon_threadsafe hands the work to the event loop's thread."],
+           ["Why pure ASGI middleware instead of BaseHTTPMiddleware?", "It wraps the raw send/receive calls, so long-lived streaming responses like SSE pass straight through untouched."]] },
+    { title: "The AI analyst", time: "30 min", goal: "See how explanations are grounded and why the feature works offline.",
+      files: [["iip/analyst.py", "Question parsing, retrieval, decision, deterministic answers, OpenAI call."], ["iip/routes/analyst.py", "The /ai/ask endpoint."]],
+      concepts: ["Grounding", "Question parsing", "Retrieval", "Deterministic fallback", "Prompt constraints", "Citations"],
+      try: ["Ask \"Anything odd about Fenwick?\": the analyst resolves the surname to USR-1001.",
+            "Ask \"How many critical incidents are open?\" and \"Which customers logged in from Lagos?\": each answer reads back the terms it understood, and every number matches the database.",
+            "Set <code>OPENAI_API_KEY</code> in <code>.env</code> and compare the two answer styles. Then break the key and watch the fallback note."],
+      qs: [["How does the analyst decide what to fetch?", "Plain rules in parse_question() turn the question into search terms (IDs, names, signals, places, levels, statuses, a time window) and an intent. Only the records matching those terms are retrieved; no model decides what the answer is about."],
+           ["Can the model change a risk score?", "No. The engine's decision is computed first and shown separately; the model only receives it as read-only context to explain."],
+           ["What happens with no API key?", "A deterministic analyst composes the answer from exactly the same context, so the feature and its tests work offline."]] },
+    { title: "The frontend", time: "100 min", goal: "Learn how a no-build vanilla-JS app stays organized, safe and animated.",
+      files: [["web/index.html", "Shell markup and asset loading."], ["web/js/main.js", "Router, nav, shortcuts, live toasts."], ["web/js/core/dom.js", "Escaping html template and formatters."],
+              ["web/js/core/motion.js", "The anime.js gateway and motion rules."], ["web/js/charts/worldmap.js", "Canvas dot map + SVG arcs."], ["web/js/pages/overview.js", "The command center page."], ["web/css/tokens.css", "The design system's tokens."]],
+      concepts: ["ES modules", "Tagged templates", "Hash routing", "Pub/sub", "FLIP", "SVG charts", "Canvas", "Design tokens", "Reduced motion"],
+      try: ["Open the command palette with <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd> and find an incident by typing part of its title.",
+            "Change <code>--accent</code> in tokens.css and reload: every interactive element follows.",
+            "Turn on the OS \"reduce motion\" setting: every animation now jumps straight to its final state."],
+      qs: [["Why is content never hidden by CSS waiting for JavaScript?", "If anime.js failed to load, or motion is off, nothing would ever appear. Animations start from values set by JS, so the default state is visible."],
+           ["Why does the incident board need a keyed FLIP?", "The board re-renders its cards as new DOM nodes; matching them by data-id lets moved cards glide from their old position."]] },
+    { title: "Quality & delivery", time: "40 min", goal: "See how the project proves itself and ships.",
+      files: [["tests/conftest.py", "Isolated database and fixtures."], ["tests/test_rules.py", "Every rule, tested without a database."], ["tests/test_simulation.py", "Scenarios as end-to-end tests."],
+              ["pyproject.toml", "pytest and ruff configuration."], [".github/workflows/ci.yml", "Lint + tests on Python 3.10 to 3.13."], ["Dockerfile", "Container image with a healthcheck."], ["scripts/build_walkthrough.py", "How the walkthrough is generated and validated."]],
+      concepts: ["Fixtures", "Parametrize", "Monkeypatching", "Isolation", "Linting", "CI matrix", "Containers"],
+      try: ["<pre class='cmd'>pytest -q\npytest -k travel -v\nruff check .\ndocker build -t iip . && docker run -p 8000:8000 iip</pre>"],
+      qs: [["Why does conftest.py set environment variables before importing iip?", "Settings are read once at import time; setting them first points the app at a throwaway database and a known key."],
+           ["How do the tests prove the OpenAI fallback works?", "test_analyst monkeypatches settings with a fake key and httpx.post with a function that raises, then asserts the deterministic source and the note."]] },
+  ];
+
+  const ARCH = {
+    nodes: [
+      { id: "client", x: 20, y: 40, w: 130, label: "NovaBank client", sub: "REST · X-API-Key", files: "iip/routes/events.py", stage: 3 },
+      { id: "sim", x: 20, y: 150, w: 130, label: "Simulator", sub: "routes/simulation.py", files: "iip/seed.py", stage: 5 },
+      { id: "traffic", x: 20, y: 260, w: 130, label: "Live traffic", sub: "live.py", files: "iip/live.py", stage: 5 },
+      { id: "api", x: 200, y: 40, w: 140, label: "FastAPI routes", sub: "validate · auth · limit", files: "iip/routes/*", stage: 3 },
+      { id: "pipe", x: 200, y: 150, w: 140, label: "Pipeline", sub: "normalize → enrich", files: "iip/pipeline.py", stage: 3 },
+      { id: "rules", x: 200, y: 260, w: 140, label: "Rulebook + geo", sub: "detect → assess", files: "iip/rules.py · geo.py", stage: 2 },
+      { id: "db", x: 390, y: 40, w: 150, label: "SQLite", sub: "events · incidents", files: "iip/database.py", stage: 1 },
+      { id: "read", x: 390, y: 150, w: 150, label: "Read side + SSE", sub: "queries.py · live.py", files: "iip/queries.py", stage: 4 },
+      { id: "ui", x: 390, y: 260, w: 150, label: "Dashboard + AI", sub: "web/ · analyst.py", files: "web/js/main.js", stage: 7 },
+    ],
+    edges: [["client", "api"], ["sim", "pipe"], ["traffic", "pipe"], ["api", "pipe"], ["pipe", "rules"], ["rules", "db"], ["db", "read"], ["read", "ui"]],
+    notes: {
+      client: "External systems POST identity events with an API key.", sim: "Scenario replays through the exact same pipeline as real calls.",
+      traffic: "A background task that keeps the demo alive with realistic events.", api: "Pydantic validation, constant-time key check, token-bucket rate limit.",
+      pipe: "Normalizes labels, resolves device trust, loads the user's recent history.", rules: "Pure, testable scoring: weighted signals clamped to 0–100.",
+      db: "SQLAlchemy 2.0 models in SQLite (WAL, foreign keys on).", read: "Batched aggregates for the dashboard; SSE pushes events as they happen.",
+      ui: "Vanilla-JS dashboard with anime.js motion; the analyst explains decisions.",
+    },
+  };
+
+  const LIFECYCLE = [
+    ["Request arrives", "RequestContextMiddleware tags it with an X-Request-ID and starts a timer.", "observability.py · RequestContextMiddleware"],
+    ["CORS", "Starlette's CORS middleware checks the origin for cross-site browsers.", "app.py · create_app()"],
+    ["Rate limit", "A token bucket per client IP refills 240 tokens/minute; empty means 429 + Retry-After.", "routes/deps.py · rate_limit"],
+    ["Authenticate", "X-API-Key is compared in constant time, so response timing leaks nothing.", "routes/deps.py · require_api_key"],
+    ["Validate", "Pydantic checks types, patterns and enums; IPs are canonicalized, timestamps made naive UTC.", "schemas.py · EventIn"],
+    ["Normalize", "Defaults filled, city label canonicalized (\"lagos\" → \"Lagos, Nigeria\").", "pipeline.py · normalize()"],
+    ["Device trust", "Is the device known, and does it belong to this customer? Unknown devices are registered.", "pipeline.py · process_event()"],
+    ["Load history", "Trusted travel baseline, recent transactions and failures, other accounts failing from this IP.", "pipeline.py · load_history()"],
+    ["Detect signals", "Every rule runs against the event; travel is computed with haversine and judged against 900 km/h.", "rules.py · detect()"],
+    ["Assess", "Weights summed and clamped, mapped to a level and action, explanation written.", "rules.py · assess()"],
+    ["Persist", "The Event row plus one RiskSignal row per signal are flushed in the open transaction.", "pipeline.py · process_event()"],
+    ["Correlate", "Joins an open incident in the 30-minute window or opens a new one at 60+.", "correlation.py · correlate()"],
+    ["Commit", "One transaction: the event, its signals and the incident change land together.", "pipeline.py · db.commit()"],
+    ["Broadcast", "The ingest is counted and published over SSE as an event (and incident) message.", "live.py · broadcast()"],
+    ["Respond", "201 with the event and its risk; middleware adds X-Response-Time and records latency.", "routes/events.py · ingest_event"],
+    ["Dashboard reacts", "The browser's EventSource fires; the feed slides, the map pings, counters tick, toasts appear.", "web/js/core/live.js → pages/overview.js"],
+  ];
+
+  const REPO = [
+    { name: "iip/", note: "The backend package: configuration, persistence, the engine, services and the HTTP API.", kids: [
+      ["__init__.py", "Package marker and version string.", "py"], ["__main__.py", "Command line: python -m iip [--reset] [--reload].", "py"], ["config.py", "Settings from environment variables and .env.", "py"],
+      ["clock.py", "utcnow(): the one definition of now.", "py"], ["database.py", "SQLAlchemy models and the session factory.", "py"], ["geo.py", "City coordinates, haversine, travel speed.", "py"],
+      ["rules.py", "The rulebook: signals, weights, thresholds, scoring.", "py"], ["schemas.py", "Pydantic request bodies.", "py"], ["pipeline.py", "The write path for one event.", "py"],
+      ["correlation.py", "Incident grouping and titles.", "py"], ["queries.py", "Read-side serializers and aggregates.", "py"], ["seed.py", "Synthetic data and attack scenarios.", "py"],
+      ["live.py", "SSE hub and live-traffic generator.", "py"], ["observability.py", "Request IDs, metrics, rate limiter.", "py"], ["analyst.py", "AI analyst with deterministic fallback.", "py"],
+      ["app.py", "Application factory, middleware, lifespan.", "py"],
+      { name: "routes/", note: "One module per API domain, mounted under /api/v1.", kids: [["__init__.py", "Combines the domain routers into the /api/v1 API.", "py"], ["deps.py", "Shared dependencies.", "py"],
+        ["events.py", "Ingest and search.", "py"], ["users.py", "Customer profiles.", "py"], ["incidents.py", "Triage.", "py"], ["dashboard.py", "Summary.", "py"], ["risk.py", "Rulebook and what-if.", "py"],
+        ["simulation.py", "Scenarios, traffic, reset.", "py"], ["analyst.py", "Ask the analyst.", "py"], ["system.py", "Health, metrics, SSE stream.", "py"]] }] },
+    { name: "web/", note: "The dashboard: plain HTML, CSS and ES modules served at /static; no build step.", kids: [
+      ["index.html", "The shell page.", "doc"],
+      { name: "assets/", note: "Static images.", kids: [["favicon.svg", "The browser-tab icon.", "doc"]] },
+      { name: "css/", note: "Design tokens, base, layout, components, charts and page styles.", kids: [["tokens.css", "Colours, type, motion tokens.", "css"], ["base.css", "Resets, typography, focus ring, dot-grid backdrop.", "css"],
+        ["layout.css", "App shell, sidebar, top bar, grid, mobile layout.", "css"], ["components.css", "Panels, badges, drawer, palette…", "css"], ["charts.css", "Axes, histogram, gauge, waterfall, world map.", "css"],
+        ["pages.css", "Page-specific layouts.", "css"]] },
+      { name: "js/", note: "Application code, organized by layer.", kids: [["main.js", "Router and shell.", "js"],
+        { name: "core/", note: "DOM, API, bus, SSE and motion foundations.", kids: [["dom.js", "html template, formatters.", "js"], ["api.js", "fetch wrapper.", "js"], ["bus.js", "App-wide publish/subscribe.", "js"],
+          ["live.js", "EventSource client.", "js"], ["motion.js", "anime.js gateway.", "js"]] },
+        { name: "ui/", note: "Reusable components: icons, drawer, palette, toasts, tooltips, boot.", kids: [["components.js", "Badges, panels, markdown…", "js"], ["icons.js", "SVG icon set and icon().", "js"],
+          ["drawer.js", "Detail sheet.", "js"], ["palette.js", "Command palette.", "js"], ["toast.js", "Pop-up notifications.", "js"], ["tooltip.js", "One shared tooltip for every chart.", "js"],
+          ["boot.js", "Once-per-session boot animation.", "js"]] },
+        { name: "charts/", note: "Hand-built SVG/canvas charts.", kids: [["core.js", "Shared toolbox: scales, smooth curves, colours, resizing.", "js"], ["area.js", "Volume chart.", "js"],
+          ["histogram.js", "Score distribution.", "js"], ["bars.js", "Horizontal bar lists.", "js"], ["sparkline.js", "KPI sparklines and micro bars.", "js"], ["gauge.js", "Risk gauge.", "js"],
+          ["waterfall.js", "Score breakdown.", "js"], ["riskline.js", "A customer's risk history.", "js"], ["worldmap.js", "Threat map.", "js"]] },
+        { name: "pages/", note: "One module per screen.", kids: [["index.js", "Route table and keyboard shortcuts.", "js"], ["overview.js", "Command center.", "js"], ["events.js", "Event log, search and filters.", "js"],
+          ["incidents.js", "Triage board.", "js"], ["users.js", "Customers and the risk spectrum.", "js"], ["lab.js", "Risk Lab.", "js"], ["simulation.js", "Simulator.", "js"],
+          ["integration.js", "Integration health.", "js"], ["analyst.js", "AI Analyst chat.", "js"]] },
+        { name: "views/", note: "Detail drawers shared by pages.", kids: [["details.js", "Event, incident, customer drawers.", "js"]] },
+        { name: "data/", note: "world-dots.js, the world-map dot mask generated by scripts/build_world_dots.py. It is data, so the walkthrough skips it.", kids: [] }] },
+      { name: "vendor/", note: "anime.js v4 (MIT), vendored so demos work offline.", kids: [] }] },
+    { name: "tests/", note: "93 pytest tests: rules, geo, API contract, scenarios, analyst, live hub.", kids: [["conftest.py", "Isolated DB and fixtures.", "py"], ["test_rules.py", "Pure engine tests.", "py"],
+      ["test_geo_and_correlation.py", "Distances, travel speed, incident titles.", "py"], ["test_api.py", "HTTP contract.", "py"], ["test_simulation.py", "End-to-end detections.", "py"],
+      ["test_analyst.py", "Analyst answers and its endpoint.", "py"], ["test_live_and_observability.py", "SSE hub, metrics, rate limiter.", "py"]] },
+    { name: "docs/", note: "This roadmap, the line-by-line walkthrough and the markdown write-ups.", kids: [["ROADMAP.html", "You are here.", "doc"], ["CODE_WALKTHROUGH.html", "Every line explained.", "doc"],
+      ["TECHNICAL_IMPLEMENTATION.md", "Deep technical reference.", "doc"], ["IMPROVEMENTS.md", "What changed and why.", "doc"],
+      { name: "walkthrough/", note: "The walkthrough's sources: template.html and one annotations/*.json file per explained file. After editing code, update the matching JSON and run scripts/build_walkthrough.py.", kids: [] }] },
+    { name: "scripts/", note: "Generators: the world-map mask and the walkthrough.", kids: [["build_world_dots.py", "Natural Earth → dot mask.", "py"], ["build_walkthrough.py", "Annotations → walkthrough HTML.", "py"]] },
+    { name: ".github/", note: "Continuous integration.", kids: [{ name: "workflows/", note: "GitHub Actions workflows.", kids: [["ci.yml", "Lint and test on Python 3.10 to 3.13.", "cfg"]] }] },
+    ["README.md", "Start here: what it is, quick start, API and configuration.", "doc"], ["pyproject.toml", "Project metadata, pytest and Ruff settings.", "cfg"],
+    ["requirements.txt", "Runtime dependencies.", "cfg"], ["requirements-dev.txt", "Adds pytest, Ruff and Pygments (for the walkthrough generator).", "cfg"],
+    ["Dockerfile", "Container image: docker build -t iip .", "cfg"], [".dockerignore", "What Docker leaves out of the build.", "cfg"],
+    [".env.example", "Template for the optional .env settings file.", "cfg"], [".gitignore", "Secrets, the runtime database and caches stay out of git.", "cfg"],
+  ];
+
+  const BEATS = [
+    ["0:00", "Overview", "Open the dashboard on a freshly reset dataset. Let the map's scan line finish.", "NovaBank streams every sign-in, payment and privileged action to us. Each one is scored by an explainable engine and correlated into incidents."],
+    ["0:40", "Turn on live traffic", "Flip the Live traffic switch in the sidebar. Point at the feed and the map pings.", "This is the real ingestion pipeline running continuously, pushed to the browser over Server-Sent Events."],
+    ["1:10", "Run Impossible travel", "Simulation → Impossible travel. Let the six pipeline stages light up.", "Two sign-ins, two continents, twenty minutes. Eleven thousand kilometres an hour. That's not a person."],
+    ["1:50", "Open the incident", "Click Open on the result. Scroll the correlated timeline, then click an event.", "Every score is a sum you can audit: this waterfall shows exactly which signals added what, and which ATT&CK techniques they point to."],
+    ["2:40", "Ask the analyst", "Click Ask analyst in the drawer.", "The engine decides and the analyst explains, and it can't change the score. With no API key it still works, deterministically."],
+    ["3:20", "Risk Lab", "Apply the Account takeover preset, then remove signals one by one.", "The whole rulebook is pure and testable, and this page runs the same code as production."],
+    ["3:50", "Business trip", "Back in Simulation, run Business trip.", "A real flight is not impossible travel. Geo-velocity cut the false positives the original rule produced."],
+    ["4:15", "Integration", "Integration → Send the sample event. Watch the 201, the latency and the request ID, then the toast.", "This is what an integration team watches: latency percentiles, error rate, throughput, request tracing."],
+    ["4:40", "Close", "Press Ctrl/⌘+K, type a name, open the customer. Mention tests, CI and docs.", "93 tests, CI on four Python versions, Docker, and a line-by-line walkthrough of the whole codebase."],
+  ];
+
+  const GLOSSARY = [
+    ["Server-Sent Events (SSE)", "A one-way HTTP stream from server to browser. EventSource reconnects automatically.", "iip/live.py · web/js/core/live.js"],
+    ["Event loop vs thread pool", "Async code runs on one event-loop thread; FastAPI runs sync endpoints in worker threads.", "iip/live.py"],
+    ["call_soon_threadsafe", "The safe way for another thread to schedule work on the asyncio event loop.", "LiveHub.publish"],
+    ["ASGI middleware", "A wrapper around the raw ASGI app that sees every request and response.", "iip/observability.py"],
+    ["Token bucket", "Rate limiting where tokens refill at a steady rate and each request spends one.", "RateLimiter"],
+    ["Constant-time comparison", "Comparing secrets so timing doesn't reveal how many characters matched.", "secrets.compare_digest"],
+    ["Pydantic", "Declarative validation and parsing of request data.", "iip/schemas.py"],
+    ["ORM session", "SQLAlchemy's unit of work: track changes, flush SQL, commit atomically.", "iip/database.py"],
+    ["flush vs commit", "flush sends SQL inside the open transaction; commit makes it permanent.", "iip/pipeline.py"],
+    ["WAL mode", "SQLite write-ahead logging, so readers and a writer don't block each other.", "_configure_sqlite"],
+    ["N+1 queries", "One query per row of a list. Batching turns it into a constant number of queries.", "iip/queries.py"],
+    ["Window function", "SQL computed over a partition of rows, e.g. row_number() per user.", "users_overview"],
+    ["Haversine", "Great-circle distance between two latitude/longitude points.", "iip/geo.py"],
+    ["Impossible travel", "Two sign-ins farther apart than any plane could fly in the time between.", "rules.impossible_travel"],
+    ["Correlation window", "Related risky events within 30 minutes join one incident.", "iip/correlation.py"],
+    ["Clamping", "Limiting a value to a range: the score sum is clamped to 0–100.", "rules.compute_score"],
+    ["MITRE ATT&CK", "A public catalogue of adversary techniques; signals carry indicative IDs.", "rules.SIGNALS"],
+    ["Password spray", "One source trying a common password against many accounts.", "Password spray signal"],
+    ["Card testing", "Tiny probe payments that check a stolen card works before cashing out.", "Rapid transactions signal"],
+    ["Grounding", "Restricting an AI model to supplied context so it can't invent facts.", "iip/analyst.py"],
+    ["FLIP animation", "First, Last, Invert, Play: animate an element from its old position to its new one.", "web/js/core/motion.js"],
+    ["Tagged template", "A function that processes a template literal; ours escapes every value.", "web/js/core/dom.js"],
+    ["Monotone cubic", "Smooth curve interpolation that never overshoots the data.", "web/js/charts/core.js"],
+    ["Design tokens", "Named variables for colour, type and motion that keep the UI consistent.", "web/css/tokens.css"],
+  ];
+
+  // ------------------------------------------------------------ progress
+  const KEY = "iip-roadmap-done";
+  let done = new Set();
+  try { done = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch { /* private mode */ }
+  function updateRing() {
+    const v = (done.size / STAGES.length) * 100, ring = $("#ring");
+    $("#ringLabel").textContent = `${done.size} / ${STAGES.length}`;
+    animate(ring, { strokeDasharray: [`${ring.dataset.v || 0} 100`, `${v} 100`], duration: 900, ease: "outExpo" });
+    if (!A) ring.setAttribute("stroke-dasharray", `${v} 100`);
+    ring.dataset.v = v;
+  }
+
+  // ------------------------------------------------------------ stages
+  const host = $("#stages");
+  host.insertAdjacentHTML("beforeend", STAGES.map((s, i) => `
+    <article class="stage${done.has(i) ? " done" : ""}" data-i="${i}" id="stage-${i}">
+      <span class="stage-num">${i}</span>
+      <header class="stage-head" data-toggle>
+        <div><div class="eyebrow">stage ${i}</div><h3>${s.title}</h3><p>${s.goal}</p></div>
+        <div class="stage-meta"><span class="time">≈ ${s.time}</span><span class="chev" aria-hidden="true">⌄</span></div>
+      </header>
+      <div class="stage-body"><div class="stage-inner">
+        <div style="display:grid;gap:14px;align-content:start">
+          <div class="box"><h4>Read, in this order</h4><ol class="files">${s.files.map(([f, why]) =>
+            `<li><div><a href="${f.endsWith(".md") ? "../" + f : W(f)}">${f}</a><span>${why}</span></div></li>`).join("")}</ol></div>
+          <div class="box"><h4>Concepts</h4><div class="chips">${s.concepts.map((c) => `<span class="chip">${c}</span>`).join("")}</div></div>
+        </div>
+        <div style="display:grid;gap:14px;align-content:start">
+          <div class="box"><h4>Try it</h4><ul class="try">${s.try.map((t) => t.startsWith("<pre") ? `<li class="cmd-item">${t}</li>` : `<li>${t}</li>`).join("")}</ul></div>
+          <div class="box"><h4>Check yourself</h4>${s.qs.map(([q, a]) => `<details class="q"><summary>${q}</summary><p>${a}</p></details>`).join("")}
+            <div style="margin-top:12px"><button class="complete" data-complete>${done.has(i) ? "✓ completed" : "Mark stage complete"}</button></div></div>
+        </div>
+      </div></div>
+    </article>`).join(""));
+
+  function toggleStage(stage, open) {
+    const body = $(".stage-body", stage);
+    const willOpen = open ?? !stage.classList.contains("open");
+    stage.classList.toggle("open", willOpen);
+    const target = willOpen ? $(".stage-inner", stage).offsetHeight : 0;
+    if (moving()) A.animate(body, { height: [body.offsetHeight, target], duration: 520, ease: "outExpo", onComplete: () => { if (willOpen) body.style.height = "auto"; } });
+    else body.style.height = willOpen ? "auto" : "0px";
+    if (willOpen) animate($$(".box", stage), { opacity: [0, 1], y: [10, 0], duration: 500, ease: "outExpo", delay: A ? A.stagger(60, { start: 80 }) : 0 });
+  }
+  host.addEventListener("click", (e) => {
+    const stage = e.target.closest(".stage");
+    if (!stage) return;
+    if (e.target.closest("[data-toggle]")) toggleStage(stage);
+    if (e.target.closest("[data-complete]")) {
+      const i = Number(stage.dataset.i);
+      done.has(i) ? done.delete(i) : done.add(i);
+      try { localStorage.setItem(KEY, JSON.stringify([...done])); } catch { /* ignore */ }
+      stage.classList.toggle("done", done.has(i));
+      $("[data-complete]", stage).textContent = done.has(i) ? "✓ completed" : "Mark stage complete";
+      animate($(".stage-num", stage), { scale: [1.35, 1], rotate: done.has(i) ? [-20, 0] : 0, duration: 700, ease: "outBack(3)" });
+      updateRing();
+      if (done.has(i) && STAGES[i + 1]) setTimeout(() => toggleStage($(`#stage-${i + 1}`), true), 350);
+    }
+  });
+  toggleStage($("#stage-0"), true);
+
+  // Cursor spotlight on stage borders.
+  host.addEventListener("pointermove", (e) => {
+    for (const s of $$(".stage", host)) { const r = s.getBoundingClientRect(); s.style.setProperty("--mx", `${e.clientX - r.left}px`); s.style.setProperty("--my", `${e.clientY - r.top}px`); }
+  });
+
+  // ------------------------------------------------------------ architecture
+  const svg = $(".arch svg"), NS = "http://www.w3.org/2000/svg", H = 52;
+  const byId = Object.fromEntries(ARCH.nodes.map((n) => [n.id, n]));
+  const anchor = (n, side) => side === "r" ? [n.x + n.w, n.y + H / 2] : side === "l" ? [n.x, n.y + H / 2] : side === "b" ? [n.x + n.w / 2, n.y + H] : [n.x + n.w / 2, n.y];
+  const edgePaths = ARCH.edges.map(([a, b]) => {
+    const A1 = byId[a], B1 = byId[b];
+    let p0, p1;
+    if (B1.x > A1.x + A1.w) { p0 = anchor(A1, "r"); p1 = anchor(B1, "l"); }
+    else if (B1.y > A1.y) { p0 = anchor(A1, "b"); p1 = anchor(B1, "t"); }
+    else { p0 = anchor(A1, "t"); p1 = anchor(B1, "b"); }
+    const mx = (p0[0] + p1[0]) / 2;
+    const d = p0[1] === p1[1] || Math.abs(p0[0] - p1[0]) < 4 ? `M${p0} L${p1}` : `M${p0} C${mx},${p0[1]} ${mx},${p1[1]} ${p1}`;
+    return { a, b, d };
+  });
+  $("#edges").innerHTML = edgePaths.map((e) => `<path class="edge" data-a="${e.a}" data-b="${e.b}" d="${e.d}"/>`).join("");
+  $("#nodes").innerHTML = ARCH.nodes.map((n) => `<g class="node" data-id="${n.id}" tabindex="0">
+    <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${H}" rx="11"/>
+    <text x="${n.x + 14}" y="${n.y + 22}">${n.label}</text><text class="sub" x="${n.x + 14}" y="${n.y + 38}">${n.sub}</text></g>`).join("");
+  const caption = $("#archCaption");
+  svg.addEventListener("pointerover", (e) => {
+    const g = e.target.closest(".node");
+    if (!g) return;
+    const n = byId[g.dataset.id];
+    $$(".node", svg).forEach((x) => x.classList.toggle("on", x === g));
+    $$(".edge", svg).forEach((p) => p.classList.toggle("hot", p.dataset.a === n.id || p.dataset.b === n.id));
+    caption.innerHTML = `<div><b>${n.label}</b><span>${ARCH.notes[n.id]}</span></div><div class="files">${n.files}<br><a href="#stage-${n.stage}">stage ${n.stage} →</a></div>`;
+  });
+  svg.addEventListener("click", (e) => {
+    const g = e.target.closest(".node");
+    if (g) { const st = $(`#stage-${byId[g.dataset.id].stage}`); st.scrollIntoView({ behavior: moving() ? "smooth" : "auto" }); if (!st.classList.contains("open")) toggleStage(st, true); }
+  });
+
+  // Packets flowing along the main route; paused when the diagram is off screen.
+  const ROUTES = [["client", "api", "pipe", "rules", "db", "read", "ui"], ["sim", "pipe", "rules", "db", "read", "ui"], ["traffic", "pipe", "rules", "db", "read", "ui"]];
+  const packetAnims = [];
+  function startPackets() {
+    if (!moving()) return;
+    ROUTES.forEach((route, r) => {
+      const segs = route.slice(1).map((b, k) => edgePaths.find((e) => e.a === route[k] && e.b === b)).filter(Boolean);
+      const dot = document.createElementNS(NS, "circle");
+      dot.setAttribute("r", "3.6");
+      dot.setAttribute("class", `packet${r === 0 ? " risk" : ""}`);
+      $("#packets").append(dot);
+      const tl = A.createTimeline({ loop: true, delay: r * 1100, loopDelay: 600 });
+      segs.forEach((seg) => {
+        const path = $(`.edge[data-a="${seg.a}"][data-b="${seg.b}"]`, svg);
+        tl.add(dot, { ...A.svg.createMotionPath(path), duration: 650, ease: "inOutSine" });
+      });
+      packetAnims.push(tl);
+    });
+  }
+  new IntersectionObserver((entries) => entries.forEach((en) => packetAnims.forEach((t) => (en.isIntersecting ? t.play() : t.pause()))), { threshold: 0 }).observe($(".arch"));
+
+  // ------------------------------------------------------------ lifecycle player
+  const lane = $("#lane");
+  lane.insertAdjacentHTML("beforeend", LIFECYCLE.map(([name], i) => `<div class="dot-step" data-i="${i}"><i>${i + 1}</i><span>${name}</span></div>`).join(""));
+  let step = 0, playing = null;
+  function showStep(i) {
+    step = (i + LIFECYCLE.length) % LIFECYCLE.length;
+    const [name, text, where] = LIFECYCLE[step];
+    $$(".dot-step", lane).forEach((d, k) => { d.classList.toggle("on", k === step); d.classList.toggle("past", k < step); });
+    $("#stepLabel").innerHTML = `step <b>${step + 1}</b> / ${LIFECYCLE.length}`;
+    $("#stepCard").innerHTML = `<div><div class="eyebrow">step ${step + 1}</div><h4>${name}</h4><p>${text}</p></div><div class="where">${where}</div>`;
+    const frac = step / (LIFECYCLE.length - 1);
+    animate($("#laneFill"), { scaleX: frac, duration: 520, ease: "outExpo" });
+    if (!A) $("#laneFill").style.transform = `scaleX(${frac})`;
+    animate($$("#stepCard > *"), { opacity: [0, 1], y: [8, 0], duration: 420, ease: "outExpo", delay: A ? A.stagger(60) : 0 });
+    animate($(`.dot-step[data-i="${step}"] i`), { scale: [0.7, 1], duration: 520, ease: "outBack(3)" });
+    const wrap = $(".track-wrap"), dot = $(`.dot-step[data-i="${step}"]`); // scroll the lane only, never the page
+    wrap.scrollTo({ left: dot.offsetLeft - wrap.clientWidth / 2 + dot.offsetWidth / 2, behavior: moving() ? "smooth" : "auto" });
+  }
+  const stop = () => { clearInterval(playing); playing = null; $("#play").textContent = "▶ Play"; };
+  $("#play").addEventListener("click", () => {
+    if (playing) return stop();
+    $("#play").textContent = "❚❚ Pause";
+    if (step === LIFECYCLE.length - 1) showStep(0);
+    playing = setInterval(() => { if (step === LIFECYCLE.length - 1) stop(); else showStep(step + 1); }, 1700);
+  });
+  $("#next").addEventListener("click", () => { stop(); showStep(step + 1); });
+  $("#prev").addEventListener("click", () => { stop(); showStep(step - 1); });
+  lane.addEventListener("click", (e) => { const d = e.target.closest(".dot-step"); if (d) { stop(); showStep(Number(d.dataset.i)); } });
+  showStep(0);
+
+  // ------------------------------------------------------------ repo map
+  const pathOf = (prefix, name) => (prefix + name).replace(/\/$/, "");
+  function treeHTML(items, prefix = "") {
+    return items.map((it) => {
+      if (Array.isArray(it)) {
+        const [name, note, kind] = it, full = prefix + name;
+        return `<button class="file" data-path="${full}" data-note="${note}"><span class="twisty"></span><span class="ico ${kind}"></span>${name}</button>`;
+      }
+      return `<div><button class="folder" data-path="${pathOf(prefix, it.name)}" data-note="${it.note}"><span class="twisty">▾</span>${it.name}</button>
+        <div class="kids">${treeHTML(it.kids, prefix + it.name)}</div></div>`;
+    }).join("");
+  }
+  const tree = $("#tree");
+  tree.innerHTML = treeHTML(REPO);
+  const detail = $("#detail");
+  // Documents open directly (links are relative to docs/); every other file in the map is explained in the walkthrough.
+  function linkFor(path) {
+    if (path === "docs/ROADMAP.html") return null;
+    if (path.endsWith(".md") || path.startsWith("docs/"))
+      return { href: path.startsWith("docs/") ? path.slice(5) : `../${path}`, label: path.endsWith(".md") ? "Open document" : "Open page" };
+    return { href: W(path), label: "Read it line by line" };
+  }
+  function showDetail(btn) {
+    $$("button", tree).forEach((b) => b.classList.toggle("on", b === btn));
+    const path = btn.dataset.path, isFile = btn.classList.contains("file"), link = isFile && linkFor(path);
+    detail.innerHTML = `<div class="eyebrow">${isFile ? "file" : "folder"}</div><h3>${path}</h3><p>${btn.dataset.note}</p>
+      ${link ? `<a class="btn sm" href="${link.href}">${link.label} →</a>` : ""}`;
+    animate($$("#detail > *"), { opacity: [0, 1], x: [10, 0], duration: 420, ease: "outExpo", delay: A ? A.stagger(50) : 0 });
+  }
+  tree.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    if (btn.classList.contains("folder")) {
+      const kids = btn.nextElementSibling, closing = !btn.classList.contains("closed");
+      btn.classList.toggle("closed", closing);
+      if (moving()) A.animate(kids, { height: closing ? [kids.scrollHeight, 0] : [0, kids.scrollHeight], opacity: closing ? [1, 0] : [0, 1], duration: 380, ease: "outExpo",
+        onComplete: () => { kids.style.height = closing ? "0px" : "auto"; } });
+      else kids.style.height = closing ? "0px" : "auto";
+    }
+    showDetail(btn);
+  });
+  showDetail($('button[data-path="iip"]', tree));
+
+  // ------------------------------------------------------------ demo + glossary
+  $("#beats").innerHTML = BEATS.map(([t, title, doIt, say]) => `<div class="beat"><time>${t}</time><div><b>${title}</b><div class="do">${doIt}</div></div><div class="say">“${say}”</div></div>`).join("");
+  const gloss = $("#gloss");
+  const renderGloss = (q = "") => {
+    const list = GLOSSARY.filter(([t, d]) => (t + d).toLowerCase().includes(q.toLowerCase()));
+    gloss.innerHTML = list.map(([t, d, w]) => `<div class="term"><b>${t}</b><p>${d}</p><small>${w}</small></div>`).join("") || `<p style="color:var(--t3)">No matching terms.</p>`;
+  };
+  renderGloss();
+  $("#glossQ").addEventListener("input", (e) => { renderGloss(e.target.value); animate($$(".term", gloss), { opacity: [0, 1], y: [6, 0], duration: 360, delay: A ? A.stagger(15) : 0 }); });
+
+  // ------------------------------------------------------------ scroll-driven motion
+  const revealed = new WeakSet();
+  const io = new IntersectionObserver((entries) => entries.forEach((en) => {
+    if (!en.isIntersecting || revealed.has(en.target)) return;
+    revealed.add(en.target);
+    const kids = en.target.matches(".gloss, .demo") ? $$(":scope > *", en.target) : [en.target];
+    animate(kids, { opacity: [0, 1], y: [18, 0], filter: ["blur(6px)", "blur(0px)"], duration: 760, ease: "outExpo", delay: A ? A.stagger(45) : 0,
+      onComplete: () => kids.forEach((el) => ["opacity", "transform", "filter"].forEach((p) => el.style.removeProperty(p))) });
+  }), { rootMargin: "0px 0px -10% 0px" });
+  $$(".head, .stage, .player, .repo, .demo, .gloss").forEach((el) => io.observe(el));
+
+  const sections = ["architecture", "path", "lifecycle", "repo", "demo", "glossary"].map((id) => $("#" + id));
+  function onScroll() {
+    const path = $("#path"), r = path.getBoundingClientRect();
+    const p = Math.min(1, Math.max(0, (innerHeight * 0.6 - r.top) / r.height));
+    $("#railFill").style.transform = `scaleY(${p})`;
+    const current = sections.filter((s) => s.getBoundingClientRect().top < innerHeight * 0.4).pop();
+    const link = current && $(`#links a[href="#${current.id}"]`);
+    $$("#links a").forEach((a) => a.classList.toggle("on", a === link));
+    const pill = $("#navPill");
+    if (link) {
+      const target = { x: link.offsetLeft, width: link.offsetWidth, opacity: 1 };
+      if (moving()) A.animate(pill, { ...target, ease: A.spring({ bounce: 0.2, duration: 400 }) });
+      else Object.assign(pill.style, { transform: `translateX(${target.x}px)`, width: `${target.width}px`, opacity: 1 });
+    } else pill.style.opacity = 0;
+  }
+  let ticking = false;
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; onScroll(); }); } }, { passive: true });
+
+  // ------------------------------------------------------------ intro
+  function intro() {
+    A = window.anime;
+    updateRing();
+    onScroll();
+    if (!moving()) { $$("[data-count]").forEach((el) => { el.textContent = el.dataset.count; }); return; }
+    A.animate($$(".hero h1 .w"), { opacity: [0, 1], y: ["45%", "0%"], filter: ["blur(10px)", "blur(0px)"], duration: 900, ease: "outExpo", delay: A.stagger(90) });
+    A.animate($$(".hero .eyebrow, .lede, .hero-stats, .cta"), { opacity: [0, 1], y: [14, 0], duration: 800, ease: "outExpo", delay: A.stagger(80, { start: 300 }) });
+    $$("[data-count]").forEach((el) => { const s = { v: 0 }; A.animate(s, { v: Number(el.dataset.count), duration: 1400, delay: 500, ease: "outExpo", onUpdate: () => { el.textContent = Math.round(s.v); } }); });
+    A.animate(A.svg.createDrawable($$(".edge", svg)), { draw: ["0 0", "0 1"], duration: 1100, ease: "inOutQuad", delay: A.stagger(70, { start: 500 }) });
+    A.animate($$(".node", svg), { opacity: [0, 1], scale: [0.85, 1], duration: 700, ease: "outBack(1.8)", delay: A.stagger(60, { start: 250 }) });
+    setTimeout(startPackets, 1600);
+  }
+  if (window.anime) intro();
+  else {
+    $$("[data-count]").forEach((el) => { el.textContent = el.dataset.count; });
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js";
+    s.onload = intro; s.onerror = () => { updateRing(); onScroll(); };
+    document.head.append(s);
+  }
+})();
+</script>
+</body>
+</html>

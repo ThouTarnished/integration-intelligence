@@ -1,0 +1,447 @@
+{
+  "path": "iip/observability.py",
+  "lines": 138,
+  "summary": "Operational plumbing for the API. A thread-safe `Metrics` registry tracks request counts, error rate, latency percentiles, per-route stats and events ingested per minute; a pure-ASGI `RequestContextMiddleware` tags every response with `X-Request-ID`/`X-Response-Time`, writes the access log and feeds `Metrics`; and `RateLimiter` is a per-client token bucket. `iip/app.py` installs the middleware, `iip/routes/deps.py` turns the limiter into a dependency, and `/api/v1/integration/metrics` in `iip/routes/system.py` serves `metrics.snapshot()` to the Integration page.",
+  "notes": [
+    {
+      "from": 1,
+      "to": 1,
+      "text": "Module docstring summary: request IDs, access logs, latency and throughput metrics, and rate limiting all live here."
+    },
+    {
+      "from": 3,
+      "to": 5,
+      "text": "Explains why: these are the SLIs (service level indicators) an integration team watches: how many calls a client makes, how fast the API answers as p50/p95/p99 percentiles, how many calls fail, and how many events flow per minute."
+    },
+    {
+      "from": 6,
+      "to": 6,
+      "text": "Postpones evaluation of type hints, so annotations such as `deque[float]` are never evaluated at import time."
+    },
+    {
+      "from": 8,
+      "to": 9,
+      "text": "`logging` writes the access log; `re` checks incoming request ids."
+    },
+    {
+      "from": 10,
+      "to": 11,
+      "text": "`threading` provides the locks that protect shared counters; `time` provides the wall-clock, high-resolution and monotonic clocks."
+    },
+    {
+      "from": 12,
+      "to": 13,
+      "text": "`uuid` generates request ids; `Counter` (a dict that counts) and `deque` (a list with an optional maximum length) hold the metrics."
+    },
+    {
+      "from": 15,
+      "to": 15,
+      "text": "`MutableHeaders` lets the middleware edit the headers of an outgoing ASGI response message in place."
+    },
+    {
+      "from": 16,
+      "to": 16,
+      "text": "Type names from the ASGI spec: an app is a callable taking `scope` (information about the request), `receive` (reads incoming messages) and `send` (emits outgoing messages); a `Message` is one such message, a plain dict."
+    },
+    {
+      "from": 18,
+      "to": 18,
+      "text": "Named logger for the access log, so its lines are labelled `iip.http`."
+    },
+    {
+      "from": 19,
+      "to": 19,
+      "text": "The shape of a request id the middleware will echo back: 1 to 64 letters, digits, dots, underscores or dashes."
+    },
+    {
+      "from": 22,
+      "to": 22,
+      "text": "`Metrics` is the in-memory registry behind everything the Integration page charts."
+    },
+    {
+      "from": 23,
+      "to": 23,
+      "text": "`window=2000` sets how many recent latency samples are kept for the percentiles."
+    },
+    {
+      "from": 24,
+      "to": 24,
+      "text": "One lock guards every field, because several threads use the registry: the middleware records requests on the event loop thread, while sync endpoints and the traffic generator call it from worker threads."
+    },
+    {
+      "from": 25,
+      "to": 25,
+      "text": "Wall-clock start time, used to compute uptime."
+    },
+    {
+      "from": 26,
+      "to": 27,
+      "text": "Total requests, and total server errors (5xx), since start-up."
+    },
+    {
+      "from": 28,
+      "to": 28,
+      "text": "Counts responses by status class: `2xx`, `4xx`, `5xx`."
+    },
+    {
+      "from": 29,
+      "to": 29,
+      "text": "Per-route statistics keyed by `\"METHOD /route\"`: call count, error count and summed milliseconds."
+    },
+    {
+      "from": 30,
+      "to": 30,
+      "text": "A rolling window: `deque(maxlen=window)` automatically discards the oldest value once 2,000 are stored, which bounds memory and keeps the percentiles about recent traffic."
+    },
+    {
+      "from": 31,
+      "to": 31,
+      "text": "Events ingested per epoch minute (whole minutes since 1 January 1970), the raw data behind the throughput chart."
+    },
+    {
+      "from": 33,
+      "to": 33,
+      "text": "`observe` records one finished HTTP request: method, templated route, status code and duration in milliseconds."
+    },
+    {
+      "from": 34,
+      "to": 34,
+      "text": "Takes the lock so concurrent updates cannot interleave and lose counts."
+    },
+    {
+      "from": 35,
+      "to": 35,
+      "text": "Counts the request."
+    },
+    {
+      "from": 36,
+      "to": 36,
+      "text": "Adds the boolean `status >= 500` to the error total. Python booleans are integers (`True == 1`), so only server errors increase it."
+    },
+    {
+      "from": 37,
+      "to": 37,
+      "text": "Integer division turns a status code into its class, for example 404 becomes `\"4xx\"`."
+    },
+    {
+      "from": 38,
+      "to": 38,
+      "text": "Stores the latency sample in the rolling window."
+    },
+    {
+      "from": 39,
+      "to": 39,
+      "text": "Fetches this route's stats dict, creating a zeroed one on first use (`setdefault`)."
+    },
+    {
+      "from": 40,
+      "to": 42,
+      "text": "Updates the route's counters. Note the per-route `errors` counts every status `>= 400` (client mistakes included), unlike the global counter, which counts only 5xx."
+    },
+    {
+      "from": 44,
+      "to": 44,
+      "text": "`record_ingest` counts events entering the pipeline; the events route, the simulation route and the live-traffic generator call it."
+    },
+    {
+      "from": 45,
+      "to": 45,
+      "text": "The current epoch minute: seconds since 1970 divided by 60, rounded down."
+    },
+    {
+      "from": 46,
+      "to": 47,
+      "text": "Under the lock, adds `count` to this minute's bucket."
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "text": "Deletes buckets older than an hour so memory stays bounded. The list comprehension collects the old keys first, because deleting from a dict while iterating over it directly raises an error."
+    },
+    {
+      "from": 51,
+      "to": 51,
+      "text": "`snapshot` returns the JSON-ready summary served by `/integration/metrics`."
+    },
+    {
+      "from": 52,
+      "to": 52,
+      "text": "Holds the lock only long enough to copy the data out."
+    },
+    {
+      "from": 53,
+      "to": 53,
+      "text": "A sorted copy of the latency window, needed to read percentiles by position."
+    },
+    {
+      "from": 54,
+      "to": 55,
+      "text": "One summary per route, with average latency (total milliseconds divided by calls) rounded to two decimals."
+    },
+    {
+      "from": 56,
+      "to": 57,
+      "text": "The last 30 minutes of ingest counts, oldest first (`k` runs from 29 down to 0); minutes without events read as 0."
+    },
+    {
+      "from": 58,
+      "to": 58,
+      "text": "Copies the plain counters into local variables so the remaining work can happen after the lock is released."
+    },
+    {
+      "from": 60,
+      "to": 61,
+      "text": "`pct` returns a percentile by **nearest rank**: take the sorted samples and pick the value at position `p * n`, clamped to the last index. p50 is the median, while p95 and p99 describe the slowest 5% and 1% of requests, the tail an average hides; with no samples it returns 0."
+    },
+    {
+      "from": 63,
+      "to": 63,
+      "text": "Builds the snapshot dictionary, outside the lock."
+    },
+    {
+      "from": 64,
+      "to": 64,
+      "text": "Seconds since the registry was created, which in practice is process uptime."
+    },
+    {
+      "from": 65,
+      "to": 66,
+      "text": "Total requests and total server errors."
+    },
+    {
+      "from": 67,
+      "to": 67,
+      "text": "Errors as a fraction of requests (0.0123 means 1.23%), guarded against division by zero."
+    },
+    {
+      "from": 68,
+      "to": 68,
+      "text": "The status-class breakdown copied earlier."
+    },
+    {
+      "from": 69,
+      "to": 70,
+      "text": "Latency percentiles and the average, in milliseconds, all from the same sorted window."
+    },
+    {
+      "from": 71,
+      "to": 71,
+      "text": "The 30-value ingest series for the throughput chart."
+    },
+    {
+      "from": 72,
+      "to": 73,
+      "text": "The 12 busiest routes, sorted by call count descending; the closing brace ends the snapshot dict."
+    },
+    {
+      "from": 76,
+      "to": 76,
+      "text": "The process-wide registry, shared by the middleware, the routes and the live-traffic generator."
+    },
+    {
+      "from": 79,
+      "to": 79,
+      "text": "`RequestContextMiddleware` wraps the whole application, so it sees every request first and every response last."
+    },
+    {
+      "from": 80,
+      "to": 82,
+      "text": "Docstring: tag every response with `X-Request-ID` and `X-Response-Time`, log one line per API call and feed `Metrics`. It is **pure ASGI** rather than Starlette's `BaseHTTPMiddleware`, which re-routes every response body through its own internal stream; wrapping `send` directly lets the long-lived SSE stream pass straight through, chunk by chunk."
+    },
+    {
+      "from": 84,
+      "to": 84,
+      "text": "Starlette constructs the middleware with the inner `app` it wraps; `registry` defaults to the shared `metrics` but a fresh `Metrics` could be passed in, for example in a test."
+    },
+    {
+      "from": 85,
+      "to": 86,
+      "text": "Stores the wrapped app and the metrics registry."
+    },
+    {
+      "from": 88,
+      "to": 88,
+      "text": "The ASGI entry point, called once per connection with `scope`, `receive` and `send`."
+    },
+    {
+      "from": 89,
+      "to": 91,
+      "text": "Anything that is not an HTTP request (such as the `lifespan` startup and shutdown messages) is passed straight through untouched."
+    },
+    {
+      "from": 92,
+      "to": 92,
+      "text": "Reads the caller's `X-Request-ID` header, if any. ASGI headers are a list of lowercase byte-string pairs, hence `b\"x-request-id\"`. Latin-1 can decode any byte sequence, so an odd header can no longer crash the request with a decoding error."
+    },
+    {
+      "from": 93,
+      "to": 93,
+      "text": "Reuses the caller's id when it is a safe token (see `_SAFE_ID`), so one request can be traced across systems; otherwise it creates a short random id from a UUID. Echoing arbitrary text used to fail with an encoding error, a 500, for characters such as `€`."
+    },
+    {
+      "from": 94,
+      "to": 94,
+      "text": "`perf_counter` is a high-resolution clock meant for measuring durations."
+    },
+    {
+      "from": 95,
+      "to": 95,
+      "text": "Assumes 500 until a response actually starts, so a request whose handler crashes before sending anything is still recorded as a server error."
+    },
+    {
+      "from": 97,
+      "to": 97,
+      "text": "A wrapper around `send`: every message the app sends passes through it on its way to the server."
+    },
+    {
+      "from": 98,
+      "to": 98,
+      "text": "`nonlocal` lets this inner function update the outer `status` variable."
+    },
+    {
+      "from": 99,
+      "to": 100,
+      "text": "The `http.response.start` message carries the status code and headers (body chunks follow later), so this is where the status is captured."
+    },
+    {
+      "from": 101,
+      "to": 101,
+      "text": "Wraps the message's header list so headers can be added to it in place."
+    },
+    {
+      "from": 102,
+      "to": 102,
+      "text": "Echoes the request id back, so a client can quote it when reporting a problem."
+    },
+    {
+      "from": 103,
+      "to": 103,
+      "text": "Time from request arrival to the moment headers are sent, formatted like `12.3ms`. For a streamed response that is time to first byte, not total duration."
+    },
+    {
+      "from": 104,
+      "to": 104,
+      "text": "Forwards the (possibly modified) message to the real server."
+    },
+    {
+      "from": 106,
+      "to": 107,
+      "text": "Runs the rest of the application with the wrapped `send`."
+    },
+    {
+      "from": 108,
+      "to": 108,
+      "text": "`finally` runs whether the app returned normally or raised, so failed requests are measured too."
+    },
+    {
+      "from": 109,
+      "to": 109,
+      "text": "The request path, for example `/api/v1/users/USR-1001`."
+    },
+    {
+      "from": 110,
+      "to": 110,
+      "text": "Only API calls are measured: static files and the dashboard page are skipped, and so is the SSE `/stream`, whose connection can stay open for hours and would wreck the latency figures."
+    },
+    {
+      "from": 111,
+      "to": 111,
+      "text": "Total elapsed milliseconds."
+    },
+    {
+      "from": 112,
+      "to": 112,
+      "text": "The route template the router matched, such as `/users/{user_id}`: FastAPI leaves the matched route in `scope`. Paths that matched nothing share one `(unmatched)` entry; keying by the raw path used to add a permanent entry for every distinct unknown URL."
+    },
+    {
+      "from": 113,
+      "to": 113,
+      "text": "Records the request in `Metrics`."
+    },
+    {
+      "from": 114,
+      "to": 114,
+      "text": "One access-log line per call: method, path, status, duration and request id. The `%s` placeholders let `logging` build the message only if the line is actually emitted."
+    },
+    {
+      "from": 117,
+      "to": 117,
+      "text": "`RateLimiter` implements the **token bucket** algorithm, with one bucket per client."
+    },
+    {
+      "from": 118,
+      "to": 118,
+      "text": "Docstring: `per_minute` requests a minute on average, with bursts of up to `per_minute` requests allowed."
+    },
+    {
+      "from": 120,
+      "to": 120,
+      "text": "Takes the allowed requests per minute (`IIP_RATE_LIMIT_PER_MINUTE`, 240 by default)."
+    },
+    {
+      "from": 121,
+      "to": 121,
+      "text": "Bucket capacity, the largest burst a client can make; `max(..., 1)` guarantees at least one token."
+    },
+    {
+      "from": 122,
+      "to": 122,
+      "text": "Refill speed in tokens per second, so an empty bucket refills completely in exactly one minute."
+    },
+    {
+      "from": 123,
+      "to": 123,
+      "text": "Maps each client key to `(tokens left, time of last update)`. Idle entries are pruned in `hit`, so the map can't grow without bound."
+    },
+    {
+      "from": 124,
+      "to": 124,
+      "text": "A lock, because sync dependencies run in FastAPI's thread pool and two requests could update the same bucket at the same time."
+    },
+    {
+      "from": 126,
+      "to": 126,
+      "text": "`hit` is called by the `rate_limit` dependency once for every throttled request (the write endpoints and `/ai/ask`)."
+    },
+    {
+      "from": 127,
+      "to": 127,
+      "text": "Docstring: returns 0 when the request is allowed, otherwise the number of seconds until a token becomes available."
+    },
+    {
+      "from": 128,
+      "to": 128,
+      "text": "`time.monotonic()` never jumps backwards (the wall clock can, when the system time is changed), which makes it safe for measuring elapsed time."
+    },
+    {
+      "from": 129,
+      "to": 129,
+      "text": "The read-modify-write of the bucket happens under the lock."
+    },
+    {
+      "from": 130,
+      "to": 131,
+      "text": "Prunes idle clients once more than 10,000 buckets exist. A bucket untouched for a minute has refilled completely, so forgetting it changes nothing for that client, and memory stays bounded however many addresses call the API."
+    },
+    {
+      "from": 132,
+      "to": 132,
+      "text": "Loads this client's bucket; a first-time client starts with a full bucket."
+    },
+    {
+      "from": 133,
+      "to": 133,
+      "text": "Lazy refill: adds the tokens earned since the last update (elapsed seconds times the refill rate), capped at capacity. No background timer is needed."
+    },
+    {
+      "from": 134,
+      "to": 136,
+      "text": "At least one whole token: spend it, save the new state and return `0.0`, meaning allowed."
+    },
+    {
+      "from": 137,
+      "to": 138,
+      "text": "Not enough tokens: saves the refilled state and returns how long until the bucket holds one token, `(1 - tokens) / refill_per_second` seconds. `deps.py` sends this back in a `Retry-After` header."
+    }
+  ]
+}

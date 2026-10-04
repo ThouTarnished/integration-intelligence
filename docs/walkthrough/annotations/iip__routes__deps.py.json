@@ -1,0 +1,25 @@
+{
+  "path": "iip/routes/deps.py",
+  "lines": 32,
+  "summary": "Shared FastAPI dependencies for the route modules. `DB` injects a per-request database session, `require_api_key` checks the `X-API-Key` header in constant time, and `rate_limit` applies the token-bucket `RateLimiter` from `iip/observability.py` per client IP. `WRITE` bundles rate limiting and authentication for every state-changing endpoint.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Module docstring: the dependencies every route module shares: database session, API-key auth and rate limiting."},
+    {"from": 2, "to": 2, "text": "Postpones evaluation of type hints; FastAPI still resolves them when it inspects function signatures."},
+    {"from": 4, "to": 5, "text": "`math` provides `ceil` for the `Retry-After` value; `secrets` provides the constant-time comparison used for the API key."},
+    {"from": 6, "to": 6, "text": "`Annotated` attaches extra metadata (here, FastAPI's dependency and header markers) to a type hint."},
+    {"from": 8, "to": 8, "text": "FastAPI building blocks: `Depends` declares a dependency, `Header` reads a request header, `HTTPException` produces an error response, and `Request` is the raw incoming request."},
+    {"from": 9, "to": 9, "text": "The SQLAlchemy session type."},
+    {"from": 11, "to": 13, "text": "The shared settings, `get_session` (a generator that opens one session per request) and the token-bucket `RateLimiter`."},
+    {"from": 15, "to": 15, "text": "A reusable type alias: any endpoint parameter written `db: DB` receives a fresh session from `get_session`, which FastAPI closes after the response. With `Annotated` the dependency travels with the type, so no endpoint has to repeat `= Depends(get_session)`."},
+    {"from": 16, "to": 16, "text": "One limiter for the whole process, sized from `IIP_RATE_LIMIT_PER_MINUTE` (240 by default)."},
+    {"from": 19, "to": 19, "text": "Reads the `X-API-Key` header: `Header()` turns the parameter name `x_api_key` into `x-api-key` (header names are case-insensitive), and the `None` default means a missing header reaches the check and gets a 401 instead of a validation error."},
+    {"from": 20, "to": 20, "text": "The comment explains the comparison on the next line."},
+    {"from": 21, "to": 21, "text": "`secrets.compare_digest` compares in constant time. A normal `==` stops at the first differing character, so an attacker timing many requests could discover the key one character at a time (a **timing attack**). Both sides are encoded to bytes, and a missing header becomes an empty string."},
+    {"from": 22, "to": 22, "text": "A wrong or missing key gets `401 Unauthorized`."},
+    {"from": 25, "to": 25, "text": "The rate-limit dependency receives the raw `Request` so it knows who is calling."},
+    {"from": 26, "to": 26, "text": "Uses the client's IP address as the bucket key; `request.client` can be `None` with some transports, hence the `\"unknown\"` fallback."},
+    {"from": 27, "to": 28, "text": "A non-zero wait means the bucket is empty: responds `429 Too Many Requests` with the standard `Retry-After` header, rounded up to whole seconds so clients never retry too early."},
+    {"from": 31, "to": 31, "text": "Explains the order of `WRITE`: throttling runs first, so someone guessing API keys is slowed down too."},
+    {"from": 32, "to": 32, "text": "The dependency list attached with `dependencies=WRITE` to every state-changing endpoint. FastAPI runs them in list order before the endpoint; they return nothing and act only by raising errors."}
+  ]
+}

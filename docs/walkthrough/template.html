@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IIP · Code walkthrough</title>
+<meta name="description" content="Every line of the Integration Intelligence Platform, explained side by side with the code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&display=swap">
+<!-- anime.js v4 from the project (works offline when opened from the repo); a CDN copy is tried if it's missing. -->
+<script src="../web/vendor/anime.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0a0b0d; --s1: #101114; --s2: #15171b; --s3: #1c1e23; --s4: #24272d;
+  --line: rgb(255 255 255 / .065); --line-2: rgb(255 255 255 / .11); --line-ctl: #474b54;
+  --t1: #ecedee; --t2: #a3a6ad; --t3: #7d818a; --t4: #565a62;
+  --accent: #3ee6d1; --accent-ink: #04201c; --accent-soft: rgb(62 230 209 / .12); --accent-line: rgb(62 230 209 / .35);
+  --py: #3ee6d1; --js: #f4d35e; --css: #8a9bb0; --html: #f08a4b; --cfg: #6e7480;
+  --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --serif: "Instrument Serif", ui-serif, Georgia, serif;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --top: 58px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-padding-top: calc(var(--top) + 16px); }
+body { margin: 0; background: var(--bg); color: var(--t1); font: 400 14px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+::selection { background: var(--accent-soft); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 5px; }
+.backdrop { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(900px 420px at 75% -120px, rgb(62 230 209 / .07), transparent 70%),
+    radial-gradient(rgb(255 255 255 / .05) 1px, transparent 1px) 0 0 / 22px 22px;
+  -webkit-mask-image: linear-gradient(#000, transparent 70%); mask-image: linear-gradient(#000, transparent 70%); }
+.eyebrow { font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--t3); }
+kbd { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 5px; font: 500 11px var(--mono); color: var(--t3); background: var(--s2); }
+
+/* ---------- top bar ---------- */
+.top { position: sticky; top: 0; z-index: 30; height: var(--top); display: flex; align-items: center; gap: 16px; padding: 0 20px;
+  border-bottom: 1px solid var(--line); background: rgb(10 11 13 / .82); backdrop-filter: blur(14px) saturate(140%); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .02em; }
+.brand svg { width: 28px; height: 28px; }
+.brand small { display: block; font: 400 10.5px var(--mono); color: var(--t3); letter-spacing: .04em; }
+.search { position: relative; flex: 1; max-width: 520px; margin-left: auto; }
+.search input { width: 100%; height: 36px; padding: 0 40px 0 36px; border: 1px solid var(--line-ctl); border-radius: 9px; background: var(--s1); outline: none; transition: border-color .15s, box-shadow .15s; }
+.search input:focus { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search svg { position: absolute; left: 11px; top: 10px; color: var(--t3); }
+.search kbd { position: absolute; right: 9px; top: 8px; }
+.results { position: absolute; top: 44px; left: 0; right: 0; max-height: 60vh; overflow: auto; padding: 6px; border: 1px solid var(--line-2); border-radius: 12px; background: rgb(21 23 27 / .97); backdrop-filter: blur(16px); box-shadow: 0 24px 60px rgb(0 0 0 / .55); }
+.result { display: block; width: 100%; text-align: left; padding: 9px 10px; border-radius: 8px; }
+.result:hover, .result[aria-selected="true"] { background: var(--s3); }
+.result b { font: 500 11.5px var(--mono); color: var(--accent); }
+.result span { display: block; font-size: 12.5px; color: var(--t2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.result mark { background: var(--accent-soft); color: var(--t1); border-radius: 3px; }
+.meter { display: flex; align-items: center; gap: 9px; font: 500 12px var(--mono); color: var(--t2); white-space: nowrap; }
+.meter svg { width: 26px; height: 26px; transform: rotate(-90deg); }
+.meter .track { fill: none; stroke: var(--s4); stroke-width: 3; }
+.meter .fill { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--s2); font-weight: 500; font-size: 13px; white-space: nowrap; transition: background-color .15s, border-color .15s, transform .15s var(--ease-out); }
+.btn:hover { background: var(--s3); border-color: var(--line-ctl); }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.btn.primary:hover { background: #63eedd; }
+.menu-btn { display: none; }
+.read-progress { position: fixed; top: var(--top); left: 0; right: 0; height: 2px; z-index: 31; pointer-events: none; }
+.read-progress i { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); box-shadow: 0 0 10px var(--accent); }
+
+/* ---------- layout ---------- */
+.shell { position: relative; z-index: 1; display: grid; grid-template-columns: 290px minmax(0, 1fr); }
+.tree { position: sticky; top: var(--top); height: calc(100vh - var(--top)); overflow-y: auto; padding: 14px 10px 40px; border-right: 1px solid var(--line); }
+.tree-inner { position: relative; }
+.tree h4 { margin: 16px 10px 6px; }
+.tree-file { position: relative; z-index: 1; display: grid; grid-template-columns: 8px 1fr auto; gap: 9px; align-items: center; width: 100%; height: 30px; padding: 0 10px; border-radius: 7px; color: var(--t2); font: 400 12.5px var(--mono); text-align: left; transition: color .15s; }
+.tree-file:hover { color: var(--t1); background: rgb(255 255 255 / .03); }
+.tree-file.active { color: var(--t1); }
+.tree-file .dot { width: 7px; height: 7px; border-radius: 2px; background: var(--lang); opacity: .85; }
+.tree-file .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-file .done { width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%; color: var(--accent-ink); background: transparent; border: 1px solid var(--line-2); font-size: 9px; }
+.tree-file.read .done { background: var(--accent); border-color: var(--accent); }
+.tree-indicator { position: absolute; left: 0; right: 0; top: 0; height: 30px; z-index: 0; border-radius: 7px; background: var(--s3); box-shadow: inset 0 0 0 1px var(--line-2); opacity: 0; pointer-events: none; }
+.tree-indicator::before { content: ""; position: absolute; left: -10px; top: 7px; bottom: 7px; width: 2px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+main { min-width: 0; padding: 28px 32px 120px; }
+
+/* ---------- intro ---------- */
+.intro { max-width: 1120px; margin: 0 auto; padding-top: 28px; }
+.intro h1 { margin: 14px 0 12px; font: 400 clamp(48px, 7vw, 88px)/0.98 var(--serif); letter-spacing: -.02em; }
+.intro h1 .w { display: inline-block; }
+.intro h1 em { color: var(--t2); }
+.lede { max-width: 640px; color: var(--t2); font-size: 16px; margin: 0 0 28px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--line); margin-bottom: 26px; }
+.stats div { padding: 16px 18px; background: var(--s1); }
+.stats b { display: block; font: 500 34px/1.1 var(--sans); letter-spacing: -.03em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.card { border: 1px solid var(--line); border-radius: 14px; background: var(--s1); padding: 18px; }
+.card h3 { margin: 0 0 4px; font-size: 14px; font-weight: 500; }
+.card p { margin: 0; color: var(--t3); font-size: 12.5px; }
+.anatomy { display: flex; align-items: flex-end; gap: 14px; height: 170px; padding: 14px 4px 0; overflow-x: auto; }
+.anatomy-group { display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; height: 100%; }
+.anatomy-bars { display: flex; align-items: flex-end; gap: 3px; flex: 1; }
+.bar { width: 10px; border-radius: 3px 3px 1px 1px; background: var(--lang); opacity: .82; transform-origin: bottom; transition: opacity .15s, filter .15s; }
+.bar:hover { opacity: 1; filter: brightness(1.25); }
+.anatomy-group span { font: 500 9.5px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--t4); white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 14px 0 0; font-size: 12px; color: var(--t3); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: var(--lang); margin-right: 7px; vertical-align: -1px; }
+.grid2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 26px 0; }
+.keys { display: flex; gap: 6px; margin-bottom: 8px; }
+.cta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.tip { position: fixed; z-index: 50; pointer-events: none; padding: 7px 10px; border: 1px solid var(--line-2); border-radius: 8px; background: rgb(21 23 27 / .96); font: 500 11.5px var(--mono); color: var(--t1); opacity: 0; transition: opacity .12s; }
+.tip.show { opacity: 1; }
+
+/* ---------- file view ---------- */
+.file { max-width: 1400px; margin: 0 auto; }
+.file-head { display: grid; gap: 10px; padding: 8px 0 22px; margin-bottom: 8px; border-bottom: 1px solid var(--line); }
+.crumbs { font: 500 12px var(--mono); color: var(--t3); }
+.crumbs b { color: var(--t1); font-weight: 500; }
+.file-head h2 { margin: 0; font: 400 46px/1.05 var(--serif); letter-spacing: -.015em; }
+.summary { margin: 0; max-width: 820px; color: var(--t2); font-size: 15px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border: 1px solid var(--line-2); border-radius: 7px; font: 500 11.5px var(--mono); color: var(--t2); background: var(--s2); }
+.chip.lang::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--lang); }
+.chip.read { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+.pager { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.pager a { font: 500 12px var(--mono); color: var(--t3); }
+.pager a:hover { color: var(--accent); }
+.rows { list-style: none; margin: 0; padding: 0; }
+.row { display: grid; grid-template-columns: minmax(260px, 36%) minmax(0, 1fr); gap: 0; border-bottom: 1px solid var(--line); scroll-margin-top: calc(var(--top) + 20px); }
+.row:hover .note { background: rgb(255 255 255 / .018); }
+.row:hover .code { background: #0d0f12; }
+.row.focus .note { background: var(--accent-soft); }
+.note { padding: 12px 18px 12px 2px; transition: background-color .2s; border-right: 1px solid var(--line); }
+.note-inner { position: sticky; top: calc(var(--top) + 14px); }
+.range { display: inline-block; margin-bottom: 4px; font: 500 10.5px var(--mono); color: var(--t4); letter-spacing: .04em; }
+.range:hover { color: var(--accent); }
+.note p { margin: 0; color: var(--t2); font-size: 13.5px; line-height: 1.6; }
+.note code { font: 12px var(--mono); color: var(--t1); background: var(--s3); padding: 1px 5px; border-radius: 4px; }
+.note b { color: var(--t1); font-weight: 600; }
+.code { min-width: 0; padding: 10px 0; transition: background-color .2s; background: #0b0c0f; }
+.code pre { margin: 0; font: 12.5px/1.7 var(--mono); }
+.line { display: flex; min-height: 21px; }
+.line:hover { background: rgb(255 255 255 / .03); }
+.ln { flex: none; width: 52px; padding-right: 16px; text-align: right; color: var(--t4); user-select: none; }
+.line.covered .ln { color: #6b707a; }
+.src { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 20px; color: #c3c7ce; }
+.file-foot { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.next-card { display: grid; gap: 6px; padding: 18px 20px; border: 1px solid var(--line-2); border-radius: 14px; background: var(--s1); transition: border-color .2s, transform .2s var(--ease-out); }
+.next-card:hover { border-color: var(--accent-line); transform: translateY(-2px); }
+.next-card b { font: 400 26px var(--serif); }
+.next-card p { margin: 0; color: var(--t3); font-size: 12.5px; }
+/* syntax colours: monochrome base, colour for strings/numbers/keywords */
+.kw { color: #e8e9eb; font-weight: 500; } .str { color: #7fe3d6; } .num, .cst { color: #f4d35e; } .com { color: #5d626b; font-style: italic; }
+.fn { color: #ffffff; } .cls { color: #ffffff; font-weight: 600; } .bi { color: #9fb0c5; } .dec { color: #f08a4b; }
+.tag { color: #f08a4b; } .attr { color: #9fb0c5; } .prop { color: #9fb0c5; } .op { color: #8d929b; } .pun { color: #6e737c; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--s4); border: 3px solid var(--bg); border-radius: 99px; }
+::-webkit-scrollbar-track { background: transparent; }
+@media (max-width: 960px) {
+  .shell { grid-template-columns: 1fr; }
+  .tree { position: fixed; z-index: 40; left: 0; top: var(--top); width: min(320px, 86vw); background: var(--s1); transform: translateX(-102%); transition: transform .35s var(--ease-out); box-shadow: 30px 0 80px rgb(0 0 0 / .5); }
+  body.tree-open .tree { transform: none; }
+  .menu-btn { display: inline-flex; }
+  .meter span, .top .btn.road { display: none; }
+  main { padding: 20px 16px 100px; }
+  .row { grid-template-columns: 1fr; }
+  .note { border-right: 0; padding: 12px 4px 6px; }
+  .stats, .grid2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .file-foot { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"></div>
+<header class="top">
+  <button class="btn menu-btn" id="menu" aria-label="Files">☰</button>
+  <a class="brand" href="#">
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x=".5" y=".5" width="31" height="31" rx="8.5" fill="#111215" stroke="rgba(255,255,255,.12)"/>
+      <path d="M7 11h8l3 5-3 5H7" stroke="#7d818a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 16h7" stroke="#7d818a" stroke-width="1.8" stroke-linecap="round"/><circle cx="22.5" cy="16" r="3.2" fill="#3ee6d1"/></svg>
+    <span>IIP<small>code walkthrough</small></span>
+  </a>
+  <div class="search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7.5"/><path d="m20.5 20.5-4.2-4.2"/></svg>
+    <input id="q" placeholder="Search files and explanations…" autocomplete="off" spellcheck="false" aria-label="Search">
+    <kbd>/</kbd>
+    <div class="results" id="results" role="listbox" hidden></div>
+  </div>
+  <div class="meter" title="Files you have read to the end">
+    <svg viewBox="0 0 26 26" aria-hidden="true"><circle class="track" cx="13" cy="13" r="10"/><circle class="fill" id="ring" cx="13" cy="13" r="10" pathLength="100" stroke-dasharray="0 100"/></svg>
+    <span id="readCount">0 read</span>
+  </div>
+  <a class="btn road" href="ROADMAP.html">Study roadmap →</a>
+</header>
+<div class="read-progress" aria-hidden="true"><i id="progress"></i></div>
+<div class="shell">
+  <aside class="tree" id="tree" aria-label="Files"></aside>
+  <main id="main"></main>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+<script type="application/json" id="data">/*__WALKTHROUGH_DATA__*/null</script>
+<script>
+(() => {
+  const DATA = JSON.parse(document.getElementById("data").textContent);
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Notes are plain text with `code` and **bold** allowed; everything else is escaped.
+  const rich = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  const ORDER = DATA.groups.flatMap((g) => g.files);
+  // Sidebar labels: the bare file name, or "folder/name" when two files share a name (e.g. two __init__.py).
+  const nameCount = ORDER.reduce((acc, p) => { const n = p.split("/").pop(); acc[n] = (acc[n] || 0) + 1; return acc; }, {});
+  const label = (p) => { const parts = p.split("/"); return nameCount[parts[parts.length - 1]] > 1 ? parts.slice(-2).join("/") : parts[parts.length - 1]; };
+  const LANG_VAR = { Python: "--py", JavaScript: "--js", CSS: "--css", HTML: "--html", SVG: "--html" };
+  const langColor = (lang) => `var(${LANG_VAR[lang] || "--cfg"})`;
+  const STORE = "iip-walkthrough-read";
+  let read = new Set();
+  try { read = new Set(JSON.parse(localStorage.getItem(STORE) || "[]")); } catch { /* private mode */ }
+
+  // ---------- motion (anime.js v4, motion-aware, never required for content to show) ----------
+  let A = window.anime;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  const moving = () => A && !reduce.matches && document.visibilityState === "visible";
+  const animate = (t, p) => (moving() ? A.animate(t, p) : A ? A.animate(t, { ...p, duration: 0, delay: 0, ease: "linear" }) : null);
+  const stagger = (v, o) => (A ? A.stagger(v, o) : 0);
+  function enter(els, { y = 14, step = 40, max = 16, blur = 6 } = {}) {
+    els = [...els].slice(0, max);
+    if (!els.length || !moving()) return;
+    A.animate(els, { opacity: [0, 1], y: [y, 0], filter: [`blur(${blur}px)`, "blur(0px)"], duration: 640, ease: "outExpo",
+      delay: A.stagger(step), onComplete: () => els.forEach((el) => ["opacity", "transform", "filter"].forEach((p) => el.style.removeProperty(p))) });
+  }
+  function countUp(el, to) {
+    if (!moving()) { el.textContent = to.toLocaleString(); return; }
+    const s = { v: 0 };
+    A.animate(s, { v: to, duration: 1300, ease: "outExpo", onUpdate: () => { el.textContent = Math.round(s.v).toLocaleString(); } });
+  }
+
+  // ---------- sidebar ----------
+  const tree = $("#tree");
+  tree.innerHTML = `<div class="tree-inner"><span class="tree-indicator" id="indicator"></span>${DATA.groups.map((g) => `
+    <h4 class="eyebrow">${esc(g.name)}</h4>${g.files.map((p) => `
+    <button class="tree-file${read.has(p) ? " read" : ""}" data-path="${esc(p)}" style="--lang:${langColor(DATA.files[p].lang)}" title="${esc(p)}">
+      <span class="dot"></span><span class="name">${esc(label(p))}</span><span class="done">✓</span></button>`).join("")}`).join("")}</div>`;
+  tree.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-path]");
+    if (b) { location.hash = `file=${b.dataset.path}`; document.body.classList.remove("tree-open"); }
+  });
+  $("#menu").addEventListener("click", () => document.body.classList.toggle("tree-open"));
+
+  function moveIndicator(path) {
+    const ind = $("#indicator"), btn = $(`.tree-file[data-path="${CSS.escape(path)}"]`);
+    $$(".tree-file").forEach((b) => b.classList.toggle("active", b === btn));
+    if (!btn) { ind.style.opacity = 0; return; }
+    btn.scrollIntoView({ block: "nearest" });
+    if (moving()) A.animate(ind, { y: btn.offsetTop, opacity: 1, ease: A.spring({ bounce: .2, duration: 420 }) });
+    else { ind.style.transform = `translateY(${btn.offsetTop}px)`; ind.style.opacity = 1; }
+  }
+  function updateMeter() {
+    const total = ORDER.length, done = ORDER.filter((p) => read.has(p)).length;
+    $("#readCount").textContent = `${done} / ${total} read`;
+    const ring = $("#ring"), target = (done / total) * 100;
+    if (moving()) A.animate(ring, { strokeDasharray: [`${ring.dataset.v || 0} 100`, `${target} 100`], duration: 900, ease: "outExpo" });
+    else ring.setAttribute("stroke-dasharray", `${target} 100`);
+    ring.dataset.v = target;
+  }
+  function markRead(path) {
+    if (read.has(path)) return;
+    read.add(path);
+    try { localStorage.setItem(STORE, JSON.stringify([...read])); } catch { /* ignore */ }
+    const btn = $(`.tree-file[data-path="${CSS.escape(path)}"]`);
+    btn?.classList.add("read");
+    if (btn) animate(btn.querySelector(".done"), { scale: [0.3, 1], duration: 600, ease: "outBack(3)" });
+    const chip = $("#readChip");
+    if (chip) { chip.textContent = "✓ read"; chip.classList.add("read"); }
+    updateMeter();
+  }
+
+  // ---------- intro ----------
+  function renderIntro() {
+    const files = Object.values(DATA.files);
+    const lines = files.reduce((a, f) => a + f.lines, 0), notes = files.reduce((a, f) => a + f.rows.length, 0);
+    const langs = [...new Set(files.map((f) => f.lang))];
+    const maxLines = Math.max(...files.map((f) => f.lines));
+    const words = ["Every", "line,"];
+    $("#main").innerHTML = `<section class="intro">
+      <div class="eyebrow">Integration Intelligence Platform · literate source</div>
+      <h1>${words.map((w) => `<span class="w">${w}</span>`).join(" ")} <span class="w"><em>explained.</em></span></h1>
+      <p class="lede">A guided read of the whole codebase. On the left, what each line does and <i>why</i>; on the right, the code itself, exactly as it ships.
+        Pick any file, search for a concept, or start at the top and follow the order in the sidebar.</p>
+      <div class="stats">
+        <div><span class="eyebrow">files</span><b data-count="${files.length}">0</b></div>
+        <div><span class="eyebrow">lines</span><b data-count="${lines}">0</b></div>
+        <div><span class="eyebrow">explanations</span><b data-count="${notes}">0</b></div>
+        <div><span class="eyebrow">languages</span><b data-count="${langs.length}">0</b></div>
+      </div>
+      <div class="card"><div class="eyebrow">Anatomy of the codebase · one bar per file, height = lines</div>
+        <div class="anatomy">${DATA.groups.map((g) => `<div class="anatomy-group"><div class="anatomy-bars">${g.files.map((p) =>
+          `<button class="bar" data-path="${esc(p)}" data-tip="${esc(p)} · ${DATA.files[p].lines} lines" style="--lang:${langColor(DATA.files[p].lang)};height:${Math.max(6, (DATA.files[p].lines / maxLines) * 120)}px" aria-label="${esc(p)}"></button>`).join("")}</div>
+          <span>${esc(g.name)}</span></div>`).join("")}</div>
+        <div class="legend">${langs.map((l) => `<span style="--lang:${langColor(l)}"><i></i>${esc(l)} · ${files.filter((f) => f.lang === l).reduce((a, f) => a + f.lines, 0).toLocaleString()} lines</span>`).join("")}</div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="keys"><kbd>j</kbd><kbd>k</kbd></div><h3>Step through explanations</h3><p>Move to the next or previous note; the matching code is highlighted.</p></div>
+        <div class="card"><div class="keys"><kbd>[</kbd><kbd>]</kbd></div><h3>Previous / next file</h3><p>Files are ordered from configuration to engine, API, frontend and tests.</p></div>
+        <div class="card"><div class="keys"><kbd>/</kbd></div><h3>Search everything</h3><p>Find a concept ("haversine", "token bucket", "FLIP") across every explanation.</p></div>
+      </div>
+      <div class="cta"><a class="btn primary" href="#file=${esc(ORDER[0])}">Start reading →</a>
+        <a class="btn" href="ROADMAP.html">Follow the study roadmap</a><span class="eyebrow">generated ${esc(DATA.generated)}</span></div>
+    </section>`;
+    if (moving()) A.animate($$(".intro h1 .w"), { opacity: [0, 1], y: ["40%", "0%"], filter: ["blur(10px)", "blur(0px)"], duration: 900, ease: "outExpo", delay: A.stagger(110) });
+    enter($$(".intro > .eyebrow, .lede, .stats, .card, .cta"), { step: 70 });
+    $$("[data-count]").forEach((el) => countUp(el, Number(el.dataset.count)));
+    if (moving()) A.animate($$(".bar"), { scaleY: [0, 1], duration: 900, ease: "outExpo", delay: A.stagger(14, { start: 350 }) });
+    moveIndicator("");
+    setProgress(0);
+  }
+
+  // ---------- file view ----------
+  let rowObserver = null, endObserver = null, currentPath = null, focusIndex = -1;
+  function renderFile(path, line) {
+    const f = DATA.files[path];
+    if (!f) return renderIntro();
+    const i = ORDER.indexOf(path), prev = ORDER[i - 1], next = ORDER[i + 1];
+    const parts = path.split("/");
+    currentPath = path;
+    focusIndex = -1;
+    $("#main").innerHTML = `<article class="file" style="--lang:${langColor(f.lang)}">
+      <header class="file-head">
+        <div class="crumbs">${parts.slice(0, -1).map((p) => esc(p) + " / ").join("")}<b>${esc(parts[parts.length - 1])}</b></div>
+        <h2>${esc(parts[parts.length - 1])}</h2>
+        <p class="summary">${rich(f.summary)}</p>
+        <div class="meta"><span class="chip lang">${esc(f.lang)}</span><span class="chip">${f.lines} lines</span><span class="chip">${f.rows.length} notes</span>
+          <span class="chip${read.has(path) ? " read" : ""}" id="readChip">${read.has(path) ? "✓ read" : "unread"}</span></div>
+        <nav class="pager">${prev ? `<a href="#file=${esc(prev)}">← ${esc(prev)}</a>` : "<span></span>"}${next ? `<a href="#file=${esc(next)}">${esc(next)} →</a>` : ""}</nav>
+      </header>
+      <ol class="rows">${f.rows.map((r, n) => `<li class="row" data-n="${n}" data-first="${r.first}" data-from="${r.from}" data-to="${r.to}">
+        <div class="note"><div class="note-inner"><a class="range" href="#file=${esc(path)}&L=${r.from}">${r.from === r.to ? `L${r.from}` : `L${r.from}–${r.to}`}</a><p>${rich(r.text)}</p></div></div>
+        <div class="code"><pre>${r.code.map((c, k) => { const ln = r.first + k; const cov = ln >= r.from && ln <= r.to;
+          return `<span class="line${cov ? " covered" : ""}"><span class="ln">${ln}</span><span class="src">${c || " "}</span></span>`; }).join("")}</pre></div></li>`).join("")}</ol>
+      <footer class="file-foot" id="fileEnd">
+        ${prev ? `<a class="next-card" href="#file=${esc(prev)}"><span class="eyebrow">← previous</span><b>${esc(prev.split("/").pop())}</b><p>${esc(DATA.files[prev].summary.slice(0, 120))}…</p></a>` : "<span></span>"}
+        ${next ? `<a class="next-card" href="#file=${esc(next)}" style="text-align:right"><span class="eyebrow">next →</span><b>${esc(next.split("/").pop())}</b><p>${esc(DATA.files[next].summary.slice(0, 120))}…</p></a>` : ""}
+      </footer>
+    </article>`;
+    moveIndicator(path);
+    enter($$(".file-head > *"), { step: 50 });
+    const rows = $$(".row");
+    enter(rows.slice(0, 10), { y: 10, step: 35, blur: 3 });
+    // Rows further down fade in the first time they scroll into view.
+    rowObserver?.disconnect();
+    rowObserver = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        rowObserver.unobserve(entry.target);
+        if (moving()) A.animate(entry.target, { opacity: [0, 1], y: [10, 0], duration: 520, ease: "outExpo", onComplete: () => ["opacity", "transform"].forEach((p) => entry.target.style.removeProperty(p)) });
+      }
+    }, { rootMargin: "0px 0px -8% 0px" });
+    rows.slice(10).forEach((r) => rowObserver.observe(r));
+    endObserver?.disconnect();
+    endObserver = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) markRead(path); });
+    endObserver.observe($("#fileEnd"));
+    if (line) {
+      const idx = rows.findIndex((r, k) => line >= Number(r.dataset.first) && (k === rows.length - 1 || line < Number(rows[k + 1].dataset.first)));
+      focusRow(Math.max(0, idx), true);
+    } else window.scrollTo(0, 0);
+  }
+
+  function focusRow(n, jump = false) {
+    const rows = $$(".row");
+    if (!rows.length) return;
+    focusIndex = Math.max(0, Math.min(rows.length - 1, n));
+    rows.forEach((r, k) => r.classList.toggle("focus", k === focusIndex));
+    const row = rows[focusIndex];
+    row.scrollIntoView({ block: "center", behavior: jump || !moving() ? "auto" : "smooth" });
+    const lines = row.querySelectorAll(".line.covered"); // explicit cleanup: a quick j/k re-highlight must not freeze mid-fade
+    animate(lines, { backgroundColor: ["rgba(62,230,209,0.16)", "rgba(62,230,209,0)"], duration: 1400, ease: "outExpo", delay: stagger(20),
+      onComplete: () => lines.forEach((l) => l.style.removeProperty("background-color")) });
+  }
+
+  // ---------- reading progress ----------
+  function setProgress(p) { $("#progress").style.transform = `scaleX(${p})`; }
+  addEventListener("scroll", () => {
+    if (!currentPath) return;
+    const doc = document.documentElement;
+    setProgress(Math.min(1, doc.scrollTop / Math.max(1, doc.scrollHeight - innerHeight)));
+  }, { passive: true });
+
+  // ---------- search ----------
+  const INDEX = Object.entries(DATA.files).flatMap(([p, f]) => [
+    { path: p, line: null, text: `${p} ${f.summary}`, show: f.summary },
+    ...f.rows.map((r) => ({ path: p, line: r.from, text: r.text, show: r.text })),
+  ]);
+  const q = $("#q"), results = $("#results");
+  let hits = [], sel = 0;
+  function search(term) {
+    term = term.trim().toLowerCase();
+    if (term.length < 2) { results.hidden = true; return; }
+    hits = INDEX.filter((x) => x.text.toLowerCase().includes(term)).slice(0, 40);
+    sel = 0;
+    const mark = (s) => { const i = s.toLowerCase().indexOf(term); const from = Math.max(0, i - 40);
+      return (from ? "…" : "") + esc(s.slice(from, i)) + "<mark>" + esc(s.slice(i, i + term.length)) + "</mark>" + esc(s.slice(i + term.length, i + term.length + 80)); };
+    results.innerHTML = hits.length ? hits.map((h, k) => `<button class="result" data-k="${k}" aria-selected="${k === 0}"><b>${esc(h.path)}${h.line ? `:${h.line}` : ""}</b><span>${mark(h.show)}</span></button>`).join("")
+      : `<div class="result"><span>No matches</span></div>`;
+    results.hidden = false;
+    animate($$(".result", results), { opacity: [0, 1], x: [-4, 0], duration: 260, delay: stagger(12) });
+  }
+  const go = (h) => { if (!h) return; results.hidden = true; q.blur(); location.hash = `file=${h.path}${h.line ? `&L=${h.line}` : ""}`; };
+  q.addEventListener("input", () => search(q.value));
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault(); sel = (sel + (e.key === "ArrowDown" ? 1 : -1) + hits.length) % Math.max(1, hits.length);
+      $$(".result", results).forEach((r, k) => { r.setAttribute("aria-selected", String(k === sel)); if (k === sel) r.scrollIntoView({ block: "nearest" }); });
+    } else if (e.key === "Enter") go(hits[sel]);
+    else if (e.key === "Escape") { results.hidden = true; q.blur(); }
+  });
+  results.addEventListener("click", (e) => { const r = e.target.closest("[data-k]"); if (r) go(hits[Number(r.dataset.k)]); });
+  document.addEventListener("click", (e) => { if (!e.target.closest?.(".search")) results.hidden = true; });
+
+  // ---------- tooltips on the anatomy bars ----------
+  const tip = $("#tip");
+  document.addEventListener("pointermove", (e) => {
+    const t = e.target.closest?.("[data-tip]");
+    if (!t) { tip.classList.remove("show"); return; }
+    tip.textContent = t.dataset.tip;
+    tip.style.transform = `translate(${Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)}px, ${e.clientY + 16}px)`;
+    tip.classList.add("show");
+  });
+  document.addEventListener("click", (e) => { const b = e.target.closest(".bar[data-path]"); if (b) location.hash = `file=${b.dataset.path}`; });
+
+  // ---------- keyboard ----------
+  addEventListener("keydown", (e) => {
+    if (e.target.closest?.("input")) return;
+    if (e.key === "/") { e.preventDefault(); q.focus(); return; }
+    if (!currentPath) return;
+    const i = ORDER.indexOf(currentPath);
+    if (e.key === "j") focusRow(focusIndex + 1);
+    else if (e.key === "k") focusRow(focusIndex - 1);
+    else if (e.key === "]" && ORDER[i + 1]) location.hash = `file=${ORDER[i + 1]}`;
+    else if (e.key === "[" && ORDER[i - 1]) location.hash = `file=${ORDER[i - 1]}`;
+  });
+
+  // ---------- routing ----------
+  function route() {
+    const params = new URLSearchParams(location.hash.slice(1));
+    const path = params.get("file");
+    if (path && DATA.files[path]) renderFile(path, Number(params.get("L")) || null);
+    else { currentPath = null; renderIntro(); }
+  }
+  addEventListener("hashchange", route);
+
+  function start() { A = window.anime; updateMeter(); route(); }
+  if (window.anime) start();
+  else { // opened outside the repo: try the CDN, and render without motion if that fails too
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/animejs@4.5.0/dist/bundles/anime.umd.min.js";
+    s.onload = start; s.onerror = start;
+    document.head.append(s);
+  }
+})();
+</script>
+</body>
+</html>

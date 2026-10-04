@@ -1,0 +1,24 @@
+{
+  "path": "iip/routes/users.py",
+  "lines": 32,
+  "summary": "Read-only customer endpoints: every user with current risk and activity counts, a full profile (devices, locations, risk history, timeline, incidents), and a user's current risk decision. The query work lives in `iip/queries.py`; this file maps URLs to those helpers and turns unknown ids into 404s.",
+  "notes": [
+    {"from": 1, "to": 1, "text": "Module docstring: customer risk profiles."},
+    {"from": 2, "to": 2, "text": "Postpones evaluation of type hints (they are kept as strings); FastAPI still resolves them when it inspects each endpoint's signature."},
+    {"from": 4, "to": 4, "text": "`APIRouter` registers endpoints; `HTTPException` produces the 404."},
+    {"from": 6, "to": 6, "text": "The `User` model, the helper's return type."},
+    {"from": 7, "to": 7, "text": "The query helpers that build the response dicts."},
+    {"from": 8, "to": 8, "text": "The per-request session alias."},
+    {"from": 10, "to": 10, "text": "This module's router, tagged `users` in the docs."},
+    {"from": 13, "to": 13, "text": "A plain helper shared by two endpoints, not an endpoint itself. FastAPI never calls it, so `db: DB` is only a type hint here: the endpoint passes in its own session."},
+    {"from": 14, "to": 14, "text": "Primary-key lookup after uppercasing, so `/users/usr-1004` works too."},
+    {"from": 15, "to": 16, "text": "Unknown customer: 404."},
+    {"from": 17, "to": 17, "text": "Returns the ORM object."},
+    {"from": 20, "to": 20, "text": "Registers `GET /api/v1/users`."},
+    {"from": 21, "to": 22, "text": "Returns every customer with risk score and level, event and incident counts and last activity, computed by `users_overview` in five batched queries."},
+    {"from": 25, "to": 25, "text": "Registers `GET /api/v1/users/{user_id}`."},
+    {"from": 26, "to": 27, "text": "Validates the id through the helper, then returns the full profile from `user_detail`."},
+    {"from": 30, "to": 30, "text": "Registers `GET /api/v1/users/{user_id}/risk`."},
+    {"from": 31, "to": 32, "text": "Returns just the current risk decision; taking `.id` from the loaded row means the canonical uppercase id is used."}
+  ]
+}
